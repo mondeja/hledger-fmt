@@ -130,6 +130,24 @@ tag foo  ; comment
 }
 
 #[test]
+fn basic_transaction() {
+    
+    /*let mut p = crate::parser::EntryValueParser::default();
+    p.parse("50000000.00000€   @@ 65579€  == $78.7", 1, 1);
+    println!("{:?}", p);
+    assert!(false);*/
+     
+    assert_noop_format(
+        r#"
+2024-01-15 hello
+    assets:checking  10000€  @ 32543.000345€  ==*  $56424324€
+    expenses:food      $10.010000 @@  $33.3  = 56€
+    foo  50000000.0000000000€   @@ 65579€  == $78.7
+"#,
+    );
+}
+
+#[test]
 fn transaction_comment_with_title_comment() {
     // transaction titles and entry comments are aligned
     assert_format(
@@ -366,10 +384,9 @@ fn date_formats_empty_transactions() {
 
 2024-01-1
 
-2024-1-01"#
+2024-1-01"#,
     );
 }
-
 
 #[test]
 fn separate_transactions() {
@@ -391,7 +408,7 @@ fn separate_transactions() {
 2015-10-17 bought tool
   expenses:food  $10
   assets:cash
-"#
+"#,
     );
 }
 

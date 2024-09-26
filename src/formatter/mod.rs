@@ -2,8 +2,8 @@
 mod tests;
 
 use crate::parser::{
-    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment,
-    TransactionEntry, TransactionNode,
+    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionEntry,
+    TransactionNode,
 };
 
 pub fn format_content(nodes: &JournalFile) -> String {
@@ -84,20 +84,31 @@ pub fn format_content(nodes: &JournalFile) -> String {
                 entries,
                 first_entry_indent,
                 max_entry_name_len,
-                max_entry_value_len,
-                max_entry_units_len,
-                max_entry_decimal_len,
-                max_entry_after_decimal_len,
+                max_entry_value_first_part_units_len,
+                max_entry_value_first_part_numeric_units_len,
+                max_entry_value_first_part_decimal_len,
+                max_entry_value_first_separator_len,
+                max_entry_value_second_part_units_len,
+                max_entry_value_second_part_decimal_len,
+                max_entry_value_second_part_numeric_units_len,
+                max_entry_value_second_separator_len,
+                max_entry_value_third_part_units_len,
+                max_entry_value_third_part_decimal_len,
+                max_entry_value_third_part_numeric_units_len,
             } => {
                 let title_comment_padding = (title.len() + 2).max(
                     first_entry_indent
                         + max_entry_name_len
                         + 2
-                        + max_entry_units_len
-                        + max_entry_decimal_len
-                        + max_entry_after_decimal_len
-                        + 2
-                        + if *max_entry_decimal_len > 0 { 1 } else { 0 },
+                        + max_entry_value_first_part_units_len
+                        + max_entry_value_first_part_decimal_len
+                        + max_entry_value_first_separator_len
+                        + max_entry_value_second_part_units_len
+                        + max_entry_value_second_part_decimal_len
+                        + max_entry_value_second_separator_len
+                        + max_entry_value_third_part_units_len
+                        + max_entry_value_third_part_decimal_len
+                        + 2,
                 );
                 formatted.push_str(&format!(
                     "{}{}\n",
@@ -117,37 +128,126 @@ pub fn format_content(nodes: &JournalFile) -> String {
 
                 for entry in entries {
                     match entry {
-                        TransactionNode::TransactionEntry(
-                            TransactionEntry {
-                                name,
-                                value,
-                                value_units_len,
-                                value_decimal_len,
-                                comment,
-                            },
-                        ) => {
-                            let separation_with_value = if value.len() == 0 && comment.is_none() {
-                                0  // no value nor comment, don't generate trailing spaces
-                            } else {
-                                max_entry_name_len - name.len()
-                                    + max_entry_units_len
-                                    + 2
-                                    + if *value_decimal_len > 0 { 1 } else { 0 }
-                                    - value_units_len
-                            };
+                        TransactionNode::TransactionEntry(TransactionEntry {
+                            name,
+                            value_first_part_units,
+                            value_first_part_numeric_units,
+                            value_first_part_decimal,
+                            value_first_separator,
+                            value_second_part_units,
+                            value_second_part_numeric_units,
+                            value_second_part_decimal,
+                            value_second_separator,
+                            value_third_part_units,
+                            value_third_part_numeric_units,
+                            value_third_part_decimal,
+                            comment,
+                        }) => {
+                            println!();
+
+                            let mut first_part_numeric_units_trailing_com_len = 0;
+                            for c in value_first_part_units.chars().rev() {
+                                if c.is_digit(10) {
+                                    break;
+                                }
+                                first_part_numeric_units_trailing_com_len += 1;
+                            }
+
+                            let mut first_part_numeric_units_leading_com_len = 0;
+                            for c in value_first_part_units.chars() {
+                                if c.is_digit(10) {
+                                    break;
+                                }
+                                first_part_numeric_units_leading_com_len += 1;
+                            }
+
+                            let mut second_part_numeric_units_trailing_com_len = 0;
+                            for c in value_second_part_units.chars().rev() {
+                                if c.is_digit(10) {
+                                    break;
+                                }
+                                second_part_numeric_units_trailing_com_len += 1;
+                            }
+
+                            let mut second_part_numeric_units_leading_com_len = 0;
+                            for c in value_second_part_units.chars() {
+                                if c.is_digit(10) {
+                                    break;
+                                }
+                                second_part_numeric_units_leading_com_len += 1;
+                            }
+
+                            let mut third_part_numeric_units_leading_com_len = 0;
+                            for c in value_third_part_units.chars() {
+                                if c.is_digit(10) {
+                                    break;
+                                }
+                                third_part_numeric_units_leading_com_len += 1;
+                            }
+
+                            /*
+                            let separation = 2 + max_entry_value_first_part_decimal_len
+                                - value_first_part_decimal.chars().count();
+                            println!(
+                                "2 + max_entry_value_first_part_decimal_len: 2 + {}",
+                                max_entry_value_first_part_decimal_len
+                            );
+                            println!(
+                                "- value_first_part_decimal.len(): -{}",
+                                value_first_part_decimal.chars().count()
+                            );
+                            println!(
+                                "separation: {}",
+                                separation
+                            );*/
+
                             formatted.push_str(&format!(
-                                "{}{}{}{}{}\n",
+                                "{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
                                 " ".repeat(*first_entry_indent),
                                 name,
-                                " ".repeat(separation_with_value),
-                                value,
+                                " ".repeat(
+                                    3 + max_entry_name_len  // 3 because of -leading
+                                        - name.len()
+                                        - first_part_numeric_units_leading_com_len
+                                        + max_entry_value_first_part_numeric_units_len
+                                        - value_first_part_numeric_units.chars().count()
+                                ),
+                                format!("{}{}", value_first_part_units, value_first_part_decimal),
+                                " ".repeat(
+                                    3 + max_entry_value_first_part_decimal_len
+                                        - value_first_part_decimal.chars().count()
+                                        - first_part_numeric_units_trailing_com_len
+                                ),
+                                value_first_separator,
+                                " ".repeat(
+                                    3 + max_entry_value_first_separator_len
+                                        - value_first_separator.len()
+                                        - second_part_numeric_units_leading_com_len
+                                        + max_entry_value_second_part_numeric_units_len
+                                        - value_second_part_numeric_units.chars().count()
+                                ),
+                                format!("{}{}", value_second_part_units, value_second_part_decimal),
+                                " ".repeat(
+                                    3 + max_entry_value_second_part_decimal_len
+                                        - value_second_part_decimal.chars().count()
+                                        - second_part_numeric_units_trailing_com_len
+                                ),
+                                value_second_separator,
+                                " ".repeat(
+                                    3 + max_entry_value_second_separator_len
+                                        - value_second_separator.len()
+                                        - third_part_numeric_units_leading_com_len
+                                        + max_entry_value_third_part_numeric_units_len
+                                        - value_third_part_numeric_units.chars().count()
+                                ),
+                                format!("{}{}", value_third_part_units, value_third_part_decimal),
                                 match comment {
                                     Some(comment) => {
-                                        let comment_separation = title_comment_padding
-                                            - value.len()
-                                            - separation_with_value
-                                            - name.len()
-                                            - first_entry_indent;
+                                        let comment_separation = 2; /*title_comment_padding
+                                                                    - value.len()
+                                                                    - separation_with_value
+                                                                    - name.len()
+                                                                    - first_entry_indent;*/
                                         format!(
                                             "{}{}{}",
                                             " ".repeat(comment_separation),
@@ -159,11 +259,11 @@ pub fn format_content(nodes: &JournalFile) -> String {
                                 },
                             ));
                         }
-                        TransactionNode::SingleLineComment(
-                            SingleLineComment {
-                                content, prefix, ..
-                            },
-                        ) => {
+                        TransactionNode::SingleLineComment(SingleLineComment {
+                            content,
+                            prefix,
+                            ..
+                        }) => {
                             formatted.push_str(&format!(
                                 "{}{}{}\n",
                                 " ".repeat(*first_entry_indent),

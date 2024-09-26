@@ -57,14 +57,18 @@ pub enum JournalCstNode {
         first_entry_indent: usize,
         /// Maximum length of the entry names
         max_entry_name_len: usize,
-        /// Maximum length of the entry values
-        max_entry_value_len: usize,
-        /// Maximum length of units before decimal mark in entries
-        max_entry_units_len: usize,
-        /// Maximum length of decimal mark in entries
-        max_entry_decimal_len: usize,
-        /// Maximum length of part after decimal mark in entries
-        max_entry_after_decimal_len: usize,
+
+        max_entry_value_first_part_units_len: usize,
+        max_entry_value_first_part_decimal_len: usize,
+        max_entry_value_first_part_numeric_units_len: usize,
+        max_entry_value_first_separator_len: usize,
+        max_entry_value_second_part_units_len: usize,
+        max_entry_value_second_part_decimal_len: usize,
+        max_entry_value_second_part_numeric_units_len: usize,
+        max_entry_value_second_separator_len: usize,
+        max_entry_value_third_part_units_len: usize,
+        max_entry_value_third_part_decimal_len: usize,
+        max_entry_value_third_part_numeric_units_len: usize,
     },
 }
 
@@ -124,12 +128,28 @@ pub enum DirectiveNode {
 pub struct TransactionEntry {
     /// Entry name
     pub name: String,
-    /// Entry value
-    pub value: String,
-    /// Length of the units before the decimal mark
-    pub value_units_len: usize,
-    /// Length of the decimal part of the value
-    pub value_decimal_len: usize,
+    /// Entry value first part units
+    pub value_first_part_units: String,
+    /// Entry value first part units without counting characters that are not numbers
+    pub value_first_part_numeric_units: String,
+    /// Entry value first part decimal
+    pub value_first_part_decimal: String,
+    /// Entry value first separator
+    pub value_first_separator: String,
+    /// Entry value sedonc part units
+    pub value_second_part_units: String,
+    /// Entry value second part units without counting characters that are not numbers
+    pub value_second_part_numeric_units: String,
+    /// Entry value second part decimal
+    pub value_second_part_decimal: String,
+    /// Entry value second separator
+    pub value_second_separator: String,
+    /// Entry value third part units
+    pub value_third_part_units: String,
+    /// Entry value third part units without counting characters that are not numbers
+    pub value_third_part_numeric_units: String,
+    /// Entry value third part decimal
+    pub value_third_part_decimal: String,
     /// Comment associated with the entry
     pub comment: Option<SingleLineComment>,
 }
@@ -172,14 +192,17 @@ struct ParserTempData {
     first_entry_indent: usize,
     /// Maximum length of the entry names
     max_entry_name_len: usize,
-    /// Maximum length of the entry values
-    max_entry_value_len: usize,
-    /// Maximum length of units before decimal mark in entries
-    max_entry_units_len: usize,
-    /// Maximum length of decimal mark in entries
-    max_entry_decimal_len: usize,
-    /// Maximum length of part after decimal mark in entries
-    max_entry_after_decimal_len: usize,
+    max_entry_value_first_part_units_len: usize,
+    max_entry_value_first_part_decimal_len: usize,
+    max_entry_value_first_part_numeric_units_len: usize,
+    max_entry_value_first_separator_len: usize,
+    max_entry_value_second_part_units_len: usize,
+    max_entry_value_second_part_decimal_len: usize,
+    max_entry_value_second_part_numeric_units_len: usize,
+    max_entry_value_second_separator_len: usize,
+    max_entry_value_third_part_units_len: usize,
+    max_entry_value_third_part_decimal_len: usize,
+    max_entry_value_third_part_numeric_units_len: usize,
 }
 
 impl ParserTempData {
@@ -195,10 +218,17 @@ impl ParserTempData {
             transaction_has_no_comment_entries: false,
             first_entry_indent: 0,
             max_entry_name_len: 0,
-            max_entry_value_len: 0,
-            max_entry_units_len: 0,
-            max_entry_decimal_len: 0,
-            max_entry_after_decimal_len: 0,
+            max_entry_value_first_part_units_len: 0,
+            max_entry_value_first_part_decimal_len: 0,
+            max_entry_value_first_part_numeric_units_len: 0,
+            max_entry_value_first_separator_len: 0,
+            max_entry_value_second_part_units_len: 0,
+            max_entry_value_second_part_decimal_len: 0,
+            max_entry_value_second_part_numeric_units_len: 0,
+            max_entry_value_second_separator_len: 0,
+            max_entry_value_third_part_units_len: 0,
+            max_entry_value_third_part_decimal_len: 0,
+            max_entry_value_third_part_numeric_units_len: 0,
         }
     }
 }
@@ -239,9 +269,8 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                         {
                             journal.push(JournalCstNode::SingleLineComment(comment));
                         } else if !data.transaction_title.is_empty() {
-                            data.transaction_entries.push(
-                                TransactionNode::SingleLineComment(comment),
-                            );
+                            data.transaction_entries
+                                .push(TransactionNode::SingleLineComment(comment));
                         } else {
                             data.directives_group_content
                                 .push(DirectiveNode::SingleLineComment(comment));
@@ -281,8 +310,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             || line.starts_with("python")  // 'python' CODE not supported
                             || line.starts_with("tag ")
                             || line.starts_with("value ")
-                            || line.starts_with("--command-line-flags")
-                        )
+                            || line.starts_with("--command-line-flags"))
                     {
                         parse_directive(
                             line.split_whitespace().next().unwrap(),
@@ -329,15 +357,11 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 if data.directives_group_content.is_empty() {
                                     journal.push(JournalCstNode::SingleLineComment(comment));
                                 } else if !data.transaction_title.is_empty() {
-                                    data.transaction_entries.push(
-                                        TransactionNode::SingleLineComment(
-                                            comment,
-                                        ),
-                                    );
+                                    data.transaction_entries
+                                        .push(TransactionNode::SingleLineComment(comment));
                                 } else {
-                                    data.directives_group_content.push(
-                                        DirectiveNode::SingleLineComment(comment),
-                                    );
+                                    data.directives_group_content
+                                        .push(DirectiveNode::SingleLineComment(comment));
                                 }
                             }
                         } else {
@@ -455,53 +479,67 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 }
                             }
 
+                            let coln = entry_value.len() + entry_name.len() + indent + 1;
                             entry_value = entry_value.trim_end().to_string();
 
-                            data.max_entry_value_len =
-                                data.max_entry_value_len.max(entry_value.len());
+                            let mut p = EntryValueParser::default();
+                            p.parse(&entry_value, lineno + 1, coln)?;
 
-                            // first value number
-                            let first_value_num = if entry_value.contains(' ') {
-                                entry_value.split_once(' ').unwrap().0.to_string()
-                            } else {
-                                entry_value.clone()
-                            };
+                            data.max_entry_value_first_part_decimal_len = data
+                                .max_entry_value_first_part_decimal_len
+                                .max(p.first_part_decimal.chars().count());
+                            data.max_entry_value_first_part_units_len = data
+                                .max_entry_value_first_part_units_len
+                                .max(p.first_part_units.chars().count());
+                            data.max_entry_value_first_part_numeric_units_len = data
+                                .max_entry_value_first_part_numeric_units_len
+                                .max(p.first_part_numeric_units.len());
 
-                            let value_units_len =
-                                if first_value_num.contains(',') || first_value_num.contains('.') {
-                                    first_value_num.len()
-                                        - first_value_num
-                                            .split(|c| c == ',' || c == '.')
-                                            .last()
-                                            .unwrap()
-                                            .len()
-                                } else {
-                                    first_value_num.len()
-                                };
+                            data.max_entry_value_first_separator_len = data
+                                .max_entry_value_first_separator_len
+                                .max(p.first_separator.len());
 
-                            data.max_entry_units_len =
-                                data.max_entry_units_len.max(value_units_len);
-                            let value_decimal_len = first_value_num.len() - value_units_len;
-                            data.max_entry_decimal_len =
-                                data.max_entry_decimal_len.max(value_decimal_len);
-                            let value_after_decimal_len =
-                                entry_value.len() - value_units_len - value_decimal_len;
-                            data.max_entry_after_decimal_len = data
-                                .max_entry_after_decimal_len
-                                .max(value_after_decimal_len);
+                            data.max_entry_value_second_part_decimal_len = data
+                                .max_entry_value_second_part_decimal_len
+                                .max(p.second_part_decimal.chars().count());
+                            data.max_entry_value_second_part_units_len = data
+                                .max_entry_value_second_part_units_len
+                                .max(p.second_part_units.chars().count());
+                            data.max_entry_value_second_part_numeric_units_len = data
+                                .max_entry_value_second_part_numeric_units_len
+                                .max(p.second_part_numeric_units.len());
+
+                            data.max_entry_value_second_separator_len = data
+                                .max_entry_value_second_separator_len
+                                .max(p.second_separator.len());
+
+                            data.max_entry_value_third_part_decimal_len = data
+                                .max_entry_value_third_part_decimal_len
+                                .max(p.third_part_decimal.chars().count());
+                            data.max_entry_value_third_part_units_len = data
+                                .max_entry_value_third_part_units_len
+                                .max(p.third_part_units.chars().count());
+                            data.max_entry_value_third_part_numeric_units_len = data
+                                .max_entry_value_third_part_numeric_units_len
+                                .max(p.third_part_numeric_units.len());
 
                             data.transaction_has_no_comment_entries = true;
-                            data.transaction_entries.push(
-                                TransactionNode::TransactionEntry(
-                                    TransactionEntry {
-                                        name: entry_name,
-                                        value: entry_value,
-                                        value_units_len,
-                                        value_decimal_len,
-                                        comment,
-                                    },
-                                ),
-                            );
+                            data.transaction_entries
+                                .push(TransactionNode::TransactionEntry(TransactionEntry {
+                                    name: entry_name,
+                                    value_first_part_decimal: p.first_part_decimal,
+                                    value_first_part_units: p.first_part_units,
+                                    value_first_part_numeric_units: p.first_part_numeric_units,
+                                    value_first_separator: p.first_separator,
+                                    value_second_part_decimal: p.second_part_decimal,
+                                    value_second_part_units: p.second_part_units,
+                                    value_second_part_numeric_units: p.second_part_numeric_units,
+                                    value_second_separator: p.second_separator,
+                                    value_third_part_decimal: p.third_part_decimal,
+                                    value_third_part_units: p.third_part_units,
+                                    value_third_part_numeric_units: p.third_part_numeric_units,
+                                    comment,
+                                }));
                         }
                     } else if colno == 0 {
                         // starts transaction
@@ -699,10 +737,17 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
         entries: data.transaction_entries.clone(),
         first_entry_indent: data.first_entry_indent,
         max_entry_name_len: data.max_entry_name_len,
-        max_entry_value_len: data.max_entry_value_len,
-        max_entry_units_len: data.max_entry_units_len,
-        max_entry_decimal_len: data.max_entry_decimal_len,
-        max_entry_after_decimal_len: data.max_entry_after_decimal_len,
+        max_entry_value_first_part_units_len: data.max_entry_value_first_part_units_len,
+        max_entry_value_first_part_decimal_len: data.max_entry_value_first_part_decimal_len,
+        max_entry_value_first_part_numeric_units_len: data.max_entry_value_first_part_numeric_units_len,
+        max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
+        max_entry_value_second_part_units_len: data.max_entry_value_second_part_units_len,
+        max_entry_value_second_part_decimal_len: data.max_entry_value_second_part_decimal_len,
+        max_entry_value_second_part_numeric_units_len: data.max_entry_value_second_part_numeric_units_len,
+        max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
+        max_entry_value_third_part_units_len: data.max_entry_value_third_part_units_len,
+        max_entry_value_third_part_decimal_len: data.max_entry_value_third_part_decimal_len,
+        max_entry_value_third_part_numeric_units_len: data.max_entry_value_third_part_numeric_units_len,
     });
     data.transaction_title.clear();
     data.transaction_title_comment = None;
@@ -710,8 +755,360 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
     data.transaction_has_no_comment_entries = false;
     data.first_entry_indent = 0;
     data.max_entry_name_len = 0;
-    data.max_entry_value_len = 0;
-    data.max_entry_units_len = 0;
-    data.max_entry_decimal_len = 0;
-    data.max_entry_after_decimal_len = 0;
+    data.max_entry_value_first_part_units_len = 0;
+    data.max_entry_value_first_part_decimal_len = 0;
+    data.max_entry_value_first_part_numeric_units_len = 0;
+    data.max_entry_value_first_separator_len = 0;
+    data.max_entry_value_second_part_units_len = 0;
+    data.max_entry_value_second_part_decimal_len = 0;
+    data.max_entry_value_second_part_numeric_units_len = 0;
+    data.max_entry_value_second_separator_len = 0;
+    data.max_entry_value_third_part_units_len = 0;
+    data.max_entry_value_third_part_decimal_len = 0;
+    data.max_entry_value_third_part_numeric_units_len = 0;
+}
+
+fn split_number_in_units_decimal(value: &str) -> (String, String) {
+    let mut units_rev = String::with_capacity(value.len());
+    let mut decimal_rev = String::with_capacity(value.len());
+    
+    let mut first_decimal_found = false;
+    for c in value.chars().rev() {
+        if !first_decimal_found {
+            decimal_rev.push(c);
+            if c == '.' || c == ',' {
+                first_decimal_found = true;
+            }
+        } else {
+            units_rev.push(c);
+        }
+    }
+
+    if decimal_rev.len() == value.len() {
+        (value.to_string(), "".to_string())
+    } else {
+        (units_rev.chars().rev().collect(), decimal_rev.chars().rev().collect())
+    }
+}
+
+/// Entry value parser
+///
+/// This parser is used to parse the value of a transaction entry.
+///
+/// A value can consist of one of the following:
+///
+/// - `N`  (amount)
+/// - `N @ N`         (price per unit cost)
+/// - `N @@ N`        (total price cost)
+/// - `N sep N`       (balance assertion)
+/// - `  = N`         (balance assignment)
+/// - `N @ N sep N`   (price per unit cost and balance assertion)
+/// - `N @@ N sep N`  (total price cost and balance assertion)
+///
+/// Where:
+///
+/// - `N` is a number and optional commodity.
+/// - `sep` is either `=`, `==` or `==*`.
+/// - Rest of characters are literals.
+///
+/// In order to format the transaction entries, we must extract each part of the value
+/// with their size in unit and decimal parts.
+#[derive(Default, Debug)]
+pub(crate) struct EntryValueParser {
+    first_part_units: String,
+    first_part_numeric_units: String,
+    first_part_decimal: String,
+    first_separator: String,
+    second_part_units: String,
+    second_part_numeric_units: String,
+    second_part_decimal: String,
+    second_separator: String,
+    third_part_units: String,
+    third_part_numeric_units: String,
+    third_part_decimal: String,
+}
+
+#[derive(Debug)]
+enum EntryValueParserState {
+    FirstPartCommodityBefore,
+    FirstPartNumber,
+    FirstPartCommodityAfter,
+    FirstSeparator,
+    SecondPartCommodityBefore,
+    SecondPartNumber,
+    SecondPartCommodityAfter,
+    SecondSeparator,
+    ThirdPartCommodityBefore,
+    ThirdPartNumber,
+    ThirdPartCommodityAfter,
+    End,
+}
+
+impl EntryValueParser {
+    pub(crate) fn parse(
+        &mut self,
+        value: &str,
+        lineno: usize,
+        colno: usize,
+    ) -> Result<(), SyntaxError> {
+        let mut chars = value.chars().enumerate();
+
+        use EntryValueParserState::*;
+        let mut state = FirstPartCommodityBefore;
+
+        let mut current_spaces_in_a_row = 0;
+        let mut current_commodity_is_quoted = false;
+        let mut first_part_value = String::new();
+        let mut second_part_value = String::new();
+        let mut third_part_value = String::new();
+
+        while let Some((coln, c)) = chars.next() {
+            println!("state: {:?}, c: {:?}", state, c);
+            match state {
+                FirstPartCommodityBefore => {
+                    if c.is_whitespace() {
+                        if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                first_part_value.push(c);
+                            }
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            state = FirstSeparator;
+                            current_spaces_in_a_row = 0;
+                        }
+                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                        first_part_value.push(c);
+                        state = FirstPartNumber;
+                    } else if c == '"' {
+                        first_part_value.push(c);
+                        if current_commodity_is_quoted {
+                            state = FirstPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        first_part_value.push(c);
+                    }
+                }
+                FirstPartNumber => {
+                    if c.is_digit(10) || c == '.' || c == ',' {
+                        first_part_value.push(c);
+                    } else if c == ' ' {
+                        if !first_part_value.is_empty() {
+                            state = FirstPartCommodityAfter;
+                        }
+                    } else if c == '@' {
+                        self.first_separator.push(c);
+                        state = FirstSeparator;
+                    } else if c == '=' {
+                        self.second_separator.push(c);
+                        state = SecondSeparator;
+                    } else if c == '"' {
+                        first_part_value.push(c);
+                        state = FirstPartCommodityAfter;
+                    } else {
+                        if c == '"' {
+                            current_commodity_is_quoted = true;
+                        }
+                        first_part_value.push(c);
+                        state = FirstPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                FirstPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        if c == '"' {
+                            first_part_value.push(c);
+                            state = FirstSeparator;
+                        } else {
+                            first_part_value.push(c);
+                        }
+                    } else if c.is_whitespace() {
+                        state = FirstSeparator;
+                    } else if c == '@' {
+                        self.first_separator.push(c);
+                        state = FirstSeparator;
+                    } else if c == '=' {
+                        self.second_separator.push(c);
+                        state = SecondSeparator;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        first_part_value.push(c);
+                    }
+                }
+                FirstSeparator => {
+                    if c == '@' {
+                        self.first_separator.push(c);
+                    } else if c == '=' {
+                        self.second_separator.push(c);
+                        state = SecondSeparator;
+                    } else if !c.is_whitespace() {
+                        second_part_value.push(c);
+                        state = SecondPartCommodityBefore;
+                    }
+                }
+                SecondPartCommodityBefore => {
+                    if c.is_whitespace() {
+                        if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                second_part_value.push(c);
+                            }
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            state = SecondSeparator;
+                            current_spaces_in_a_row = 0;
+                        }
+                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                        second_part_value.push(c);
+                        state = SecondPartNumber;
+                    } else if c == '"' {
+                        second_part_value.push(c);
+                        if current_commodity_is_quoted {
+                            state = SecondPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        second_part_value.push(c);
+                    }
+                }
+                SecondPartNumber => {
+                    if c.is_digit(10) || c == '.' || c == ',' {
+                        second_part_value.push(c);
+                    } else if c == ' ' {
+                        if !second_part_value.is_empty() {
+                            state = SecondPartCommodityAfter;
+                        }
+                    } else if c == '=' {
+                        self.second_separator.push(c);
+                        state = SecondSeparator;
+                        current_spaces_in_a_row = 0;
+                    } else if c == '"' {
+                        second_part_value.push(c);
+                        state = SecondPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    } else {
+                        second_part_value.push(c);
+                        state = SecondPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                SecondPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        if c == '"' {
+                            second_part_value.push(c);
+                            state = SecondSeparator;
+                        } else {
+                            second_part_value.push(c);
+                        }
+                    } else if c.is_whitespace() {
+                        state = SecondSeparator;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        second_part_value.push(c);
+                    }
+                }
+                SecondSeparator => {
+                    if c == '=' || c == '*' {
+                        self.second_separator.push(c);
+                    } else if !c.is_whitespace() {
+                        third_part_value.push(c);
+                        state = ThirdPartCommodityBefore;
+                    }
+                }
+                ThirdPartCommodityBefore => {
+                    if c.is_whitespace() {
+                        if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                third_part_value.push(c);
+                            }
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            state = End;
+                            current_spaces_in_a_row = 0;
+                        }
+                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                        third_part_value.push(c);
+                        state = ThirdPartNumber;
+                    } else if c == '"' {
+                        third_part_value.push(c);
+                        if current_commodity_is_quoted {
+                            state = ThirdPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        third_part_value.push(c);
+                    }
+                }
+                ThirdPartNumber => {
+                    if c.is_digit(10) || c == '.' || c == ',' {
+                        third_part_value.push(c);
+                    } else if c == ' ' {
+                        if current_spaces_in_a_row == 0 {
+                            third_part_value.push(c);
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            state = ThirdPartCommodityAfter;
+                            current_spaces_in_a_row = 0;
+                        }
+                    } else if c == '"' {
+                        third_part_value.push(c);
+                        state = ThirdPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    } else {
+                        third_part_value.push(c);
+                        state = ThirdPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                ThirdPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        if c == '"' {
+                            third_part_value.push(c);
+                            state = End;
+                        } else {
+                            third_part_value.push(c);
+                        }
+                    } else if c.is_whitespace() {
+                        state = End;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        third_part_value.push(c);
+                    }
+                }
+                End => {
+                    break;
+                }
+            }
+        }
+
+        if first_part_value.ends_with(' ') {
+            first_part_value.pop();
+        }
+        if second_part_value.ends_with(' ') {
+            second_part_value.pop();
+        }
+        if third_part_value.ends_with(' ') {
+            third_part_value.pop();
+        }
+
+        let (units, decimal) = split_number_in_units_decimal(&first_part_value);
+        self.first_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.first_part_units = units;
+        self.first_part_decimal = decimal;
+
+        let (units, decimal) = split_number_in_units_decimal(&second_part_value);
+        self.second_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.second_part_units = units;
+        self.second_part_decimal = decimal;
+
+        let (units, decimal) = split_number_in_units_decimal(&third_part_value);
+        self.third_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.third_part_units = units;
+        self.third_part_decimal = decimal;
+
+        Ok(())
+    }
 }
