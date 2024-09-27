@@ -60,9 +60,18 @@ fn main() {
         }
     } else {
         for file in &args.files {
-            if std::path::PathBuf::from(&file).is_dir() {
+            let pathbuf = std::path::PathBuf::from(&file);
+            if pathbuf.is_dir() {
                 gather_files_from_directory_and_subdirectories(file, &mut files);
                 break;
+            } else if pathbuf.is_file() {
+                files.push(file.clone());
+            } else if !pathbuf.exists() {
+                eprintln!("Path {file} does not exist.");
+                exitcode = 1;
+            } else if pathbuf.is_symlink() {
+                eprintln!("Path {file} is a symlink. Symbolic links are not supported.");
+                exitcode = 1;
             }
         }
 
