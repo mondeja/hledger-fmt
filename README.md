@@ -39,7 +39,7 @@ repos:
   - repo: https://github.com/mondeja/hledger-fmt
     rev: vX.Y.Z
     hooks:
-      # id: hledger-fmt        # Use this id to format files in place
+      # id: hledger-fmt       # Use this id to format files in place
       - id: hledger-fmt-check # Use this id to check files without formatting
 ```
 
@@ -55,6 +55,10 @@ hledger-fmt [OPTIONS] [FILES]...
 
 To fix them in place, use the `--fix` option:
 
+> [!WARNING]\
+> This is a potentially destructive operation. Make sure to make a backup
+> of your files before running this command for the first time.
+
 ```bash
 hledger-fmt --fix [FILES]...
 ```
@@ -64,12 +68,6 @@ See `hledger-fmt --help` for more information.
 ## Features
 
 - **`color`** (enabled by default): Build with terminal color support.
-
-## Roadmap
-
-This project is in an alpha stage and currently the formatting is
-opinionated based on my preferences, but configuration options are
-accepted to make it more flexible. Send a PR if you want to help.
 
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org
