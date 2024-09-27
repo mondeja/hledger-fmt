@@ -4,11 +4,18 @@ version = "0.1.0"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
 repository = "https://github.com/mondeja/hledger-fmt"
-keywords = [
-  "hledger",
-  "journal",
-  "formatter",
-  "accounting",
+authors = ["Álvaro Mondéjar Rubio"]
+license = "MIT"
+keywords = ["hledger", "journal", "formatter", "accounting"]
+categories = ["command-line-utilities", "finance", "value-formatting"]
+exclude = [
+  ".editorconfig",
+  ".github",
+  "fuzz",
+  ".pre-commit-config.yaml",
+  ".pre-commit-hooks.yaml",
+  ".markdown-link-check.json",
+  ".gitignore"
 ]
 
 [lib]
@@ -26,3 +33,6 @@ colored = { version = "2", optional = true }
 [features]
 default = ["color"]
 color = ["dep:colored"]
+
+[workspace]
+members = ["."]

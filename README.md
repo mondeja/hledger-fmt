@@ -1,9 +1,16 @@
 # hledger-fmt
 
 [![Crates.io](https://img.shields.io/crates/v/hledger-fmt?logo=rust)](https://crates.io/crates/hledger-fmt)
-[![License](https://img.shields.io/crates/l/hledger-fmt)](https://github.com/mondeja/hledger-fmt/blob/master/LICENSE)
-[![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/hledger-fmt/ci.yml?label=tests&logo=github)](https://github.com/mondeja/hledger-fmt/actions)
+[![License](https://img.shields.io/crates/l/hledger-fmt)][license-badge-link]
+[![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/hledger-fmt/ci.yml?label=tests&logo=github)][tests-badge-link]
 [![Crates.io downloads](https://img.shields.io/crates/d/hledger-fmt)](https://crates.io/crates/hledger-fmt)
+
+<!-- markdown-link-check-disable -->
+
+[license-badge-link]: https://github.com/mondeja/hledger-fmt/blob/master/LICENSE
+[tests-badge-link]: https://github.com/mondeja/hledger-fmt/actions
+
+<!-- markdown-link-check-enable -->
 
 An opinionated [hledger]'s journal files formatter.
 
@@ -30,20 +37,20 @@ the extensions `.journal`, `.hledger` and `.j` in the current directory
 and its subdirectories.
 
 ```bash
-hledger-fmt [files...]
+hledger-fmt [OPTIONS] [FILES]...
 ```
 
-To fix them, use the `--fix` option:
+To fix them in place, use the `--fix` option:
 
 ```bash
-hledger-fmt --fix [files...]
+hledger-fmt --fix [FILES]...
 ```
 
 See `hledger-fmt --help` for more information.
 
 ## Features
 
-- **color** (enabled by default): Build with terminal color support.
+- **`color`** (enabled by default): Build with terminal color support.
 
 ## Roadmap
 
