@@ -30,6 +30,19 @@ cargo binstall hledger-fmt
 
 We don't currently provide standalone pre-built binaries.
 
+### pre-commit
+
+Use it with [pre-commit] by adding the hook to your _.pre-commit-config.yaml_:
+
+```yaml
+repos:
+  - repo: https://github.com/mondeja/hledger-fmt
+    rev: vX.Y.Z
+    hooks:
+      # id: hledger-fmt        # Use this id to format files in place
+      - id: hledger-fmt-check # Use this id to check files without formatting
+```
+
 ## Usage
 
 When you don't pass files to format, it reads all the files with
@@ -61,3 +74,4 @@ accepted to make it more flexible. Send a PR if you want to help.
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org
 [cargo]: https://doc.rust-lang.org/cargo/
+[pre-commit]: https://pre-commit.com

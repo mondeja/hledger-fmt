@@ -125,6 +125,8 @@ fn main() {
             continue;
         }
 
+        exitcode = 1;
+
         if args.fix {
             match std::fs::write(&file, &formatted) {
                 Ok(_) => {}
@@ -135,7 +137,6 @@ fn main() {
                         eprintln!();
                     }
                     eprintln!("Error writing file {file}: {e}");
-                    exitcode = 1;
                 }
             }
         } else {

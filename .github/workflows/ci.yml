@@ -18,7 +18,8 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: nightly
+          rust-version: stable
+          profile: minimal
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -54,7 +55,8 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: nightly
+          rust-version: stable
+          profile: minimal
       - name: Build
         run: cargo build --release
 
@@ -73,7 +75,8 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: nightly
+          rust-version: stable
+          profile: minimal
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -100,6 +103,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
+        with:
+          rust-version: stable
+          profile: minimal
       - name: Publish
         run: |
           cargo login ${{ secrets.CRATES_TOKEN }}
@@ -115,6 +121,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
+        with:
+          rust-version: stable
+          profile: minimal
       - name: Publish
         run: |
           cargo login ${{ secrets.CRATES_TOKEN }}
