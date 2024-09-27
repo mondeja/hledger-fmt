@@ -2,6 +2,14 @@
 name = "hledger-fmt"
 version = "0.1.0"
 edition = "2021"
+description = "An opinionated hledger's journal files formatter."
+repository = "https://github.com/mondeja/hledger-fmt"
+keywords = [
+  "hledger",
+  "journal",
+  "formatter",
+  "accounting",
+]
 
 [lib]
 path = "src/lib.rs"
@@ -13,4 +21,8 @@ name = "hledger-fmt"
 clap = { version = "4", features = ["derive"] }
 walkdir = "2"
 similar = "2"
-colored = "2"
+colored = { version = "2", optional = true }
+
+[features]
+default = ["color"]
+color = ["dep:colored"]

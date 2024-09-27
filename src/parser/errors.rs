@@ -31,10 +31,6 @@ pub fn build_error_context(error: &SyntaxError, content: &str, file_path: &str) 
         " ".repeat(error.colno_start - 1),
         "^".repeat(error.colno_end - error.colno_start)
     ));
-    context.push_str(&format!(
-        "{}\nExpected {}",
-        error.message,
-        error.expected
-    ));
+    context.push_str(&format!("{}\nExpected {}", error.message, error.expected));
     context
 }

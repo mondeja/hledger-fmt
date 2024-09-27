@@ -1,5 +1,4 @@
 use crate::{formatter::format_content, parser::parse_content};
-use colored::Colorize;
 use similar::{ChangeTag, TextDiff};
 
 /// Add a newline to the end of the string if it doesn't have one.
@@ -23,9 +22,9 @@ fn assert_raw_format(content: &str, expected: &str) {
         let mut lines = String::from("\n");
         for change in diff.iter_all_changes() {
             let line = match change.tag() {
-                ChangeTag::Delete => format!("- {}", change).bright_red(),
-                ChangeTag::Insert => format!("+ {}", change).bright_green(),
-                ChangeTag::Equal => format!("  {}", change).normal(),
+                ChangeTag::Delete => format!("- {}", change),
+                ChangeTag::Insert => format!("+ {}", change),
+                ChangeTag::Equal => format!("  {}", change),
             };
             lines.push_str(&line);
         }
@@ -62,6 +61,19 @@ fn single_line_comment_semicolon() {
 fn indented_single_line_comment() {
     // must not be dedented
     assert_noop_format("  ; comment");
+}
+
+#[test]
+fn commodities() {
+    assert_noop_format(
+        r#"
+; Declare commodities/currencies and their decimal mark, digit grouping,
+; number of decimal places..
+commodity 10.000000000€  ; Euro
+commodity 10.000000000$  ; Dollar
+commodity 80.00Kg        ; weight in Kg
+"#,
+    );
 }
 
 #[test]
@@ -130,24 +142,6 @@ tag foo  ; comment
 }
 
 #[test]
-fn basic_transaction() {
-    
-    /*let mut p = crate::parser::EntryValueParser::default();
-    p.parse("50000000.00000€   @@ 65579€  == $78.7", 1, 1);
-    println!("{:?}", p);
-    assert!(false);*/
-     
-    assert_noop_format(
-        r#"
-2024-01-15 hello
-    assets:checking  10000€  @ 32543.000345€  ==*  $56424324€
-    expenses:food      $10.010000 @@  $33.3  = 56€
-    foo  50000000.0000000000€   @@ 65579€  == $78.7
-"#,
-    );
-}
-
-#[test]
 fn transaction_comment_with_title_comment() {
     // transaction titles and entry comments are aligned
     assert_format(
@@ -184,6 +178,8 @@ fn transaction_comments() {
 #[test]
 fn transaction_comments_alignments() {
     // comments are aligned with the longest entry
+    //
+    // TODO: this extreme case is not handled by the current implementation
     assert_format(
         r#"
 2023-05-25 trip to the supermarket  ; foo bar
@@ -192,10 +188,10 @@ fn transaction_comments_alignments() {
     assets              $-100000000000,000000000    ; hello
 "#,
         r#"
-2023-05-25 trip to the supermarket       ; foo bar
-    expenses              $10.06         ; hello
-    assets                $-1            ; hello
-    assets     $-100000000000,000000000  ; hello
+2023-05-25 trip to the supermarket  ; foo bar
+    expenses             $10.06     ; hello
+    assets               $-1        ; hello
+    assets    $-100000000000,000000000  ; hello
 "#,
     );
 }
@@ -260,8 +256,8 @@ fn auto_posting_rule() {
 "#,
         r#"
 = revenues:consulting
-    liabilities:tax:2024:us    *0.25  ; Add a tax liability & expense
-    expenses:tax:2024:us      *-0.25  ; for 25% of the revenue.
+    liabilities:tax:2024:us   *0.25  ; Add a tax liability & expense
+    expenses:tax:2024:us     *-0.25  ; for 25% of the revenue.
 "#,
     );
 }
@@ -287,11 +283,11 @@ fn two_full_transactions() {
     expenses:rent             $500  ; Plus means added to this account (debit).
 "#,
         r#"
-2024-01-01 opening balances          ; At the start, declare pre-existing balances this way.
-    assets:savings           $10000  ; Account names can be anything. lower case is easy to type.
-    assets:checking           $1000  ; assets, liabilities, equity, revenues, expenses are common.
-    liabilities:credit card   $-500  ; liabilities, equity, revenues balances are usually negative.
-    equity:start                     ; One amount can be left blank. $-10500 is inferred here.
+2024-01-01 opening balances  ; At the start, declare pre-existing balances this way.
+    assets:savings            $10000  ; Account names can be anything. lower case is easy to type.
+    assets:checking            $1000  ; assets, liabilities, equity, revenues, expenses are common.
+    liabilities:credit card    $-500  ; liabilities, equity, revenues balances are usually negative.
+    equity:start             ; One amount can be left blank. $-10500 is inferred here.
     ; Some of these accounts we didn't declare above,
     ; so -s/--strict would complain.
 
@@ -333,9 +329,9 @@ fn transaction_with_shares() {
     assets:checking                 $-7
 "#,
         r#"
-2024-01-15 buy some shares, in two lots                   ; Cost can be noted.
-    assets:investments:2024-01-15       2.0 AAAA @ $1.50  ; @  means per-unit cost
-    assets:investments:2024-01-15-02    3.0 AAAA @@ $4    ; @@ means total cost
+2024-01-15 buy some shares, in two lots  ; Cost can be noted.
+    assets:investments:2024-01-15       2.0 AAAA   @   $1.50  ; @  means per-unit cost
+    assets:investments:2024-01-15-02    3.0 AAAA   @@  $4     ; @@ means total cost
     ; ^ Per-lot subaccounts are sometimes useful.
     assets:checking                   $-7
 "#,
@@ -430,6 +426,37 @@ fn assert_balance_transaction() {
     assets:investments:2024-01-15-02   0.0 AAAA            =      3.0 AAAA @@ $4
     liabilities:credit card           $0                   =  $-500
 "#,
-        r#""#,
+        r#"
+2024-01-15 assert some account balances on this date
+    ; Balances can be asserted in any transaction, with =, for extra error checking.
+    ; Assertion txns like this one can be made with hledger close --assert --show-costs
+    ;
+    assets:savings                    $0                    =  $10000
+    assets:checking                   $0                    =    $493
+    assets:bank:gold                   0 gold               =     -10 gold
+    assets:pouch                       0 gold               =       4 gold
+    assets:pouch                       0 "Chocolate Frogs"  =       3 "Chocolate Frogs"
+    assets:investments:2024-01-15      0.0 AAAA             =       2.0 AAAA
+    assets:investments:2024-01-15-02   0.0 AAAA             =       3.0 AAAA
+    liabilities:credit card           $0                    =   $-500
+"#,
+    );
+}
+
+#[test]
+fn complex_transaction() {
+    assert_format(
+        r#"
+2024-01-15 hello  ; a comment
+    assets:checking  10000€  @ 32543.000345€  ==*  $56424324€  ; comments
+    expenses:food      $10.010000 @@  $33.3  = 56€   ; must be
+    foo  50000000.0000000000€   @@ 65579€  == $78.7   ; aligned
+"#,
+        r#"
+2024-01-15 hello  ; a comment
+    assets:checking      10000€              @    32543.000345€  ==*  $56424324€   ; comments
+    expenses:food          $10.010000        @@     $33.3        =           56€   ; must be
+    foo               50000000.0000000000€   @@   65579€         ==         $78.7  ; aligned
+"#,
     );
 }

@@ -1,9 +1,12 @@
 #[cfg(test)]
 mod tests;
 
-use crate::parser::{
-    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionEntry,
-    TransactionNode,
+use crate::{
+    common::{leading_commodity_len_from_units, trailing_commodity_len_from_units},
+    parser::{
+        Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionEntry,
+        TransactionNode,
+    },
 };
 
 pub fn format_content(nodes: &JournalFile) -> String {
@@ -28,14 +31,14 @@ pub fn format_content(nodes: &JournalFile) -> String {
                 formatted.push('\n');
             }
             JournalCstNode::MultilineComment { content, .. } => {
-                formatted.push_str(&format!("comment\n{}end comment\n", content));
+                formatted.push_str(&format!("comment\n{content}end comment\n"));
             }
             JournalCstNode::DirectivesGroup {
-                content,
+                nodes,
                 max_name_content_len,
                 ..
             } => {
-                for node in content {
+                for node in nodes {
                     match node {
                         DirectiveNode::Directive(Directive {
                             name,
@@ -52,8 +55,9 @@ pub fn format_content(nodes: &JournalFile) -> String {
                                         format!(
                                             "{}{}{}",
                                             " ".repeat(
-                                                *max_name_content_len - name.len() - content.len()
-                                                    + 2
+                                                2 + max_name_content_len
+                                                    - name.chars().count()
+                                                    - content.chars().count()
                                             ),
                                             comment.prefix as u8 as char,
                                             comment.content
@@ -84,43 +88,23 @@ pub fn format_content(nodes: &JournalFile) -> String {
                 entries,
                 first_entry_indent,
                 max_entry_name_len,
-                max_entry_value_first_part_units_len,
                 max_entry_value_first_part_numeric_units_len,
                 max_entry_value_first_part_decimal_len,
+                max_entry_value_first_part_commodity_leading_len,
+                max_entry_value_first_part_commodity_trailing_len,
                 max_entry_value_first_separator_len,
-                max_entry_value_second_part_units_len,
                 max_entry_value_second_part_decimal_len,
                 max_entry_value_second_part_numeric_units_len,
                 max_entry_value_second_separator_len,
-                max_entry_value_third_part_units_len,
                 max_entry_value_third_part_decimal_len,
                 max_entry_value_third_part_numeric_units_len,
             } => {
-                let title_comment_padding = (title.len() + 2).max(
-                    first_entry_indent
-                        + max_entry_name_len
-                        + 2
-                        + max_entry_value_first_part_units_len
-                        + max_entry_value_first_part_decimal_len
-                        + max_entry_value_first_separator_len
-                        + max_entry_value_second_part_units_len
-                        + max_entry_value_second_part_decimal_len
-                        + max_entry_value_second_separator_len
-                        + max_entry_value_third_part_units_len
-                        + max_entry_value_third_part_decimal_len
-                        + 2,
-                );
                 formatted.push_str(&format!(
                     "{}{}\n",
                     title.trim(),
                     match title_comment {
                         Some(comment) => {
-                            format!(
-                                "{}{}{}",
-                                " ".repeat(title_comment_padding - title.len()),
-                                comment.prefix as u8 as char,
-                                comment.content
-                            )
+                            format!("  {}{}", comment.prefix as u8 as char, comment.content)
                         }
                         None => String::new(),
                     }
@@ -128,136 +112,145 @@ pub fn format_content(nodes: &JournalFile) -> String {
 
                 for entry in entries {
                     match entry {
-                        TransactionNode::TransactionEntry(TransactionEntry {
-                            name,
-                            value_first_part_units,
-                            value_first_part_numeric_units,
-                            value_first_part_decimal,
-                            value_first_separator,
-                            value_second_part_units,
-                            value_second_part_numeric_units,
-                            value_second_part_decimal,
-                            value_second_separator,
-                            value_third_part_units,
-                            value_third_part_numeric_units,
-                            value_third_part_decimal,
-                            comment,
-                        }) => {
-                            println!();
-
-                            let mut first_part_numeric_units_trailing_com_len = 0;
-                            for c in value_first_part_units.chars().rev() {
-                                if c.is_digit(10) {
-                                    break;
-                                }
-                                first_part_numeric_units_trailing_com_len += 1;
-                            }
-
-                            let mut first_part_numeric_units_leading_com_len = 0;
-                            for c in value_first_part_units.chars() {
-                                if c.is_digit(10) {
-                                    break;
-                                }
-                                first_part_numeric_units_leading_com_len += 1;
-                            }
-
-                            let mut second_part_numeric_units_trailing_com_len = 0;
-                            for c in value_second_part_units.chars().rev() {
-                                if c.is_digit(10) {
-                                    break;
-                                }
-                                second_part_numeric_units_trailing_com_len += 1;
-                            }
-
-                            let mut second_part_numeric_units_leading_com_len = 0;
-                            for c in value_second_part_units.chars() {
-                                if c.is_digit(10) {
-                                    break;
-                                }
-                                second_part_numeric_units_leading_com_len += 1;
-                            }
-
-                            let mut third_part_numeric_units_leading_com_len = 0;
-                            for c in value_third_part_units.chars() {
-                                if c.is_digit(10) {
-                                    break;
-                                }
-                                third_part_numeric_units_leading_com_len += 1;
-                            }
-
-                            /*
-                            let separation = 2 + max_entry_value_first_part_decimal_len
-                                - value_first_part_decimal.chars().count();
-                            println!(
-                                "2 + max_entry_value_first_part_decimal_len: 2 + {}",
-                                max_entry_value_first_part_decimal_len
-                            );
-                            println!(
-                                "- value_first_part_decimal.len(): -{}",
-                                value_first_part_decimal.chars().count()
-                            );
-                            println!(
-                                "separation: {}",
-                                separation
-                            );*/
-
-                            formatted.push_str(&format!(
-                                "{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+                        TransactionNode::TransactionEntry(inner) => {
+                            let TransactionEntry {
+                                name,
+                                value_first_part_units,
+                                value_first_part_numeric_units,
+                                value_first_part_decimal,
+                                value_first_separator,
+                                value_second_part_units,
+                                value_second_part_numeric_units,
+                                value_second_part_decimal,
+                                value_second_separator,
+                                value_third_part_units,
+                                value_third_part_numeric_units,
+                                value_third_part_decimal,
+                                comment,
+                                ..
+                            } = inner.as_ref();
+                            let entry_line = format!(
+                                "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
                                 " ".repeat(*first_entry_indent),
                                 name,
-                                " ".repeat(
-                                    3 + max_entry_name_len  // 3 because of -leading
-                                        - name.len()
-                                        - first_part_numeric_units_leading_com_len
-                                        + max_entry_value_first_part_numeric_units_len
-                                        - value_first_part_numeric_units.chars().count()
-                                ),
-                                format!("{}{}", value_first_part_units, value_first_part_decimal),
-                                " ".repeat(
-                                    3 + max_entry_value_first_part_decimal_len
-                                        - value_first_part_decimal.chars().count()
-                                        - first_part_numeric_units_trailing_com_len
-                                ),
-                                value_first_separator,
-                                " ".repeat(
-                                    3 + max_entry_value_first_separator_len
-                                        - value_first_separator.len()
-                                        - second_part_numeric_units_leading_com_len
-                                        + max_entry_value_second_part_numeric_units_len
-                                        - value_second_part_numeric_units.chars().count()
-                                ),
-                                format!("{}{}", value_second_part_units, value_second_part_decimal),
-                                " ".repeat(
-                                    3 + max_entry_value_second_part_decimal_len
-                                        - value_second_part_decimal.chars().count()
-                                        - second_part_numeric_units_trailing_com_len
-                                ),
-                                value_second_separator,
-                                " ".repeat(
-                                    3 + max_entry_value_second_separator_len
-                                        - value_second_separator.len()
-                                        - third_part_numeric_units_leading_com_len
-                                        + max_entry_value_third_part_numeric_units_len
-                                        - value_third_part_numeric_units.chars().count()
-                                ),
-                                format!("{}{}", value_third_part_units, value_third_part_decimal),
-                                match comment {
-                                    Some(comment) => {
-                                        let comment_separation = 2; /*title_comment_padding
-                                                                    - value.len()
-                                                                    - separation_with_value
-                                                                    - name.len()
-                                                                    - first_entry_indent;*/
-                                        format!(
-                                            "{}{}{}",
-                                            " ".repeat(comment_separation),
-                                            comment.prefix as u8 as char,
-                                            comment.content
-                                        )
-                                    }
-                                    None => String::new(),
+                                if !value_first_part_units.is_empty()
+                                    || !value_first_part_decimal.is_empty()
+                                {
+                                    " ".repeat(
+                                        2 + max_entry_name_len - name.len()
+                                            + max_entry_value_first_part_commodity_leading_len
+                                            - leading_commodity_len_from_units(
+                                                value_first_part_units,
+                                            )
+                                            + max_entry_value_first_part_numeric_units_len
+                                            - value_first_part_numeric_units.chars().count(),
+                                    )
+                                } else {
+                                    "".to_string()
                                 },
-                            ));
+                                value_first_part_units,
+                                value_first_part_decimal,
+                                if !value_first_separator.is_empty() {
+                                    " ".repeat(
+                                        3 + max_entry_value_first_part_decimal_len
+                                            - value_first_part_decimal.chars().count()
+                                            - trailing_commodity_len_from_units(
+                                                value_first_part_units,
+                                            ),
+                                    )
+                                } else {
+                                    "".to_string()
+                                },
+                                value_first_separator,
+                                if !value_second_part_units.is_empty()
+                                    || !value_second_part_decimal.is_empty()
+                                {
+                                    " ".repeat(
+                                        3 + max_entry_value_first_separator_len
+                                            - value_first_separator.len()
+                                            - leading_commodity_len_from_units(
+                                                value_second_part_units,
+                                            )
+                                            + max_entry_value_second_part_numeric_units_len
+                                            - value_second_part_numeric_units.chars().count(),
+                                    )
+                                } else {
+                                    "".to_string()
+                                },
+                                value_second_part_units,
+                                value_second_part_decimal,
+                                if !value_second_separator.is_empty() {
+                                    " ".repeat(if !value_first_separator.is_empty() {
+                                        2 + max_entry_value_second_part_decimal_len
+                                            - value_second_part_decimal.chars().count()
+                                            - trailing_commodity_len_from_units(
+                                                value_second_part_units,
+                                            )
+                                    } else {
+                                        2 + max_entry_value_first_part_commodity_trailing_len
+                                            - value_first_part_decimal.chars().count()
+                                            - trailing_commodity_len_from_units(
+                                                value_first_part_units,
+                                            )
+                                    })
+                                } else {
+                                    "".to_string()
+                                },
+                                value_second_separator,
+                                if !value_third_part_units.is_empty()
+                                    || !value_third_part_decimal.is_empty()
+                                {
+                                    " ".repeat(
+                                        3 + max_entry_value_second_separator_len
+                                            - value_second_separator.len()
+                                            - leading_commodity_len_from_units(
+                                                value_third_part_units,
+                                            )
+                                            + max_entry_value_third_part_numeric_units_len
+                                            - value_third_part_numeric_units.chars().count(),
+                                    )
+                                } else {
+                                    "".to_string()
+                                },
+                                value_third_part_units,
+                                value_third_part_decimal,
+                            );
+
+                            let comment_part = if let Some(comment) = comment {
+                                let comment_separation = if !value_second_separator.is_empty() {
+                                    2 + max_entry_value_third_part_decimal_len
+                                        - value_third_part_decimal.chars().count()
+                                        - trailing_commodity_len_from_units(value_third_part_units)
+                                } else if !value_first_separator.is_empty() {
+                                    2 + max_entry_value_second_part_decimal_len
+                                        - value_second_part_decimal.chars().count()
+                                        - trailing_commodity_len_from_units(value_second_part_units)
+                                } else {
+                                    2 + max_entry_value_first_part_decimal_len
+                                        - value_first_part_decimal.chars().count()
+                                };
+
+                                format!(
+                                    "{}{}{}",
+                                    " ".repeat(
+                                        if title.chars().count() + 2
+                                            > entry_line.chars().count() + 2
+                                        {
+                                            title.chars().count() + 2 - entry_line.chars().count()
+                                        } else {
+                                            comment_separation
+                                        }
+                                    ),
+                                    comment.prefix as u8 as char,
+                                    comment.content
+                                )
+                            } else {
+                                String::new()
+                            };
+
+                            formatted.push_str(&entry_line);
+                            formatted.push_str(&comment_part);
+                            formatted.push('\n');
                         }
                         TransactionNode::SingleLineComment(SingleLineComment {
                             content,

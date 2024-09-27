@@ -2,6 +2,7 @@ pub mod errors;
 #[cfg(test)]
 mod tests;
 
+use crate::common::{leading_commodity_len_from_units, trailing_commodity_len_from_units};
 use errors::SyntaxError;
 
 /// A journal file
@@ -31,7 +32,7 @@ pub enum JournalCstNode {
     /// Directives group
     DirectivesGroup {
         /// Directives in the group
-        content: Vec<DirectiveNode>,
+        nodes: Vec<DirectiveNode>,
         /// Maximum length of the directive name + content
         max_name_content_len: usize,
     },
@@ -58,15 +59,14 @@ pub enum JournalCstNode {
         /// Maximum length of the entry names
         max_entry_name_len: usize,
 
-        max_entry_value_first_part_units_len: usize,
         max_entry_value_first_part_decimal_len: usize,
         max_entry_value_first_part_numeric_units_len: usize,
+        max_entry_value_first_part_commodity_leading_len: usize,
+        max_entry_value_first_part_commodity_trailing_len: usize,
         max_entry_value_first_separator_len: usize,
-        max_entry_value_second_part_units_len: usize,
         max_entry_value_second_part_decimal_len: usize,
         max_entry_value_second_part_numeric_units_len: usize,
         max_entry_value_second_separator_len: usize,
-        max_entry_value_third_part_units_len: usize,
         max_entry_value_third_part_decimal_len: usize,
         max_entry_value_third_part_numeric_units_len: usize,
     },
@@ -157,7 +157,7 @@ pub struct TransactionEntry {
 /// A transaction entry or a single line comment
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionNode {
-    TransactionEntry(TransactionEntry),
+    TransactionEntry(Box<TransactionEntry>),
     SingleLineComment(SingleLineComment),
 }
 
@@ -176,8 +176,8 @@ struct ParserTempData {
     multiline_comment_start_lineno: usize,
     /// Content of the current multiline comment
     multiline_comment_content: String,
-    /// Directives group content
-    directives_group_content: Vec<DirectiveNode>,
+    /// Directives group nodes
+    directives_group_nodes: Vec<DirectiveNode>,
     /// Maximum length of the directive names + contents
     directives_group_max_name_content_len: usize,
     /// Transaction title
@@ -192,15 +192,14 @@ struct ParserTempData {
     first_entry_indent: usize,
     /// Maximum length of the entry names
     max_entry_name_len: usize,
-    max_entry_value_first_part_units_len: usize,
     max_entry_value_first_part_decimal_len: usize,
     max_entry_value_first_part_numeric_units_len: usize,
+    max_entry_value_first_part_commodity_leading_len: usize,
+    max_entry_value_first_part_commodity_trailing_len: usize,
     max_entry_value_first_separator_len: usize,
-    max_entry_value_second_part_units_len: usize,
     max_entry_value_second_part_decimal_len: usize,
     max_entry_value_second_part_numeric_units_len: usize,
     max_entry_value_second_separator_len: usize,
-    max_entry_value_third_part_units_len: usize,
     max_entry_value_third_part_decimal_len: usize,
     max_entry_value_third_part_numeric_units_len: usize,
 }
@@ -210,7 +209,7 @@ impl ParserTempData {
         Self {
             multiline_comment_start_lineno: 0,
             multiline_comment_content: String::new(),
-            directives_group_content: Vec::new(),
+            directives_group_nodes: Vec::new(),
             directives_group_max_name_content_len: 0,
             transaction_title: String::new(),
             transaction_title_comment: None,
@@ -218,15 +217,14 @@ impl ParserTempData {
             transaction_has_no_comment_entries: false,
             first_entry_indent: 0,
             max_entry_name_len: 0,
-            max_entry_value_first_part_units_len: 0,
             max_entry_value_first_part_decimal_len: 0,
             max_entry_value_first_part_numeric_units_len: 0,
+            max_entry_value_first_part_commodity_leading_len: 0,
+            max_entry_value_first_part_commodity_trailing_len: 0,
             max_entry_value_first_separator_len: 0,
-            max_entry_value_second_part_units_len: 0,
             max_entry_value_second_part_decimal_len: 0,
             max_entry_value_second_part_numeric_units_len: 0,
             max_entry_value_second_separator_len: 0,
-            max_entry_value_third_part_units_len: 0,
             max_entry_value_third_part_decimal_len: 0,
             max_entry_value_third_part_numeric_units_len: 0,
         }
@@ -264,7 +262,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             colno: colno + 1,
                         };
 
-                        if data.directives_group_content.is_empty()
+                        if data.directives_group_nodes.is_empty()
                             && data.transaction_title.is_empty()
                         {
                             journal.push(JournalCstNode::SingleLineComment(comment));
@@ -272,7 +270,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.transaction_entries
                                 .push(TransactionNode::SingleLineComment(comment));
                         } else {
-                            data.directives_group_content
+                            data.directives_group_nodes
                                 .push(DirectiveNode::SingleLineComment(comment));
                         }
                         state = ParserState::Start;
@@ -325,7 +323,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
 
                             let mut comment_prefix = None;
                             let mut colno = 0;
-                            while let Some((coln, c)) = chars_iter.next() {
+                            for (coln, c) in chars_iter.by_ref() {
                                 if comment_prefix.is_none() {
                                     if c == '#' {
                                         comment_prefix = Some(CommentPrefix::Hash);
@@ -354,13 +352,13 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                     lineno: lineno + 1,
                                     colno,
                                 };
-                                if data.directives_group_content.is_empty() {
+                                if data.directives_group_nodes.is_empty() {
                                     journal.push(JournalCstNode::SingleLineComment(comment));
                                 } else if !data.transaction_title.is_empty() {
                                     data.transaction_entries
                                         .push(TransactionNode::SingleLineComment(comment));
                                 } else {
-                                    data.directives_group_content
+                                    data.directives_group_nodes
                                         .push(DirectiveNode::SingleLineComment(comment));
                                 }
                             }
@@ -436,7 +434,8 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 // properly setted so we need to set it here
                                 data.first_entry_indent = indent;
                             }
-                            data.max_entry_name_len = data.max_entry_name_len.max(entry_name.len());
+                            data.max_entry_name_len =
+                                data.max_entry_name_len.max(entry_name.chars().count());
 
                             let mut entry_value = String::new();
                             let mut inside_entry_value = false;
@@ -479,21 +478,27 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 }
                             }
 
-                            let coln = entry_value.len() + entry_name.len() + indent + 1;
+                            // let coln = entry_value.chars().count()
+                            //     + entry_name.chars().count()
+                            //     + indent + 1;
                             entry_value = entry_value.trim_end().to_string();
 
                             let mut p = EntryValueParser::default();
-                            p.parse(&entry_value, lineno + 1, coln)?;
+                            // for development: to raise errors, pass lineno and coln
+                            p.parse(&entry_value)?; // , lineno + 1, coln)?;
 
                             data.max_entry_value_first_part_decimal_len = data
                                 .max_entry_value_first_part_decimal_len
                                 .max(p.first_part_decimal.chars().count());
-                            data.max_entry_value_first_part_units_len = data
-                                .max_entry_value_first_part_units_len
-                                .max(p.first_part_units.chars().count());
                             data.max_entry_value_first_part_numeric_units_len = data
                                 .max_entry_value_first_part_numeric_units_len
                                 .max(p.first_part_numeric_units.len());
+                            data.max_entry_value_first_part_commodity_leading_len = data
+                                .max_entry_value_first_part_commodity_leading_len
+                                .max(leading_commodity_len_from_units(&p.first_part_units));
+                            data.max_entry_value_first_part_commodity_trailing_len = data
+                                .max_entry_value_first_part_commodity_trailing_len
+                                .max(trailing_commodity_len_from_units(&p.first_part_units));
 
                             data.max_entry_value_first_separator_len = data
                                 .max_entry_value_first_separator_len
@@ -502,9 +507,6 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.max_entry_value_second_part_decimal_len = data
                                 .max_entry_value_second_part_decimal_len
                                 .max(p.second_part_decimal.chars().count());
-                            data.max_entry_value_second_part_units_len = data
-                                .max_entry_value_second_part_units_len
-                                .max(p.second_part_units.chars().count());
                             data.max_entry_value_second_part_numeric_units_len = data
                                 .max_entry_value_second_part_numeric_units_len
                                 .max(p.second_part_numeric_units.len());
@@ -516,30 +518,30 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.max_entry_value_third_part_decimal_len = data
                                 .max_entry_value_third_part_decimal_len
                                 .max(p.third_part_decimal.chars().count());
-                            data.max_entry_value_third_part_units_len = data
-                                .max_entry_value_third_part_units_len
-                                .max(p.third_part_units.chars().count());
                             data.max_entry_value_third_part_numeric_units_len = data
                                 .max_entry_value_third_part_numeric_units_len
                                 .max(p.third_part_numeric_units.len());
 
                             data.transaction_has_no_comment_entries = true;
                             data.transaction_entries
-                                .push(TransactionNode::TransactionEntry(TransactionEntry {
-                                    name: entry_name,
-                                    value_first_part_decimal: p.first_part_decimal,
-                                    value_first_part_units: p.first_part_units,
-                                    value_first_part_numeric_units: p.first_part_numeric_units,
-                                    value_first_separator: p.first_separator,
-                                    value_second_part_decimal: p.second_part_decimal,
-                                    value_second_part_units: p.second_part_units,
-                                    value_second_part_numeric_units: p.second_part_numeric_units,
-                                    value_second_separator: p.second_separator,
-                                    value_third_part_decimal: p.third_part_decimal,
-                                    value_third_part_units: p.third_part_units,
-                                    value_third_part_numeric_units: p.third_part_numeric_units,
-                                    comment,
-                                }));
+                                .push(TransactionNode::TransactionEntry(Box::new(
+                                    TransactionEntry {
+                                        name: entry_name,
+                                        value_first_part_decimal: p.first_part_decimal,
+                                        value_first_part_units: p.first_part_units,
+                                        value_first_part_numeric_units: p.first_part_numeric_units,
+                                        value_first_separator: p.first_separator,
+                                        value_second_part_decimal: p.second_part_decimal,
+                                        value_second_part_units: p.second_part_units,
+                                        value_second_part_numeric_units: p
+                                            .second_part_numeric_units,
+                                        value_second_separator: p.second_separator,
+                                        value_third_part_decimal: p.third_part_decimal,
+                                        value_third_part_units: p.third_part_units,
+                                        value_third_part_numeric_units: p.third_part_numeric_units,
+                                        comment,
+                                    },
+                                )));
                         }
                     } else if colno == 0 {
                         // starts transaction
@@ -553,7 +555,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                         transaction_title.push(c);
                         let mut prev_was_whitespace = false;
                         let mut is_periodic = false;
-                        while let Some((_, c)) = chars_iter.next() {
+                        for (_, c) in chars_iter.by_ref() {
                             if c.is_whitespace() {
                                 if prev_was_whitespace {
                                     // periodic transactions (starts with "~ ") allow two
@@ -601,8 +603,8 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
         save_multiline_comment(&mut data, &mut journal, content.lines().count());
     }
 
-    if !data.directives_group_content.is_empty() {
-        save_directives_group_content(&mut data, &mut journal);
+    if !data.directives_group_nodes.is_empty() {
+        save_directives_group_nodes(&mut data, &mut journal);
     } else if !data.transaction_title.is_empty() {
         save_transaction(&mut data, &mut journal);
     }
@@ -611,8 +613,8 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
 }
 
 fn process_empty_line(lineno: usize, journal: &mut Vec<JournalCstNode>, data: &mut ParserTempData) {
-    if !data.directives_group_content.is_empty() {
-        save_directives_group_content(data, journal);
+    if !data.directives_group_nodes.is_empty() {
+        save_directives_group_nodes(data, journal);
     } else if !data.transaction_title.is_empty() {
         save_transaction(data, journal);
     }
@@ -628,11 +630,11 @@ fn parse_directive(
     let mut content = String::new();
     let mut prev_was_whitespace = false;
     let mut last_colno = 0;
-    for _ in 0..name.len() {
+    for _ in 0..name.chars().count() {
         chars_iter.next();
     }
     let mut comment_colno_padding = 1;
-    while let Some((colno, c)) = chars_iter.next() {
+    for (colno, c) in chars_iter.by_ref() {
         if c == '\t' {
             last_colno = colno;
             comment_colno_padding = 4;
@@ -657,8 +659,8 @@ fn parse_directive(
         comment = parse_inline_comment(chars_iter, lineno, comment_colno_padding, None);
     }
 
-    let content_len = content.len();
-    data.directives_group_content
+    let content_len = content.chars().count();
+    data.directives_group_nodes
         .push(DirectiveNode::Directive(Directive {
             name: name.to_string(),
             content,
@@ -666,7 +668,7 @@ fn parse_directive(
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
-        .max(content_len + name.len());
+        .max(content_len + name.chars().count());
 }
 
 fn parse_inline_comment(
@@ -678,14 +680,14 @@ fn parse_inline_comment(
     let mut comment_prefix = from_comment_prefix;
     let mut comment_content = String::new();
     let mut first_colno = colno_padding;
-    while let Some((colno, c)) = chars_iter.next() {
+    for (colno, c) in chars_iter.by_ref() {
         if comment_prefix.is_none() {
             if c == '#' {
                 comment_prefix = Some(CommentPrefix::Hash);
-                first_colno = colno + first_colno;
+                first_colno += colno;
             } else if c == ';' {
                 comment_prefix = Some(CommentPrefix::Semicolon);
-                first_colno = colno + first_colno;
+                first_colno += colno;
             } else if c == '\t' {
                 first_colno += 3;
             } else {
@@ -695,16 +697,12 @@ fn parse_inline_comment(
             comment_content.push(c);
         }
     }
-    if let Some(prefix) = comment_prefix {
-        Some(SingleLineComment {
-            content: comment_content,
-            prefix,
-            lineno: lineno + 1,
-            colno: first_colno,
-        })
-    } else {
-        None
-    }
+    comment_prefix.map(|prefix| SingleLineComment {
+        content: comment_content,
+        prefix,
+        lineno: lineno + 1,
+        colno: first_colno,
+    })
 }
 
 fn save_multiline_comment(
@@ -721,12 +719,12 @@ fn save_multiline_comment(
     data.multiline_comment_start_lineno = 0;
 }
 
-fn save_directives_group_content(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>) {
+fn save_directives_group_nodes(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>) {
     journal.push(JournalCstNode::DirectivesGroup {
-        content: data.directives_group_content.clone(),
+        nodes: data.directives_group_nodes.clone(),
         max_name_content_len: data.directives_group_max_name_content_len,
     });
-    data.directives_group_content.clear();
+    data.directives_group_nodes.clear();
     data.directives_group_max_name_content_len = 0;
 }
 
@@ -737,17 +735,21 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
         entries: data.transaction_entries.clone(),
         first_entry_indent: data.first_entry_indent,
         max_entry_name_len: data.max_entry_name_len,
-        max_entry_value_first_part_units_len: data.max_entry_value_first_part_units_len,
         max_entry_value_first_part_decimal_len: data.max_entry_value_first_part_decimal_len,
-        max_entry_value_first_part_numeric_units_len: data.max_entry_value_first_part_numeric_units_len,
+        max_entry_value_first_part_numeric_units_len: data
+            .max_entry_value_first_part_numeric_units_len,
+        max_entry_value_first_part_commodity_leading_len: data
+            .max_entry_value_first_part_commodity_leading_len,
+        max_entry_value_first_part_commodity_trailing_len: data
+            .max_entry_value_first_part_commodity_trailing_len,
         max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
-        max_entry_value_second_part_units_len: data.max_entry_value_second_part_units_len,
         max_entry_value_second_part_decimal_len: data.max_entry_value_second_part_decimal_len,
-        max_entry_value_second_part_numeric_units_len: data.max_entry_value_second_part_numeric_units_len,
+        max_entry_value_second_part_numeric_units_len: data
+            .max_entry_value_second_part_numeric_units_len,
         max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
-        max_entry_value_third_part_units_len: data.max_entry_value_third_part_units_len,
         max_entry_value_third_part_decimal_len: data.max_entry_value_third_part_decimal_len,
-        max_entry_value_third_part_numeric_units_len: data.max_entry_value_third_part_numeric_units_len,
+        max_entry_value_third_part_numeric_units_len: data
+            .max_entry_value_third_part_numeric_units_len,
     });
     data.transaction_title.clear();
     data.transaction_title_comment = None;
@@ -755,15 +757,14 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
     data.transaction_has_no_comment_entries = false;
     data.first_entry_indent = 0;
     data.max_entry_name_len = 0;
-    data.max_entry_value_first_part_units_len = 0;
     data.max_entry_value_first_part_decimal_len = 0;
     data.max_entry_value_first_part_numeric_units_len = 0;
+    data.max_entry_value_first_part_commodity_leading_len = 0;
+    data.max_entry_value_first_part_commodity_trailing_len = 0;
     data.max_entry_value_first_separator_len = 0;
-    data.max_entry_value_second_part_units_len = 0;
     data.max_entry_value_second_part_decimal_len = 0;
     data.max_entry_value_second_part_numeric_units_len = 0;
     data.max_entry_value_second_separator_len = 0;
-    data.max_entry_value_third_part_units_len = 0;
     data.max_entry_value_third_part_decimal_len = 0;
     data.max_entry_value_third_part_numeric_units_len = 0;
 }
@@ -771,7 +772,7 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
 fn split_number_in_units_decimal(value: &str) -> (String, String) {
     let mut units_rev = String::with_capacity(value.len());
     let mut decimal_rev = String::with_capacity(value.len());
-    
+
     let mut first_decimal_found = false;
     for c in value.chars().rev() {
         if !first_decimal_found {
@@ -784,10 +785,13 @@ fn split_number_in_units_decimal(value: &str) -> (String, String) {
         }
     }
 
-    if decimal_rev.len() == value.len() {
+    if decimal_rev.chars().count() == value.chars().count() {
         (value.to_string(), "".to_string())
     } else {
-        (units_rev.chars().rev().collect(), decimal_rev.chars().rev().collect())
+        (
+            units_rev.chars().rev().collect(),
+            decimal_rev.chars().rev().collect(),
+        )
     }
 }
 
@@ -845,13 +849,8 @@ enum EntryValueParserState {
 }
 
 impl EntryValueParser {
-    pub(crate) fn parse(
-        &mut self,
-        value: &str,
-        lineno: usize,
-        colno: usize,
-    ) -> Result<(), SyntaxError> {
-        let mut chars = value.chars().enumerate();
+    pub(crate) fn parse(&mut self, value: &str) -> Result<(), SyntaxError> {
+        let chars = value.chars();
 
         use EntryValueParserState::*;
         let mut state = FirstPartCommodityBefore;
@@ -862,8 +861,8 @@ impl EntryValueParser {
         let mut second_part_value = String::new();
         let mut third_part_value = String::new();
 
-        while let Some((coln, c)) = chars.next() {
-            println!("state: {:?}, c: {:?}", state, c);
+        for c in chars {
+            //println!("state: {:?}, c: {:?}", state, c);
             match state {
                 FirstPartCommodityBefore => {
                     if c.is_whitespace() {
@@ -877,7 +876,7 @@ impl EntryValueParser {
                             state = FirstSeparator;
                             current_spaces_in_a_row = 0;
                         }
-                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         first_part_value.push(c);
                         state = FirstPartNumber;
                     } else if c == '"' {
@@ -891,10 +890,11 @@ impl EntryValueParser {
                     }
                 }
                 FirstPartNumber => {
-                    if c.is_digit(10) || c == '.' || c == ',' {
+                    if c.is_ascii_digit() || c == '.' || c == ',' {
                         first_part_value.push(c);
                     } else if c == ' ' {
                         if !first_part_value.is_empty() {
+                            first_part_value.push(c);
                             state = FirstPartCommodityAfter;
                         }
                     } else if c == '@' {
@@ -931,6 +931,9 @@ impl EntryValueParser {
                     } else if c == '=' {
                         self.second_separator.push(c);
                         state = SecondSeparator;
+                    } else if c == '"' {
+                        first_part_value.push(c);
+                        current_commodity_is_quoted = true;
                     } else {
                         // really numbers are forbidden by hledger, but don't care
                         first_part_value.push(c);
@@ -959,7 +962,7 @@ impl EntryValueParser {
                             state = SecondSeparator;
                             current_spaces_in_a_row = 0;
                         }
-                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         second_part_value.push(c);
                         state = SecondPartNumber;
                     } else if c == '"' {
@@ -973,7 +976,7 @@ impl EntryValueParser {
                     }
                 }
                 SecondPartNumber => {
-                    if c.is_digit(10) || c == '.' || c == ',' {
+                    if c.is_ascii_digit() || c == '.' || c == ',' {
                         second_part_value.push(c);
                     } else if c == ' ' {
                         if !second_part_value.is_empty() {
@@ -982,10 +985,6 @@ impl EntryValueParser {
                     } else if c == '=' {
                         self.second_separator.push(c);
                         state = SecondSeparator;
-                        current_spaces_in_a_row = 0;
-                    } else if c == '"' {
-                        second_part_value.push(c);
-                        state = SecondPartCommodityAfter;
                         current_spaces_in_a_row = 0;
                     } else {
                         second_part_value.push(c);
@@ -1019,16 +1018,14 @@ impl EntryValueParser {
                 ThirdPartCommodityBefore => {
                     if c.is_whitespace() {
                         if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                third_part_value.push(c);
-                            }
                             current_spaces_in_a_row += 1;
+                            third_part_value.push(c);
                         } else {
                             // no commodity
                             state = End;
                             current_spaces_in_a_row = 0;
                         }
-                    } else if c.is_digit(10) || c == '.' || c == ',' {
+                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         third_part_value.push(c);
                         state = ThirdPartNumber;
                     } else if c == '"' {
@@ -1042,7 +1039,7 @@ impl EntryValueParser {
                     }
                 }
                 ThirdPartNumber => {
-                    if c.is_digit(10) || c == '.' || c == ',' {
+                    if c.is_ascii_digit() || c == '.' || c == ',' {
                         third_part_value.push(c);
                     } else if c == ' ' {
                         if current_spaces_in_a_row == 0 {
@@ -1053,10 +1050,6 @@ impl EntryValueParser {
                             state = ThirdPartCommodityAfter;
                             current_spaces_in_a_row = 0;
                         }
-                    } else if c == '"' {
-                        third_part_value.push(c);
-                        state = ThirdPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
                     } else {
                         third_part_value.push(c);
                         state = ThirdPartCommodityAfter;
@@ -1095,20 +1088,35 @@ impl EntryValueParser {
         }
 
         let (units, decimal) = split_number_in_units_decimal(&first_part_value);
-        self.first_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.first_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
         self.first_part_units = units;
         self.first_part_decimal = decimal;
 
         let (units, decimal) = split_number_in_units_decimal(&second_part_value);
-        self.second_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.second_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
         self.second_part_units = units;
         self.second_part_decimal = decimal;
 
         let (units, decimal) = split_number_in_units_decimal(&third_part_value);
-        self.third_part_numeric_units = units.chars().filter(|c| c.is_digit(10)).collect();
+        self.third_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
         self.third_part_units = units;
         self.third_part_decimal = decimal;
 
         Ok(())
     }
 }
+
+/*
+#[cfg(test)]
+mod test {
+    use crate::parser::EntryValueParser;
+
+    #[test]
+    fn test_parser() {
+        let mut parser = EntryValueParser::default();
+        parser.parse("0 gold               =       4 gold");
+        println!("{:?}", parser);
+        assert!(false);
+    }
+}
+*/

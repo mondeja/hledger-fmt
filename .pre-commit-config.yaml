@@ -1,0 +1,67 @@
+repos:
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.3.3
+    hooks:
+      - id: prettier
+        args:
+          - --cache
+          - --cache-location=.prettier-cache
+          - --ignore-path=.gitignore
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+        name: check-hooks-apply
+      - id: check-useless-excludes
+        name: check-useless-excludes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: trailing-whitespace
+      - id: end-of-file-fixer
+        name: end-of-file-fixer
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint-cli2
+        exclude: ^LICENSE$
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+      - id: clippy
+        alias: clippy-no-features
+        name: clippy-no-features
+        args:
+          [
+            --exclude=leptos-fluent-ssr-hydrate-axum-example,
+            --workspace,
+            --,
+            -D,
+            warnings,
+            -D,
+            clippy::perf,
+            -D,
+            clippy::print_stdout,
+            -D,
+            clippy::explicit_iter_loop,
+            -D,
+            clippy::uninlined_format_args,
+            -D,
+            clippy::semicolon_if_nothing_returned,
+          ]
+  - repo: https://github.com/mondeja/rust-pc-hooks
+    rev: v1.2.0
+    hooks:
+      - id: cargo-machete
+        args:
+          - --skip-target-dir
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: v3.12.2
+    hooks:
+      - id: markdown-link-check
+        name: markdown-link-check
+        files: ^README\.md$
+        args:
+          - --config
+          - .markdown-link-check.json

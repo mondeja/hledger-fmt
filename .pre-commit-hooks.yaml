@@ -1,0 +1,22 @@
+- id: hledger-fmt
+  name: hledger-fmt
+  alias: hledger-fmt
+  description: An opinionated hledger's journal files formatter.
+  language: rust
+  entry: hledger-fmt --fix
+  files: \.(hledger)|(journal)|(j)$
+  args: []
+  pass_filenames: true
+  additional_dependencies: []
+  minimum_pre_commit_version: "2.21.0"
+- id: hledger-fmt-check
+  name: hledger-fmt
+  alias: hledger-fmt
+  description: An opinionated hledger's journal files formatter.
+  language: rust
+  entry: hledger-fmt
+  files: \.(hledger)|(journal)|(j)$
+  args: []
+  pass_filenames: true
+  additional_dependencies: []
+  minimum_pre_commit_version: "2.21.0"
