@@ -70,13 +70,11 @@ _settings.json_:
 
 To format on save:
 
-```json5
+```json
 {
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": true
 }
 ```
-
-Just ensure that `hledger-fmt` is in your PATH.
 
 ## Usage
 
