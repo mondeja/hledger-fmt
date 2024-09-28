@@ -93,17 +93,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-13-build
-          path: ./build/mac/hledger-fmt-x64
+          path: ./build/mac
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: ubuntu-latest-build
-          path: ./build/linux/hledger-fmt
+          path: ./build/linux
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: windows-latest-build
-          path: ./build/windows/hledger-fmt.exe
+          path: ./build/windows
       - name: Create Linux tarball
         run: tar -czf dist/hledger-fmt-linux-x64.tar.gz -C build/linux hledger-fmt
       - name: Create MacOS tarballs

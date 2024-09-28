@@ -25,7 +25,7 @@ path = "src/lib.rs"
 name = "hledger-fmt"
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", default-features = false, features = ["std", "help", "derive"] }
 walkdir = "2"
 similar = "2"
 colored = { version = "2", optional = true }
