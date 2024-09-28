@@ -111,7 +111,10 @@ jobs:
           tar -czf dist/hledger-fmt-mac-x64.tar.gz -C build/mac-x64 hledger-fmt
           tar -czf dist/hledger-fmt-mac-arm64.tar.gz -C build/mac-arm64 hledger-fmt
       - name: Create Windows zip
-        run: 7z a -tzip dist/hledger-fmt-windows-x64.zip build/windows/hledger-fmt.exe
+        run: |
+          cd build/windows
+          mv hledger-fmt hledger-fmt.exe
+          7z a -tzip ../../dist/hledger-fmt-windows-x64.zip hledger-fmt.exe
       - name: Remove build directories
         run: rm -rf build
       - name: Upload artifacts
