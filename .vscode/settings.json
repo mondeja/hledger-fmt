@@ -1,0 +1,8 @@
+{
+  "customLocalFormatters.formatters": [
+    {
+      "command": "./target/debug/hledger-fmt - --no-diff",
+      "languages": ["hledger"]
+    }
+  ]
+}
