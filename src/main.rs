@@ -17,6 +17,8 @@ struct Args {
     ///
     /// If the paths passed are directories, hledger-fmt will search for
     /// hledger files in those directories and their subdirectories.
+    ///
+    /// STDIN can be read by passing `-` as a file.
     #[arg(num_args(0..))]
     files: Vec<String>,
 
@@ -35,6 +37,11 @@ struct Args {
     /// You can also use the environment variable NO_COLOR to disable colors.
     #[arg(long)]
     no_color: bool,
+
+    /// Do not print the diff between original and formatted files,
+    /// but the new formatted content.
+    #[arg(long)]
+    no_diff: bool,
 }
 
 fn main() {
@@ -43,62 +50,76 @@ fn main() {
 
     // if no files, search in current directory and its subdirectories
     let mut files = Vec::new();
-    if args.files.is_empty() {
-        gather_files_from_directory_and_subdirectories(".", &mut files);
-
-        if files.is_empty() {
-            eprintln!(
-                "{}",
-                concat!(
-                    "No hledger journal files found in the current directory nor its",
-                    " subdirectories.\nEnsure that have extensions '.hledger', '.journal'",
-                    " or '.j'."
-                )
-            );
-            exitcode = 1;
-            std::process::exit(exitcode);
-        }
+    let stdin = if std::env::args().any(|arg| arg == "-") {
+        read_stdin()
     } else {
-        for file in &args.files {
-            let pathbuf = std::path::PathBuf::from(&file);
-            if pathbuf.is_dir() {
-                gather_files_from_directory_and_subdirectories(file, &mut files);
-                break;
-            } else if pathbuf.is_file() {
-                files.push(file.clone());
-            } else if !pathbuf.exists() {
-                eprintln!("Path {file} does not exist.");
-                exitcode = 1;
-            } else if pathbuf.is_symlink() {
-                eprintln!("Path {file} is a symlink. Symbolic links are not supported.");
+        "".to_string()
+    };
+
+    if stdin.is_empty() {
+        if args.files.is_empty() {
+            if gather_files_from_directory_and_subdirectories(".", &mut files).is_err() {
                 exitcode = 1;
             }
-        }
 
-        if files.is_empty() {
-            eprintln!(
-                "No hledger journal files found looking for next files and/or directories: {:?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
-                args.files,
-            );
-            exitcode = 1;
-            std::process::exit(exitcode);
+            if files.is_empty() {
+                eprintln!(
+                    "{}",
+                    concat!(
+                        "No hledger journal files found in the current directory nor its",
+                        " subdirectories.\nEnsure that have extensions '.hledger', '.journal'",
+                        " or '.j'."
+                    )
+                );
+                exitcode = 1;
+                std::process::exit(exitcode);
+            }
+        } else {
+            for file in &args.files {
+                let pathbuf = std::path::PathBuf::from(&file);
+                if pathbuf.is_dir() {
+                    if gather_files_from_directory_and_subdirectories(file, &mut files).is_err() {
+                        exitcode = 1;
+                    }
+                    break;
+                } else if pathbuf.is_file() {
+                    if let Ok(content) = read_file(file) {
+                        files.push((file.clone(), content));
+                    } else {
+                        exitcode = 1;
+                    }
+                } else if !pathbuf.exists() {
+                    eprintln!("Path '{file}' does not exist.");
+                    exitcode = 1;
+                } else if pathbuf.is_symlink() {
+                    eprintln!("Path '{file}' is a symlink. Symbolic links are not supported.");
+                    exitcode = 1;
+                }
+            }
+
+            if files.is_empty() {
+                eprintln!(
+                    "No hledger journal files found looking for next files and/or directories: {:?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
+                    args.files,
+                );
+                exitcode = 1;
+                std::process::exit(exitcode);
+            }
         }
+    } else if files.is_empty() {
+        files.push(("".into(), stdin));
+    } else {
+        eprintln!("Cannot read from STDIN and pass files at the same time.");
+        exitcode = 1;
+        std::process::exit(exitcode);
     }
 
     #[cfg(feature = "color")]
     let no_color = args.no_color || std::env::var("NO_COLOR").is_ok();
     let mut something_printed = false;
+    let n_files = files.len();
 
-    for file in files {
-        let content = match std::fs::read_to_string(&file) {
-            Ok(content) => content,
-            Err(e) => {
-                eprintln!("Error reading file {file}: {e}");
-                exitcode = 1;
-                continue;
-            }
-        };
-
+    for (file, content) in files {
         // 1. Parse content
         // 2. Format content
         // 3 Contents are the same? OK
@@ -125,8 +146,6 @@ fn main() {
             continue;
         }
 
-        exitcode = 1;
-
         if args.fix {
             match std::fs::write(&file, &formatted) {
                 Ok(_) => {}
@@ -140,16 +159,26 @@ fn main() {
                 }
             }
         } else {
-            if !something_printed {
-                something_printed = true;
-            } else {
-                eprintln!();
+            if n_files > 1 {
+                if something_printed {
+                    eprintln!();
+                } else {
+                    something_printed = true;
+                }
+                // only print the file name if there are more than one file
+                let separator = "=".repeat(file.len());
+                eprintln!("{separator}\n{file}\n{separator}");
+            }
+
+            if args.no_diff {
+                #[allow(clippy::print_stdout)]
+                {
+                    print!("{formatted}");
+                }
+                continue;
             }
 
             let diff = TextDiff::from_lines(&content, &formatted);
-
-            let separator = "=".repeat(file.len());
-            eprintln!("{separator}\n{file}\n{separator}");
             for change in diff.iter_all_changes() {
                 #[cfg(feature = "color")]
                 let line = if no_color {
@@ -182,7 +211,11 @@ fn main() {
 }
 
 /// Search for hledger files in the passed directory and its subdirectories
-fn gather_files_from_directory_and_subdirectories(root: &str, files: &mut Vec<String>) {
+fn gather_files_from_directory_and_subdirectories(
+    root: &str,
+    files: &mut Vec<(String, String)>,
+) -> Result<(), ()> {
+    let mut error = false;
     for entry in WalkDir::new(root)
         .follow_links(true)
         .into_iter()
@@ -197,8 +230,40 @@ fn gather_files_from_directory_and_subdirectories(root: &str, files: &mut Vec<St
             ]
             .contains(&ext)
             {
-                files.push(entry.path().to_str().unwrap().to_string());
+                let file_path = entry.path().to_str().unwrap().to_string();
+                let maybe_file_content = read_file(&file_path);
+                if let Ok(content) = maybe_file_content {
+                    files.push((file_path, content));
+                } else {
+                    error = true;
+                }
             }
         }
     }
+
+    if error {
+        Err(())
+    } else {
+        Ok(())
+    }
+}
+
+fn read_file(file_path: &str) -> Result<String, ()> {
+    match std::fs::read_to_string(file_path) {
+        Ok(content) => Ok(content),
+        Err(e) => {
+            eprintln!("Error reading file {file_path}: {e}");
+            Err(())
+        }
+    }
+}
+
+fn read_stdin() -> String {
+    let mut buffer = String::new();
+    let lines = std::io::stdin().lines();
+    for line in lines {
+        buffer.push_str(&line.unwrap());
+        buffer.push('\n');
+    }
+    buffer
 }

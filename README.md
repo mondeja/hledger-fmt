@@ -51,6 +51,33 @@ repos:
       - id: hledger-fmt-check # Use this id to check files without formatting
 ```
 
+### VSCode
+
+With hledger-fmt in your PATH, use the [VSCode Custom Local Formatters]
+extension. Just install it and add the next configuration to your
+_settings.json_:
+
+```json
+{
+  "customLocalFormatters.formatters": [
+    {
+      "command": "hledger-fmt - --no-diff",
+      "languages": ["hledger"]
+    }
+  ]
+}
+```
+
+To format on save:
+
+```json5
+{
+  "editor.formatOnSave": true,
+}
+```
+
+Just ensure that `hledger-fmt` is in your PATH.
+
 ## Usage
 
 When you don't pass files to format, it reads all the files with
@@ -82,3 +109,4 @@ See `hledger-fmt --help` for more information.
 [cargo]: https://doc.rust-lang.org/cargo/
 [releases page]: https://github.com/mondeja/hledger-fmt/releases
 [pre-commit]: https://pre-commit.com
+[VSCode Custom Local Formatters]: https://marketplace.visualstudio.com/items?itemName=jkillian.custom-local-formatters
