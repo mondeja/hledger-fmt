@@ -3,7 +3,6 @@
 [![Crates.io](https://img.shields.io/crates/v/hledger-fmt?logo=rust)](https://crates.io/crates/hledger-fmt)
 [![License](https://img.shields.io/crates/l/hledger-fmt)][license-badge-link]
 [![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/hledger-fmt/ci.yml?label=tests&logo=github)][tests-badge-link]
-[![Crates.io downloads](https://img.shields.io/crates/d/hledger-fmt)](https://crates.io/crates/hledger-fmt)
 
 <!-- markdown-link-check-disable -->
 
@@ -16,19 +15,28 @@ An opinionated [hledger]'s journal files formatter.
 
 ## Installation
 
-Build from source using [cargo]:
+[![Crates.io downloads](https://img.shields.io/crates/d/hledger-fmt?label=Crate%20downloads)](https://crates.io/crates/hledger-fmt)
+![GitHub downloads](https://img.shields.io/github/downloads/mondeja/hledger-fmt/total?label=GitHub%20downloads)
 
-```bash
-cargo install hledger-fmt
-```
+### Standalone pre-built binaries
+
+Download standalone pre-built binaries from [releases page].
+
+### Cargo binaries
 
 Install from pre-built binaries using [cargo-binstall]:
 
-```bash
+```sh
 cargo binstall hledger-fmt
 ```
 
-We don't currently provide standalone pre-built binaries.
+### Build from source
+
+Build from source using [cargo]:
+
+```sh
+cargo install hledger-fmt
+```
 
 ### pre-commit
 
@@ -49,7 +57,7 @@ When you don't pass files to format, it reads all the files with
 the extensions `.journal`, `.hledger` and `.j` in the current directory
 and its subdirectories.
 
-```bash
+```sh
 hledger-fmt [OPTIONS] [FILES]...
 ```
 
@@ -59,7 +67,7 @@ To fix them in place, use the `--fix` option:
 > This is a potentially destructive operation. Make sure to make a backup
 > of your files before running this command for the first time.
 
-```bash
+```sh
 hledger-fmt --fix [FILES]...
 ```
 
@@ -72,4 +80,5 @@ See `hledger-fmt --help` for more information.
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org
 [cargo]: https://doc.rust-lang.org/cargo/
+[releases page]: https://github.com/mondeja/hledger-fmt/releases
 [pre-commit]: https://pre-commit.com
