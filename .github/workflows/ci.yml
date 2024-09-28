@@ -88,12 +88,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-14-build
-          path: ./build/mac/hledger-fmt-arm64
+          path: ./build/mac-arm64
       - name: Download MacOS X86 artifact
         uses: actions/download-artifact@v4
         with:
           name: macos-13-build
-          path: ./build/mac
+          path: ./build/mac-x64
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
@@ -108,12 +108,8 @@ jobs:
         run: tar -czf dist/hledger-fmt-linux-x64.tar.gz -C build/linux hledger-fmt
       - name: Create MacOS tarballs
         run: |
-          mv build/mac/hledger-fmt-x64 build/mac/hledger-fmt
-          tar -czf dist/hledger-fmt-mac-x64.tar.gz -C build/mac hledger-fmt
-          mv build/mac/hledger-fmt build/mac/hledger-fmt-x64
-          mv build/mac/hledger-fmt-arm64 build/mac/hledger-fmt
-          tar -czf dist/hledger-fmt-mac-arm64.tar.gz -C build/mac hledger-fmt
-          mv build/mac/hledger-fmt build/mac/hledger-fmt-arm64
+          tar -czf dist/hledger-fmt-mac-x64.tar.gz -C build/mac-x64 hledger-fmt
+          tar -czf dist/hledger-fmt-mac-arm64.tar.gz -C build/mac-arm64 hledger-fmt
       - name: Create Windows zip
         run: 7z a -tzip dist/hledger-fmt-windows-x64.zip build/windows/hledger-fmt.exe
       - name: Remove build directories

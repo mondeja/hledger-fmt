@@ -32,7 +32,7 @@ colored = { version = "2", optional = true }
 
 [features]
 default = ["color"]
-color = ["dep:colored"]
+color = ["dep:colored", "clap/color"]
 
 [workspace]
 members = ["."]
