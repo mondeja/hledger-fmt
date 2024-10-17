@@ -89,13 +89,17 @@ jobs:
               --release
       - name: Standarize Windows executable path
         if: matrix.runs-on == 'windows-latest'
-        run: mv target/release/hledger-fmt.exe target/release/hledger-fmt
+        shell: bash
+        run: |
+          mv \
+            target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt.exe \
+            target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
       - name: Compress with UPX
-        run: upx --best --lzma target/${{ steps.get-rust-target.outputs.target }}/hledger-fmt
+        run: upx --best --lzma target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.runs-on }}-build
-          path: ./target/release/hledger-fmt
+          path: ./target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
           if-no-files-found: error
           overwrite: true
 
