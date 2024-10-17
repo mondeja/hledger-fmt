@@ -96,8 +96,9 @@ jobs:
             target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt.exe \
             target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
       - name: Compress with UPX
-        if: ! startsWith(matrix.runs-on, 'macos')
-        run: upx --best --lzma target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
+        if: ${{ !startsWith(matrix.runs-on, 'macos') }}
+        run: upx --best --lzma \
+          target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.runs-on }}-build
