@@ -72,9 +72,6 @@ jobs:
       - name: Install UPX
         if: matrix.runs-on == 'ubuntu-latest'
         run: sudo apt-get install upx
-      - name: Install UPX
-        if: matrix.runs-on == 'macos-14' || matrix.runs-on == 'macos-13'
-        run: brew install upx
       - name: Get Rust target
         id: get-rust-target
         shell: bash
@@ -98,6 +95,7 @@ jobs:
             target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
       - name: Compress with UPX
         if: ${{ !startsWith(matrix.runs-on, 'macos') }}
+        shell: bash
         run: |
           upx --best --lzma \
             target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
