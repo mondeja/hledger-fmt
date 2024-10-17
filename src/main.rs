@@ -1,51 +1,80 @@
-use clap::Parser;
+use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
 #[cfg(feature = "color")]
 use colored::Colorize;
 use similar::{ChangeTag, TextDiff};
 use std::ffi::OsStr;
 use walkdir::WalkDir;
 
-/// Format hlegder's journal files
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Paths of files to format.
-    ///
-    /// If not passed, hledger-fmt will search for hledger files in the
-    /// current directory and its subdirectories (those that have the
-    /// extensions '.journal', '.hledger' or '.j').
-    ///
-    /// If the paths passed are directories, hledger-fmt will search for
-    /// hledger files in those directories and their subdirectories.
-    ///
-    /// STDIN can be read by passing `-` as a file.
-    #[arg(num_args(0..))]
-    files: Vec<String>,
-
-    /// Fix the files in place.
-    ///
-    /// If not passed, hledger-fmt will print the diff between the original
-    /// and the formatted file. WARNING: this is a potentially destructive
-    /// operation, make sure to make a backup of your files or print the diff
-    /// first.
-    #[arg(short, long)]
-    fix: bool,
+fn cli() -> ArgMatches {
+    let cmd = Command::new("hledger-fmt")
+        .version(env!("CARGO_PKG_VERSION"))
+        .about("An opinionated hledger's journal files formatter.")
+        .override_usage(concat!("hledger-fmt [OPTIONS] [files...]\n",))
+        .arg(
+            Arg::new("files")
+                .help(concat!(
+                    "Paths of files to format. To read from STDIN pass '-'.\n",
+                    "\n",
+                    "If not defined, hledger-fmt will search for hledger files in the",
+                    " current directory and its subdirectories (those that have the",
+                    " extensions '.journal', '.hledger' or '.j').",
+                    " If the paths passed are directories, hledger-fmt will search for",
+                    " hledger files in those directories and their subdirectories.",
+                ))
+                .action(ArgAction::Append)
+                .value_parser(value_parser!(String))
+                .value_name("files")
+                .num_args(1..),
+        )
+        .arg(
+            Arg::new("fix")
+                .short('f')
+                .long("fix")
+                .help(concat!(
+                    "Fix the files in place.\n",
+                    "\n",
+                    "If not passed, hledger-fmt will print the diff between the original",
+                    " and the formatted file. WARNING: this is a potentially destructive",
+                    " operation, make sure to make a backup of your files or print the diff",
+                    " first."
+                ))
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("no-diff")
+                .long("no-diff")
+                .help(concat!(
+                    "Do not print the diff between original and formatted files,",
+                    " but the new formatted content."
+                ))
+                .action(ArgAction::SetTrue),
+        );
 
     #[cfg(feature = "color")]
-    /// Do not use colors in the output.
-    ///
-    /// You can also use the environment variable NO_COLOR to disable colors.
-    #[arg(long)]
-    no_color: bool,
+    let cmd = cmd.arg(
+        Arg::new("no-color")
+            .long("no-color")
+            .help(concat!(
+                "Do not use colors in the output.\n",
+                "\n",
+                "You can also use the environment variable NO_COLOR to disable colors."
+            ))
+            .action(ArgAction::SetTrue),
+    );
 
-    /// Do not print the diff between original and formatted files,
-    /// but the new formatted content.
-    #[arg(long)]
-    no_diff: bool,
+    cmd.get_matches()
 }
 
 fn main() {
-    let args = Args::parse();
+    let args = cli();
+    let files_arg: Vec<String> = if let Some(files) = args.get_many("files") {
+        files.cloned().collect()
+    } else {
+        Vec::new()
+    };
+    let fix = args.get_flag("fix");
+    let no_diff = args.get_flag("no-diff");
+
     let mut exitcode = 0;
 
     // if no files, search in current directory and its subdirectories
@@ -57,7 +86,7 @@ fn main() {
     };
 
     if stdin.is_empty() {
-        if args.files.is_empty() {
+        if files_arg.is_empty() {
             if gather_files_from_directory_and_subdirectories(".", &mut files).is_err() {
                 exitcode = 1;
             }
@@ -75,7 +104,7 @@ fn main() {
                 std::process::exit(exitcode);
             }
         } else {
-            for file in &args.files {
+            for file in &files_arg {
                 let pathbuf = std::path::PathBuf::from(&file);
                 if pathbuf.is_dir() {
                     if gather_files_from_directory_and_subdirectories(file, &mut files).is_err() {
@@ -99,8 +128,7 @@ fn main() {
 
             if files.is_empty() {
                 eprintln!(
-                    "No hledger journal files found looking for next files and/or directories: {:?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
-                    args.files,
+                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
                 );
                 exitcode = 1;
                 std::process::exit(exitcode);
@@ -115,7 +143,7 @@ fn main() {
     }
 
     #[cfg(feature = "color")]
-    let no_color = args.no_color || std::env::var("NO_COLOR").is_ok();
+    let no_color = args.get_flag("no-color") || std::env::var("NO_COLOR").is_ok();
     let mut something_printed = false;
     let n_files = files.len();
 
@@ -146,7 +174,7 @@ fn main() {
             continue;
         }
 
-        if args.fix {
+        if fix {
             match std::fs::write(&file, &formatted) {
                 Ok(_) => {}
                 Err(e) => {
@@ -170,7 +198,7 @@ fn main() {
                 eprintln!("{separator}\n{file}\n{separator}");
             }
 
-            if args.no_diff {
+            if no_diff {
                 #[allow(clippy::print_stdout)]
                 {
                     print!("{formatted}");
