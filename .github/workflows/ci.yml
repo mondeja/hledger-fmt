@@ -65,17 +65,28 @@ jobs:
         with:
           rust-version: nightly
           components: rust-src
+      - name: Install UPX
+        if: matrix.runs-on == 'windows-latest'
+        run: choco install upx
+      - name: Install UPX
+        if: matrix.runs-on == 'ubuntu-latest'
+        run: sudo apt-get install upx
+      - name: Install UPX
+        if: matrix.runs-on == 'macos-14' || matrix.runs-on == 'macos-13'
+        run: brew install upx
       - name: Build
         run: |
           RUSTFLAGS="-Zlocation-detail=none -Cpanic=abort" \
             cargo +nightly build \
               -Z build-std=std,panic_abort \
               -Z build-std-features=optimize_for_size,panic_immediate_abort \
-              --target $(rustc -vV | sed -n 's|host: ||p')
+              --target $(rustc -vV | sed -n 's|host: ||p') \
               --release
       - name: Standarize Windows executable path
         if: matrix.runs-on == 'windows-latest'
         run: mv target/release/hledger-fmt.exe target/release/hledger-fmt
+      - name: Compress with UPX
+        run: upx --best --lzma target/release/hledger-fmt
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.runs-on }}-build
