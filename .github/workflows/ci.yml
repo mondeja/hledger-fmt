@@ -65,6 +65,7 @@ jobs:
         with:
           rust-version: nightly
           components: rust-src
+          profile: minimal
       - name: Install UPX
         if: matrix.runs-on == 'windows-latest'
         run: choco install upx
