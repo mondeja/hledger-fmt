@@ -37,7 +37,8 @@ color = ["dep:colored", "clap/color"]
 
 [profile.release]
 strip = true
-opt-level = "s"  # optimize for size
+opt-level = "z"  # optimize for size
+lto = true
 
 [workspace]
 members = ["."]
