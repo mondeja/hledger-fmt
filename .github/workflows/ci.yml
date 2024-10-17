@@ -67,7 +67,7 @@ jobs:
           components: rust-src
       - name: Build
         run: |
-          RUSTFLAGS="-Zlocation-detail=none" \
+          RUSTFLAGS="-Zlocation-detail=none -Cpanic=abort" \
             cargo +nightly build \
               -Z build-std=std,panic_abort \
               -Z build-std-features=optimize_for_size,panic_immediate_abort \
