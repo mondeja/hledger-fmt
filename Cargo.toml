@@ -35,5 +35,8 @@ colored = { version = "2", optional = true }
 default = ["color"]
 color = ["dep:colored", "clap/color"]
 
+[profile.release]
+strip = true
+
 [workspace]
 members = ["."]

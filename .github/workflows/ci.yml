@@ -63,7 +63,7 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: stable
+          rust-version: nightly
           profile: minimal
       - name: Build
         run: cargo build --release
