@@ -66,13 +66,14 @@ jobs:
           rust-version: nightly
           components: rust-src
       - name: Build
+        env:
+          RUSTFLAGS: -Zlocation-detail=none Zfmt-debug=none
         run: |
-          RUSTFLAGS="-Zlocation-detail=none Zfmt-debug=none" \
-            cargo +nightly build \
-              -Z build-std=std,panic_abort \
-              -Z build-std-features=optimize_for_size,panic_immediate_abort \
-              --target $(rustc -vV | sed -n 's|host: ||p') \
-              --release
+          cargo +nightly build \
+            -Z build-std=std,panic_abort \
+            -Z build-std-features=optimize_for_size,panic_immediate_abort \
+            --target $(rustc -vV | sed -n 's|host: ||p')
+            --release
       - name: Standarize Windows executable path
         if: matrix.runs-on == 'windows-latest'
         run: mv target/release/hledger-fmt.exe target/release/hledger-fmt
