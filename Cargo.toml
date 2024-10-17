@@ -29,11 +29,12 @@ name = "hledger-fmt"
 clap = { version = "4", default-features = false, features = ["std", "help"] }
 walkdir = "2"
 similar = "2"
-colored = { version = "2", optional = true }
+anstream = { version = "0.6", optional = true }
+anstyle = { version = "1", optional = true }
 
 [features]
 default = ["color"]
-color = ["dep:colored", "clap/color"]
+color = ["dep:anstream", "dep:anstyle", "clap/color"]
 
 [profile.release]
 strip = true

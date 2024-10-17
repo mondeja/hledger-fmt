@@ -1,6 +1,4 @@
 use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
-#[cfg(feature = "color")]
-use colored::Colorize;
 use similar::{ChangeTag, TextDiff};
 use std::ffi::OsStr;
 use walkdir::WalkDir;
@@ -209,28 +207,43 @@ fn main() {
             let diff = TextDiff::from_lines(&content, &formatted);
             for change in diff.iter_all_changes() {
                 #[cfg(feature = "color")]
-                let line = if no_color {
-                    match change.tag() {
-                        ChangeTag::Delete => format!("- {change}").normal(),
-                        ChangeTag::Insert => format!("+ {change}").normal(),
-                        ChangeTag::Equal => format!("  {change}").normal(),
-                    }
-                } else {
-                    match change.tag() {
-                        ChangeTag::Delete => format!("- {change}").bright_red(),
-                        ChangeTag::Insert => format!("+ {change}").bright_green(),
-                        ChangeTag::Equal => format!("  {change}").dimmed(),
-                    }
-                };
+                {
+                    let line = if no_color {
+                        match change.tag() {
+                            ChangeTag::Delete => format!("- {change}"),
+                            ChangeTag::Insert => format!("+ {change}"),
+                            ChangeTag::Equal => format!("  {change}"),
+                        }
+                    } else {
+                        match change.tag() {
+                            ChangeTag::Delete => {
+                                let bright_red = anstyle::Style::new()
+                                    .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+                                format!("{bright_red}- {change}{bright_red:#}")
+                            }
+                            ChangeTag::Insert => {
+                                let bright_green = anstyle::Style::new()
+                                    .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+                                format!("{bright_green}+ {change}{bright_green:#}")
+                            }
+                            ChangeTag::Equal => {
+                                let dimmed = anstyle::Style::new().dimmed();
+                                format!("{dimmed}  {change}{dimmed:#}")
+                            }
+                        }
+                    };
+                    anstream::eprint!("{line}");
+                }
 
                 #[cfg(not(feature = "color"))]
-                let line = match change.tag() {
-                    ChangeTag::Delete => format!("- {change}"),
-                    ChangeTag::Insert => format!("+ {change}"),
-                    ChangeTag::Equal => format!("  {change}"),
-                };
-
-                eprint!("{line}");
+                {
+                    let line = match change.tag() {
+                        ChangeTag::Delete => format!("- {change}"),
+                        ChangeTag::Insert => format!("+ {change}"),
+                        ChangeTag::Equal => format!("  {change}"),
+                    };
+                    eprint!("{line}");
+                }
             }
         }
     }
