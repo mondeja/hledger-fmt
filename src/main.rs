@@ -1,70 +1,9 @@
-use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
 use similar::{ChangeTag, TextDiff};
 use std::ffi::OsStr;
 use walkdir::WalkDir;
 
-fn cli() -> ArgMatches {
-    let cmd = Command::new("hledger-fmt")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("An opinionated hledger's journal files formatter.")
-        .override_usage(concat!("hledger-fmt [OPTIONS] [files...]\n",))
-        .arg(
-            Arg::new("files")
-                .help(concat!(
-                    "Paths of files to format. To read from STDIN pass '-'.\n",
-                    "\n",
-                    "If not defined, hledger-fmt will search for hledger files in the",
-                    " current directory and its subdirectories (those that have the",
-                    " extensions '.journal', '.hledger' or '.j').",
-                    " If the paths passed are directories, hledger-fmt will search for",
-                    " hledger files in those directories and their subdirectories.",
-                ))
-                .action(ArgAction::Append)
-                .value_parser(value_parser!(String))
-                .value_name("files")
-                .num_args(1..),
-        )
-        .arg(
-            Arg::new("fix")
-                .short('f')
-                .long("fix")
-                .help(concat!(
-                    "Fix the files in place.\n",
-                    "\n",
-                    "If not passed, hledger-fmt will print the diff between the original",
-                    " and the formatted file. WARNING: this is a potentially destructive",
-                    " operation, make sure to make a backup of your files or print the diff",
-                    " first."
-                ))
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("no-diff")
-                .long("no-diff")
-                .help(concat!(
-                    "Do not print the diff between original and formatted files,",
-                    " but the new formatted content."
-                ))
-                .action(ArgAction::SetTrue),
-        );
-
-    #[cfg(feature = "color")]
-    let cmd = cmd.arg(
-        Arg::new("no-color")
-            .long("no-color")
-            .help(concat!(
-                "Do not use colors in the output.\n",
-                "\n",
-                "You can also use the environment variable NO_COLOR to disable colors."
-            ))
-            .action(ArgAction::SetTrue),
-    );
-
-    cmd.get_matches()
-}
-
 fn main() {
-    let args = cli();
+    let args = hledger_fmt::cli().get_matches();
     let files_arg: Vec<String> = if let Some(files) = args.get_many("files") {
         files.cloned().collect()
     } else {
@@ -140,8 +79,6 @@ fn main() {
         std::process::exit(exitcode);
     }
 
-    #[cfg(feature = "color")]
-    let no_color = args.get_flag("no-color") || std::env::var("NO_COLOR").is_ok();
     let mut something_printed = false;
     let n_files = files.len();
 
@@ -206,35 +143,6 @@ fn main() {
 
             let diff = TextDiff::from_lines(&content, &formatted);
             for change in diff.iter_all_changes() {
-                #[cfg(feature = "color")]
-                {
-                    let line = if no_color {
-                        match change.tag() {
-                            ChangeTag::Delete => format!("- {change}"),
-                            ChangeTag::Insert => format!("+ {change}"),
-                            ChangeTag::Equal => format!("  {change}"),
-                        }
-                    } else {
-                        match change.tag() {
-                            ChangeTag::Delete => {
-                                let bright_red = anstyle::Style::new()
-                                    .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
-                                format!("{bright_red}- {change}{bright_red:#}")
-                            }
-                            ChangeTag::Insert => {
-                                let bright_green = anstyle::Style::new()
-                                    .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
-                                format!("{bright_green}+ {change}{bright_green:#}")
-                            }
-                            ChangeTag::Equal => {
-                                let dimmed = anstyle::Style::new().dimmed();
-                                format!("{dimmed}  {change}{dimmed:#}")
-                            }
-                        }
-                    };
-                    anstream::eprint!("{line}");
-                }
-
                 #[cfg(not(feature = "color"))]
                 {
                     let line = match change.tag() {
@@ -243,6 +151,27 @@ fn main() {
                         ChangeTag::Equal => format!("  {change}"),
                     };
                     eprint!("{line}");
+                }
+
+                #[cfg(feature = "color")]
+                {
+                    let line = match change.tag() {
+                        ChangeTag::Delete => {
+                            let bright_red = anstyle::Style::new()
+                                .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+                            format!("{bright_red}- {change}{bright_red:#}")
+                        }
+                        ChangeTag::Insert => {
+                            let bright_green = anstyle::Style::new()
+                                .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+                            format!("{bright_green}+ {change}{bright_green:#}")
+                        }
+                        ChangeTag::Equal => {
+                            let dimmed = anstyle::Style::new().dimmed();
+                            format!("{dimmed}  {change}{dimmed:#}")
+                        }
+                    };
+                    anstream::eprint!("{line}");
                 }
             }
         }

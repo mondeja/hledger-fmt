@@ -101,6 +101,8 @@ See `hledger-fmt --help` for more information.
 ## Features
 
 - **`color`** (enabled by default): Build with terminal color support.
+- **`auto-color`** (enabled by default): Automatically detects if your terminal
+  supports colors.
 
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org

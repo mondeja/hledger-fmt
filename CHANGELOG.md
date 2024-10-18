@@ -1,12 +1,24 @@
 # CHANGELOG
 
-## 2024-10-18 - [0.1.5]
+## 2024-10-18 - [0.2.0]
+
+### Breaking changes
+
+- `--no-color` CLI flag has been removed. Use `NO_COLOR` environment variable
+  instead.
+- `-f` short CLI flag has been removed. Use `--fix` instead.
+
+### New features
+
+- Add `auto-color` compilation feature enabled by default to automatically
+  detect if your terminal supports colors.
 
 ### Enhancements
 
 - Reduce distributed binary sizes ~80%.
 - Drop `clap-derive` dependency.
 - Drop `colored` dependency.
+- Generate man page at compile time.
 
 ## 2024-09-29 - [0.1.4]
 
@@ -42,7 +54,7 @@
 
 First beta release
 
-[0.1.5]: https://github.com/mondeja/hledger-fmt/compare/v0.1.4...master
+[0.2.0]: https://github.com/mondeja/hledger-fmt/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/mondeja/hledger-fmt/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mondeja/hledger-fmt/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mondeja/hledger-fmt/compare/v0.1.1...v0.1.2
