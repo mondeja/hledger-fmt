@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2024-10-18 - [0.1.5]
+
+### Enhancements
+
+- Reduce distributed binary sizes ~80%.
+- Drop `clap-derive` dependency.
+- Drop `colored` dependency.
+
 ## 2024-09-29 - [0.1.4]
 
 ### New features
@@ -34,6 +42,7 @@
 
 First beta release
 
+[0.1.5]: https://github.com/mondeja/hledger-fmt/compare/v0.1.4...master
 [0.1.4]: https://github.com/mondeja/hledger-fmt/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mondeja/hledger-fmt/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mondeja/hledger-fmt/compare/v0.1.1...v0.1.2
