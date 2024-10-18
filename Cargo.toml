@@ -50,3 +50,6 @@ clap = { version = "4", default-features = false, features = ["std", "help"] }
 [build-dependencies]
 clap.workspace = true
 clap_mangen = "0.2"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"
