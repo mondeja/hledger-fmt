@@ -250,8 +250,4 @@ jobs:
             See [CHANGELOG](https://github.com/mondeja/hledger-fmt/blob/master/CHANGELOG.md).
           draft: false
           prerelease: false
-          files: |
-            ./dist/hledger-fmt-linux-x64.tar.gz
-            ./dist/hledger-fmt-mac-x64.tar.gz
-            ./dist/hledger-fmt-mac-arm64.tar.gz
-            ./dist/hledger-fmt-windows-x64.zip
+          files: ./dist/*
