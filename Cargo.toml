@@ -1,6 +1,6 @@
 [package]
 name = "hledger-fmt"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
 repository = "https://github.com/mondeja/hledger-fmt"
@@ -19,22 +19,20 @@ exclude = [
   ".vscode",
 ]
 
-[lib]
-path = "src/lib.rs"
-
 [[bin]]
 name = "hledger-fmt"
 
 [dependencies]
-clap = { version = "4", default-features = false, features = ["std", "help"] }
+clap.workspace = true
 walkdir = "2"
 similar = "2"
-anstream = { version = "0.6", optional = true }
-anstyle = { version = "1", optional = true }
+anstream = { version = "0.6", optional = true, default-features = false }
+anstyle = { version = "1", optional = true, default-features = false }
 
 [features]
-default = ["color"]
+default = ["color", "auto-color"]
 color = ["dep:anstream", "dep:anstyle", "clap/color"]
+auto-color = ["anstream?/auto", "anstream?/wincon"]
 
 [profile.release]
 strip = true
@@ -45,3 +43,10 @@ panic = "abort"
 
 [workspace]
 members = ["."]
+
+[workspace.dependencies]
+clap = { version = "4", default-features = false, features = ["std", "help"] }
+
+[build-dependencies]
+clap.workspace = true
+clap_mangen = "0.2"
