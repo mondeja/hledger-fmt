@@ -47,7 +47,6 @@ opt-level = "z"  # optimize for size
 lto = true
 codegen-units = 1
 panic = "abort"
-rustflags = ["-Cpanic=abort", "-Zprofile-rustflags"]
 
 [unstable]
 build-std = ["std", "panic_abort"]

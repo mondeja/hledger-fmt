@@ -18,7 +18,7 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: stable
+          rust-version: nightly
           profile: minimal
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -75,6 +75,8 @@ jobs:
           bin: hledger-fmt
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
+        env:
+          RUSTFLAGS: -Cpanic=abort -Zprofile-rustflags
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.target }}
