@@ -64,6 +64,11 @@ jobs:
             os: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v2
+        with:
+          rust-version: nightly
+          profile: minimal
       - uses: taiki-e/upload-rust-binary-action@v1
         id: build
         with:
