@@ -78,7 +78,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
         env:
-          RUSTFLAGS: -Zlocation-detail=none -Cpanic=abort -Z build-std=std,panic_abort build-std-features=optimize_for_size,panic_immediate_abort
+          RUSTFLAGS: -Zlocation-detail=none -Cpanic=abort -Zunstable-options
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.target }}
