@@ -1,3 +1,5 @@
+cargo-features = [ "profile-rustflags" ]
+
 [package]
 name = "hledger-fmt"
 version = "0.2.0"
@@ -45,11 +47,11 @@ opt-level = "z"  # optimize for size
 lto = true
 codegen-units = 1
 panic = "abort"
-rustflags = ["-Cpanic=abort"]
+rustflags = ["-Cpanic=abort", "-Zprofile-rustflags"]
 
 [unstable]
 build-std = ["std", "panic_abort"]
-build-std-features = ["optimize_for_size", "panic_immediate_abort"]
+build-std-features = ["optimize_for_size", "panic_immediate_abort", "profile_rustflags"]
 location-detail = "none"
 
 [workspace]
