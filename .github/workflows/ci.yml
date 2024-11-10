@@ -71,14 +71,15 @@ jobs:
           profile: minimal
       - name: Use nightly
         run: rustup override set nightly
-      - uses: taiki-e/upload-rust-binary-action@v1
+      - uses: mondeja/upload-rust-binary-action@upx
         id: build
         with:
           bin: hledger-fmt
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
+          upx: true
         env:
-          RUSTFLAGS: -Zlocation-detail=none -Cpanic=abort -Zunstable-options
+          RUSTFLAGS: -Zlocation-detail=none -Cpanic=abort
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.target }}
