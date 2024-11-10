@@ -18,7 +18,7 @@ jobs:
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: nightly
+          rust-version: stable
           profile: minimal
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -76,7 +76,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
         env:
-          RUSTFLAGS: -Cpanic=abort -Zprofile-rustflags
+          RUSTFLAGS: -Zlocation-detail=none -Cpanic=abort -Z build-std=std,panic_abort build-std-features=optimize_for_size,panic_immediate_abort
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.target }}

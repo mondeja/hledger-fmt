@@ -48,11 +48,6 @@ lto = true
 codegen-units = 1
 panic = "abort"
 
-[unstable]
-build-std = ["std", "panic_abort"]
-build-std-features = ["optimize_for_size", "panic_immediate_abort", "profile_rustflags"]
-location-detail = "none"
-
 [workspace]
 members = ["."]
 
