@@ -69,6 +69,8 @@ jobs:
         with:
           rust-version: nightly
           profile: minimal
+      - name: Use nightly
+        run: rustup override set nightly
       - uses: taiki-e/upload-rust-binary-action@v1
         id: build
         with:
