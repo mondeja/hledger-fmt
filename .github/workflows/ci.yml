@@ -107,7 +107,7 @@ jobs:
     needs:
       - qa
       - unit-tests
-      - dist
+      - build
     if: |
       '${{ github.event.pull_request.user.login }}' == 'mondeja' ||
       startsWith(github.ref, 'refs/tags/') ||
