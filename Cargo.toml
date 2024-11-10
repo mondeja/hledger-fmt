@@ -17,6 +17,7 @@ exclude = [
   ".markdown-link-check.json",
   ".gitignore",
   ".vscode",
+  "lychee.toml",
 ]
 
 [[bin]]
