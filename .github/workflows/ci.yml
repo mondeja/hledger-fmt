@@ -70,6 +70,7 @@ jobs:
           bin: hledger-fmt
           token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
+          features: profile-rustflags
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.target }}
