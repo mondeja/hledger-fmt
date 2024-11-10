@@ -41,6 +41,12 @@ opt-level = "z"  # optimize for size
 lto = true
 codegen-units = 1
 panic = "abort"
+rustflags = ["-Cpanic=abort"]
+
+[unstable]
+build-std = ["std", "panic_abort"]
+build-std-features = ["optimize_for_size", "panic_immediate_abort"]
+location-detail = "none"
 
 [workspace]
 members = ["."]
