@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-- Set exitcode 2 when detect possible changes in files. 
+- Set exitcode 2 when CLI detects possible changes for files. 
 
 ## 2024-10-18 - [0.2.0]
 
