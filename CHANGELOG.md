@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2024-11-13 - [0.2.1]
+
+### Bug fixes
+
+- Set exitcode 2 when detect possible changes in files. 
+
 ## 2024-10-18 - [0.2.0]
 
 ### Breaking changes
@@ -54,6 +60,7 @@
 
 First beta release
 
+[0.2.1]: https://github.com/mondeja/hledger-fmt/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mondeja/hledger-fmt/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/mondeja/hledger-fmt/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mondeja/hledger-fmt/compare/v0.1.2...v0.1.3
