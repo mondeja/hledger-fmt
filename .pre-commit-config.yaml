@@ -34,9 +34,6 @@ repos:
         name: clippy-no-features
         args:
           [
-            --exclude=leptos-fluent-ssr-hydrate-axum-example,
-            --workspace,
-            --,
             -D,
             warnings,
             -D,
