@@ -189,12 +189,12 @@ pub fn format_content(nodes: &JournalFile) -> String {
                                     } else {
                                         let pos =
                                             2 + max_entry_value_first_part_commodity_trailing_len;
-                                        let p = value_first_part_decimal.chars().count()
+                                        let neg = value_first_part_decimal.chars().count()
                                             + trailing_commodity_len_from_units(
                                                 value_first_part_units,
                                             );
-                                        if pos > p {
-                                            pos - p
+                                        if pos > neg {
+                                            pos - neg
                                         } else {
                                             2
                                         }
