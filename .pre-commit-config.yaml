@@ -36,8 +36,6 @@ repos:
           [
             --,
             -D,
-            warnings,
-            -D,
             clippy::perf,
             -D,
             clippy::print_stdout,
