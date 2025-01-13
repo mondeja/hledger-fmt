@@ -108,7 +108,7 @@ fn main() {
         if formatted == content {
             continue;
         }
-        exitcode = 2;
+        exitcode = if no_diff { 0 } else { 2 };
 
         if fix {
             match std::fs::write(&file, &formatted) {

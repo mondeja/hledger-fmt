@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2025-01-14 - [0.2.3]
+
+### Changes
+
+- Exit always with code 0 when `--no-diff` option is used.
+
 ## 2025-01-13 - [0.2.2]
 
 ### Bug fixes
@@ -66,6 +72,7 @@
 
 First beta release
 
+[0.2.2]: https://github.com/mondeja/hledger-fmt/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/mondeja/hledger-fmt/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/mondeja/hledger-fmt/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mondeja/hledger-fmt/compare/v0.1.4...v0.2.0
