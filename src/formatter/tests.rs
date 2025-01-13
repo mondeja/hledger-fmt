@@ -460,3 +460,19 @@ fn complex_transaction() {
 "#,
     );
 }
+
+#[test]
+fn issue_13() {
+    assert_format(
+        r#"
+2022-01-01 SHELL OIL
+    asset:checking           $-8.42 = $11373.17
+    expense:transport:gas           $8.42
+"#,
+        r#"
+2022-01-01 SHELL OIL
+    asset:checking         $-8.42  =  $11373.17
+    expense:transport:gas   $8.42
+"#,
+    );
+}

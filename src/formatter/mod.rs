@@ -187,11 +187,17 @@ pub fn format_content(nodes: &JournalFile) -> String {
                                                 value_second_part_units,
                                             )
                                     } else {
-                                        2 + max_entry_value_first_part_commodity_trailing_len
-                                            - value_first_part_decimal.chars().count()
-                                            - trailing_commodity_len_from_units(
+                                        let pos =
+                                            2 + max_entry_value_first_part_commodity_trailing_len;
+                                        let p = value_first_part_decimal.chars().count()
+                                            + trailing_commodity_len_from_units(
                                                 value_first_part_units,
-                                            )
+                                            );
+                                        if pos > p {
+                                            pos - p
+                                        } else {
+                                            2
+                                        }
                                     })
                                 } else {
                                     "".to_string()
