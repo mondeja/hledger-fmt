@@ -278,7 +278,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                         state = ParserState::MultilineComment;
                         data.multiline_comment_start_lineno = lineno + 1;
                         data.multiline_comment_content = String::new();
-                    } else if colno == 0 && line.chars().map(char::is_whitespace).all(|x| x) {
+                    } else if colno == 0 && line.chars().all(char::is_whitespace) {
                         process_empty_line(lineno + 1, &mut journal, &mut data);
                     } else if colno == 0
                         && (line.starts_with("account ")
