@@ -1,6 +1,7 @@
 [package]
 name = "hledger-fmt"
-version = "0.2.3"
+version = "0.2.4"
+rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
 repository = "https://github.com/mondeja/hledger-fmt"

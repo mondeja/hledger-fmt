@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## ? - 0.2.4
+
+### Changes
+
+- Add MSRV.
+
 ## 2025-01-14 - [0.2.3]
 
 ### Changes
