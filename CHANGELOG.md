@@ -1,11 +1,12 @@
 # CHANGELOG
 
-## ? - 0.2.4
+## 2025-01-20 - [0.2.4]
 
 ### Changes
 
 - Add MSRV.
-- Add `manpages` feature to build MAN pages (`clap_mangen` not used by default).
+- Add `manpages` feature to build MAN pages (`clap_mangen` dependency
+  not used by default).
 
 ## 2025-01-14 - [0.2.3]
 
@@ -79,6 +80,7 @@
 
 First beta release
 
+[0.2.4]: https://github.com/mondeja/hledger-fmt/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/mondeja/hledger-fmt/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/mondeja/hledger-fmt/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/mondeja/hledger-fmt/compare/v0.2.0...v0.2.1
