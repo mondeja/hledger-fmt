@@ -1,40 +1,37 @@
-use clap_mangen::Man;
-use std::{
-    env,
-    fs::File,
-    io::Error,
-    path::{Path, PathBuf},
-};
-
+#[cfg(feature = "manpages")]
 include!("src/cli.rs");
 
-fn build_manpages(outdir: &Path) -> Result<(), Error> {
+#[cfg(feature = "manpages")]
+fn build_manpages(outdir: &std::path::Path) -> Result<(), std::io::Error> {
     let app = cli();
 
-    let file = Path::new(&outdir).join("example.1");
-    let mut file = File::create(&file)?;
+    let file = std::path::Path::new(&outdir).join("example.1");
+    let mut file = std::fs::File::create(&file)?;
 
-    Man::new(app).render(&mut file)?;
+    clap_mangen::Man::new(app).render(&mut file)?;
 
     Ok(())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed=src/cli.rs");
-    println!("cargo:rerun-if-changed=man");
+    #[cfg(feature = "manpages")]
+    {
+        println!("cargo:rerun-if-changed=src/cli.rs");
+        println!("cargo:rerun-if-changed=man");
 
-    let outdir = match env::var_os("OUT_DIR") {
-        None => return Ok(()),
-        Some(outdir) => outdir,
-    };
+        let outdir = match std::env::var_os("OUT_DIR") {
+            None => return Ok(()),
+            Some(outdir) => outdir,
+        };
 
-    // Create `target/assets/` folder.
-    let out_path = PathBuf::from(outdir);
-    let mut path = out_path.ancestors().nth(4).unwrap().to_owned();
-    path.push("assets");
-    std::fs::create_dir_all(&path).unwrap();
+        // Create `target/assets/` folder.
+        let out_path = std::path::PathBuf::from(outdir);
+        let mut path = out_path.ancestors().nth(4).unwrap().to_owned();
+        path.push("assets");
+        std::fs::create_dir_all(&path).unwrap();
 
-    build_manpages(&path)?;
+        build_manpages(&path)?;
+    }
 
     Ok(())
 }

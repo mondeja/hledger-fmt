@@ -1,7 +1,6 @@
 [package]
 name = "hledger-fmt"
 version = "0.2.4"
-rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
 repository = "https://github.com/mondeja/hledger-fmt"
@@ -34,6 +33,7 @@ anstyle = { version = "1", optional = true, default-features = false }
 default = ["color", "auto-color"]
 color = ["dep:anstream", "dep:anstyle", "clap/color"]
 auto-color = ["anstream?/auto", "anstream?/wincon"]
+manpages = ["dep:clap_mangen"]
 
 [profile.release]
 strip = true
@@ -50,7 +50,7 @@ clap = { version = "4", default-features = false, features = ["std", "help"] }
 
 [build-dependencies]
 clap.workspace = true
-clap_mangen = "0.2"
+clap_mangen = { version = ">=0.2", optional = true }
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"
