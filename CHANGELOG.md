@@ -5,6 +5,7 @@
 ### Changes
 
 - Add MSRV.
+- Add `manpages` feature to build MAN pages (`clap_mangen` not used by default).
 
 ## 2025-01-14 - [0.2.3]
 
