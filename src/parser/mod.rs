@@ -852,16 +852,16 @@ enum EntryValueParserState {
 impl EntryValueParser {
     pub(crate) fn parse(&mut self, value: &str) -> Result<(), SyntaxError> {
         let chars = value.chars();
-        let chars_count = chars.clone().count();
+        let value_length = value.len();
 
         use EntryValueParserState::*;
         let mut state = FirstPartCommodityBefore;
 
         let mut current_spaces_in_a_row = 0;
         let mut current_commodity_is_quoted = false;
-        let mut first_part_value = String::with_capacity(chars_count);
-        let mut second_part_value = String::with_capacity(chars_count);
-        let mut third_part_value = String::with_capacity(chars_count);
+        let mut first_part_value = String::with_capacity(value_length);
+        let mut second_part_value = String::with_capacity(value_length);
+        let mut third_part_value = String::with_capacity(value_length);
 
         for c in chars {
             //println!("state: {:?}, c: {:?}", state, c);
