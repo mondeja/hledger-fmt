@@ -31,11 +31,9 @@ fn main() {
             if files.is_empty() {
                 eprintln!(
                     "{}",
-                    concat!(
-                        "No hledger journal files found in the current directory nor its",
-                        " subdirectories.\nEnsure that have extensions '.hledger', '.journal'",
-                        " or '.j'."
-                    )
+                    // Rewrite without concatenation
+                    "No hledger journal files found in the current directory nor its subdirectories.\n\
+                    Ensure that have extensions '.hledger', '.journal' or '.j."
                 );
                 exitcode = 1;
                 std::process::exit(exitcode);
@@ -104,7 +102,9 @@ fn main() {
             continue;
         }
         let parsed = parsed_or_err.unwrap();
-        let formatted = hledger_fmt::formatter::format_content(&parsed);
+        let format_opts =
+            hledger_fmt::formatter::FormatContentOptions::new().with_estimated_size(content.len());
+        let formatted = hledger_fmt::formatter::format_content_with_options(&parsed, &format_opts);
         if formatted == content {
             continue;
         }
@@ -231,8 +231,7 @@ fn read_file(file_path: &str) -> Result<String, ()> {
 
 fn read_stdin() -> String {
     let mut buffer = String::new();
-    let lines = std::io::stdin().lines();
-    for line in lines {
+    for line in std::io::stdin().lines() {
         buffer.push_str(&line.unwrap());
         buffer.push('\n');
     }
