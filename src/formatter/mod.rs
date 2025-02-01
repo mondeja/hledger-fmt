@@ -12,7 +12,7 @@ use core::fmt::Write;
 
 #[derive(Default)]
 pub struct FormatContentOptions {
-    estimated_size: usize,
+    estimated_length: usize,
 }
 
 impl FormatContentOptions {
@@ -20,8 +20,8 @@ impl FormatContentOptions {
         Self::default()
     }
 
-    pub fn with_estimated_size(mut self, estimated_size: usize) -> Self {
-        self.estimated_size = estimated_size;
+    pub fn with_estimated_length(mut self, estimated_length: usize) -> Self {
+        self.estimated_length = estimated_length;
         self
     }
 }
@@ -31,7 +31,7 @@ pub fn format_content(nodes: &JournalFile) -> String {
 }
 
 pub fn format_content_with_options(nodes: &JournalFile, opts: &FormatContentOptions) -> String {
-    let mut formatted = String::with_capacity(opts.estimated_size);
+    let mut formatted = String::with_capacity(opts.estimated_length);
 
     for node in nodes {
         match node {

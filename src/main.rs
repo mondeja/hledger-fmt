@@ -102,8 +102,8 @@ fn main() {
             continue;
         }
         let parsed = parsed_or_err.unwrap();
-        let format_opts =
-            hledger_fmt::formatter::FormatContentOptions::new().with_estimated_size(content.len());
+        let format_opts = hledger_fmt::formatter::FormatContentOptions::new()
+            .with_estimated_length(content.len());
         let formatted = hledger_fmt::formatter::format_content_with_options(&parsed, &format_opts);
         if formatted == content {
             continue;
