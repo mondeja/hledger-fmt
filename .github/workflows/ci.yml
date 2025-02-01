@@ -13,32 +13,30 @@ jobs:
   qa:
     name: QA
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [pre-commit, lychee, cargo-machete]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Rust
+        if: matrix.job == 'cargo-machete'
         uses: hecrj/setup-rust-action@v2
         with:
           rust-version: stable
           profile: minimal
       - name: Set up Python
+        if: matrix.job == 'pre-commit'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install dependencies
+        if: matrix.job == 'pre-commit'
         run: |
-          ls -la
-          ls -la ..
           pip install --upgrade pip
           pip install pre-commit
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Lint
+        if: matrix.job == 'pre-commit'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 25
@@ -46,6 +44,25 @@ jobs:
           retry_wait_seconds: 15
           warning_on_retry: false
           command: pre-commit run --all-files --show-diff-on-failure
+      - name: Restore lychee cache
+        if: matrix.job == 'lychee'
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+      - name: Run Lychee
+        if: matrix.job == 'lychee'
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: "--cache --max-cache-age 1d ."
+      - uses: taiki-e/install-action@v2
+        if: matrix.job == 'cargo-machete'
+        with:
+          tool: cargo-machete
+      - name: Run cargo-machete
+        if: matrix.job == 'cargo-machete'
+        run: cargo machete --skip-target-dir
 
   build:
     name: Build hledger-fmt
