@@ -3,18 +3,18 @@ use clap::{value_parser, Arg, ArgAction, Command};
 pub fn cli() -> Command {
     Command::new("hledger-fmt")
         .long_about("An opinionated hledger's journal files formatter.")
-        .override_usage(concat!("hledger-fmt [OPTIONS] [FILES]...\n"))
+        .override_usage("hledger-fmt [OPTIONS] [FILES]...\n")
         .arg(
             Arg::new("files")
-                .help(concat!(
-                    "Paths of files to format. To read from STDIN pass '-'.\n",
-                    "\n",
-                    "If not defined, hledger-fmt will search for hledger files in the",
-                    " current directory and its subdirectories (those that have the",
-                    " extensions '.journal', '.hledger' or '.j').",
-                    " If the paths passed are directories, hledger-fmt will search for",
-                    " hledger files in those directories and their subdirectories.",
-                ))
+                .help(
+                    "Paths of files to format. To read from STDIN pass '-'.\n\
+            \n\
+            If not defined, hledger-fmt will search for hledger files in the \
+            current directory and its subdirectories (those that have the \
+            extensions '.journal', '.hledger' or '.j'). \
+            If the paths passed are directories, hledger-fmt will search for \
+            hledger files in those directories and their subdirectories.",
+                )
                 .action(ArgAction::Append)
                 .value_parser(value_parser!(String))
                 .value_name("FILES")
@@ -23,21 +23,21 @@ pub fn cli() -> Command {
         .arg(
             Arg::new("fix")
                 .long("fix")
-                .help(concat!(
-                    "Fix the files in place. WARNING: this is a potentially destructive",
-                    " operation, make sure to make a backup of your files or print the diff",
-                    " first. If not passed, hledger-fmt will print the diff between the",
-                    " original and the formatted file."
-                ))
+                .help(
+                    "Fix the files in place. WARNING: this is a potentially destructive \
+           operation, make sure to make a backup of your files or print the diff \
+           first. If not passed, hledger-fmt will print the diff between the \
+           original and the formatted file.",
+                )
                 .action(ArgAction::SetTrue),
         )
         .arg(
             Arg::new("no-diff")
                 .long("no-diff")
-                .help(concat!(
-                    "Don't print diff between original and formatted files,",
-                    " but formatted content instead."
-                ))
+                .help(
+                    "Don't print diff between original and formatted files, \
+           but formatted content instead.",
+                )
                 .action(ArgAction::SetTrue),
         )
         .disable_help_flag(true)

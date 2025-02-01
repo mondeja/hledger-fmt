@@ -277,7 +277,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                     } else if colno == 0 && line == "comment" {
                         state = ParserState::MultilineComment;
                         data.multiline_comment_start_lineno = lineno + 1;
-                        data.multiline_comment_content = String::new();
+                        data.multiline_comment_content = String::with_capacity(128);
                     } else if colno == 0 && line.chars().all(char::is_whitespace) {
                         process_empty_line(lineno + 1, &mut journal, &mut data);
                     } else if colno == 0
@@ -319,7 +319,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                     } else if colno == 0 && c.is_whitespace() {
                         if data.transaction_title.is_empty() {
                             // probably single line comment that starts with a space
-                            let mut content = String::new();
+                            let mut content = String::with_capacity(128);
 
                             let mut comment_prefix = None;
                             let mut colno = 0;
@@ -366,7 +366,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             // inside transaction entry
                             let mut at_indent = c != '\t';
                             let mut indent = if at_indent { 1 } else { 4 };
-                            let mut entry_name = String::new();
+                            let mut entry_name = String::with_capacity(64);
                             let mut prev_was_whitespace = c.is_whitespace();
                             let mut is_comment_only = false;
                             while let Some((coln, c)) = chars_iter.next() {
@@ -437,7 +437,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.max_entry_name_len =
                                 data.max_entry_name_len.max(entry_name.chars().count());
 
-                            let mut entry_value = String::new();
+                            let mut entry_value = String::with_capacity(64);
                             let mut inside_entry_value = false;
                             let mut comment = None;
 
@@ -551,7 +551,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             process_empty_line(lineno, &mut journal, &mut data);
                         }
 
-                        let mut transaction_title = String::new();
+                        let mut transaction_title = String::with_capacity(64);
                         transaction_title.push(c);
                         let mut prev_was_whitespace = false;
                         let mut is_periodic = false;
@@ -627,7 +627,8 @@ fn parse_directive(
     lineno: usize,
     data: &mut ParserTempData,
 ) {
-    let mut content = String::new();
+    let name_chars_count = name.chars().count();
+    let mut content = String::with_capacity(name_chars_count);
     let mut prev_was_whitespace = false;
     let mut last_colno = 0;
     for _ in 0..name.chars().count() {
@@ -668,7 +669,7 @@ fn parse_directive(
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
-        .max(content_len + name.chars().count());
+        .max(content_len + name_chars_count);
 }
 
 fn parse_inline_comment(
@@ -678,7 +679,7 @@ fn parse_inline_comment(
     from_comment_prefix: Option<CommentPrefix>,
 ) -> Option<SingleLineComment> {
     let mut comment_prefix = from_comment_prefix;
-    let mut comment_content = String::new();
+    let mut comment_content = String::with_capacity(128);
     let mut first_colno = colno_padding;
     for (colno, c) in chars_iter.by_ref() {
         if comment_prefix.is_none() {
@@ -851,15 +852,16 @@ enum EntryValueParserState {
 impl EntryValueParser {
     pub(crate) fn parse(&mut self, value: &str) -> Result<(), SyntaxError> {
         let chars = value.chars();
+        let value_length = value.len();
 
         use EntryValueParserState::*;
         let mut state = FirstPartCommodityBefore;
 
         let mut current_spaces_in_a_row = 0;
         let mut current_commodity_is_quoted = false;
-        let mut first_part_value = String::new();
-        let mut second_part_value = String::new();
-        let mut third_part_value = String::new();
+        let mut first_part_value = String::with_capacity(value_length);
+        let mut second_part_value = String::with_capacity(value_length);
+        let mut third_part_value = String::with_capacity(value_length);
 
         for c in chars {
             //println!("state: {:?}, c: {:?}", state, c);
