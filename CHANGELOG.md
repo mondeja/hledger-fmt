@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2025-02-09 - [0.2.5]
+
+### Enhancements
+
+- Speed up parsing and formatting.
+- Distribute Linux ARM64 binaries.
+
 ## 2025-01-20 - [0.2.4]
 
 ### Changes
@@ -80,6 +87,7 @@
 
 First beta release
 
+[0.2.5]: https://github.com/mondeja/hledger-fmt/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/mondeja/hledger-fmt/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/mondeja/hledger-fmt/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/mondeja/hledger-fmt/compare/v0.2.1...v0.2.2
