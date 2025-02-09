@@ -146,7 +146,7 @@ jobs:
         with:
           name: ubuntu-latest-build
           path: ./build/linux
-      - name: Donwload Linux ARM artifact
+      - name: Download Linux ARM artifact
         uses: actions/download-artifact@v4
         with:
           name: ubuntu-24.04-arm-build
