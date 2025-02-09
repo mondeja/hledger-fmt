@@ -72,6 +72,7 @@ jobs:
       matrix:
         runs-on:
           - ubuntu-latest
+          - ubuntu-24.04-arm
           - macos-14 # ARM
           - macos-13 # X86
           - windows-latest
@@ -87,7 +88,7 @@ jobs:
         if: matrix.runs-on == 'windows-latest'
         run: choco install upx
       - name: Install UPX
-        if: matrix.runs-on == 'ubuntu-latest'
+        if: startsWith(matrix.runs-on, 'ubuntu')
         run: sudo apt-get install upx
       - name: Get Rust target
         id: get-rust-target
@@ -108,9 +109,8 @@ jobs:
         if: matrix.runs-on == 'windows-latest'
         shell: bash
         run: |
-          mv \
-            target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt.exe \
-            target/${{ steps.get-rust-target.outputs.target }}/release/hledger-fmt
+          path="target/${{ steps.get-rust-target.outputs.target }}/release"
+          mv "${path}/hledger-fmt.exe" "${path}/hledger-fmt"
       - name: Compress with UPX
         if: ${{ !startsWith(matrix.runs-on, 'macos') }}
         shell: bash
@@ -146,13 +146,20 @@ jobs:
         with:
           name: ubuntu-latest-build
           path: ./build/linux
+      - name: Donwload Linux ARM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-24.04-arm-build
+          path: ./build/linux-arm
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: windows-latest-build
           path: ./build/windows
-      - name: Create Linux tarball
-        run: tar -czf dist/hledger-fmt-x86_64-unknown-linux-gnu.tar.gz -C build/linux hledger-fmt
+      - name: Create Linux tarballs
+        run: |
+          tar -czf dist/hledger-fmt-x86_64-unknown-linux-gnu.tar.gz -C build/linux hledger-fmt
+          tar -czf dist/hledger-fmt-arm64-unknown-linux-gnu.tar.gz -C build/linux-arm hledger-fmt
       - name: Create MacOS tarballs
         run: |
           tar -czf dist/hledger-fmt-x86_64-apple-darwin.tar.gz -C build/mac-x64 hledger-fmt
