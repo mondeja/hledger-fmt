@@ -1,6 +1,6 @@
 [package]
 name = "hledger-fmt"
-version = "0.2.5"
+version = "0.2.6"
 rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
@@ -25,7 +25,6 @@ name = "hledger-fmt"
 
 [dependencies]
 clap.workspace = true
-walkdir = "2"
 similar = "2"
 anstream = { version = "0.6", optional = true, default-features = false }
 anstyle = { version = "1", optional = true, default-features = false }
@@ -52,6 +51,11 @@ clap = { version = "4", default-features = false, features = ["std", "help"] }
 [build-dependencies]
 clap.workspace = true
 clap_mangen = { version = ">=0.2", optional = true }
+
+[dev-dependencies]
+assert_cmd = "2"
+ctor = "0.4"
+tempfile = "3"
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"

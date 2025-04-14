@@ -1,4 +1,4 @@
-/// Syntax error occurring while parsing journal files.
+/// Syntax error occurring while parsing a journal file content.
 #[derive(Debug, PartialEq)]
 pub struct SyntaxError {
     pub lineno: usize,
