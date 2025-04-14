@@ -3,7 +3,7 @@ include!("src/cli/builder.rs");
 
 #[cfg(feature = "manpages")]
 fn build_manpages(outdir: &std::path::Path) -> Result<(), std::io::Error> {
-    let app = cli();
+    let app = build();
 
     let file = std::path::Path::new(&outdir).join("example.1");
     let mut file = std::fs::File::create(&file)?;
