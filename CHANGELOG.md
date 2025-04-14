@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-- Removed `walkdir` dependency.
+- Remove `walkdir` dependency.
 - Add public API to use `hledger-fmt` as a library (see
   [crates.io documentation](https://crates.io/crates/hledger-fmt)
   for more information).
