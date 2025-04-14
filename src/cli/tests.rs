@@ -1,13 +1,17 @@
 use ctor::ctor;
 use tempfile::TempDir;
 
+#[cfg(not(windows))]
+static EXECUTABLE_PATH: &str = "target/debug/hledger-fmt";
+#[cfg(windows)]
+static EXECUTABLE_PATH: &str = "target\\debug\\hledger-fmt.exe";
+
 #[ctor]
 /// Check that the CLI is built and located at `./target/debug/hledger-fmt`.
 ///
 /// This function only runs once, at the start of the test suite.
 unsafe fn check_cli_is_built() {
-    let cli_path = "target/debug/hledger-fmt";
-    if !std::path::Path::new(cli_path).exists() {
+    if !std::path::Path::new(EXECUTABLE_PATH).exists() {
         panic!("CLI not built. Run `cargo build` to build the hledger-fmt debug executable!\n");
     }
 }
@@ -21,7 +25,7 @@ fn build_cmd() -> assert_cmd::Command {
         .unwrap()
         .parent()
         .unwrap()
-        .join("target/debug/hledger-fmt");
+        .join(EXECUTABLE_PATH);
     assert_cmd::Command::new(&target_bin)
 }
 
