@@ -68,21 +68,29 @@ fn walks_directory() {
     assert!(!output.status.success());
     assert!(output.stdout.is_empty());
     let stderr = String::from_utf8_lossy(&output.stderr);
+
+    #[cfg(not(windows))]
+    let sep = "/";
+    #[cfg(windows)]
+    let sep = "\\";
+
     assert_eq!(
         stderr,
-        "=====================
-./subdir/test.hledger
+        format!(
+            "=====================
+.{sep}subdir{sep}test.hledger
 =====================
   2015-10-16 food
 -   expenses:food     $10
 +   expenses:food  $10
 
 ==============
-./test.journal
+.{sep}test.journal
 ==============
   2015-10-16 food
 -   expenses:food     $10
 +   expenses:food  $10
 "
+        )
     );
 }
