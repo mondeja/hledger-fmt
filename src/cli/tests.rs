@@ -6,7 +6,7 @@ use tempfile::TempDir;
 ///
 /// This function only runs once, at the start of the test suite.
 unsafe fn check_cli_is_built() {
-    let cli_path = "./target/debug/hledger-fmt";
+    let cli_path = "target/debug/hledger-fmt";
     if !std::path::Path::new(cli_path).exists() {
         panic!("CLI not built. Run `cargo build` to build the hledger-fmt debug executable!\n");
     }

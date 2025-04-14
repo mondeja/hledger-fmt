@@ -204,6 +204,9 @@ jobs:
           key: ${{ runner.os }}-cargo-unit-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run: cargo build --all-features
+      - name: Debug
+        run: ls -la target/debug
+        shell: bash
       - name: Run unit tests
         run: cargo test --all-features
 
