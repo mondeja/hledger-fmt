@@ -1,15 +1,9 @@
 # hledger-fmt
 
 [![Crates.io](https://img.shields.io/crates/v/hledger-fmt?logo=rust)](https://crates.io/crates/hledger-fmt)
-[![License](https://img.shields.io/crates/l/hledger-fmt)][license-badge-link]
-[![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/hledger-fmt/ci.yml?label=tests&logo=github)][tests-badge-link]
-
-<!-- markdown-link-check-disable -->
-
-[license-badge-link]: https://github.com/mondeja/hledger-fmt/blob/master/LICENSE
-[tests-badge-link]: https://github.com/mondeja/hledger-fmt/actions
-
-<!-- markdown-link-check-enable -->
+[![docs.rs](https://img.shields.io/docsrs/hledger-fmt?logo=docs.rs)](https://docs.rs/hledger-fmt)
+[![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/hledger-fmt/ci.yml?label=tests&logo=github)](https://github.com/mondeja/hledger-fmt/actions)
+[![License](https://img.shields.io/crates/l/hledger-fmt)](https://github.com/mondeja/hledger-fmt/blob/master/LICENSE)
 
 An opinionated [hledger]'s journal files formatter.
 

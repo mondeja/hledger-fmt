@@ -72,16 +72,6 @@ pub enum JournalCstNode {
     },
 }
 
-/// Decimal mark
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(u8)]
-pub enum DecimalMark {
-    /// '.'
-    Period = b'.',
-    /// ','
-    Comma = b',',
-}
-
 /// Prefix of a single line comment
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u8)]

@@ -11,7 +11,7 @@ use crate::{
 use core::fmt::Write;
 
 #[derive(Default)]
-pub struct FormatContentOptions {
+pub(crate) struct FormatContentOptions {
     estimated_length: usize,
 }
 
@@ -26,11 +26,15 @@ impl FormatContentOptions {
     }
 }
 
-pub fn format_content(nodes: &JournalFile) -> String {
+#[cfg(test)]
+fn format_content(nodes: &JournalFile) -> String {
     format_content_with_options(nodes, &FormatContentOptions::default())
 }
 
-pub fn format_content_with_options(nodes: &JournalFile, opts: &FormatContentOptions) -> String {
+pub(crate) fn format_content_with_options(
+    nodes: &JournalFile,
+    opts: &FormatContentOptions,
+) -> String {
     let mut formatted = String::with_capacity(opts.estimated_length);
 
     for node in nodes {

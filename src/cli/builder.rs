@@ -1,6 +1,8 @@
 use clap::{value_parser, Arg, ArgAction, Command};
 
-pub fn cli() -> Command {
+#[doc(hidden)]
+/// Build the hledger-fmt CLI with clap.
+pub fn build() -> Command {
     Command::new("hledger-fmt")
         .long_about("An opinionated hledger's journal files formatter.")
         .override_usage("hledger-fmt [OPTIONS] [FILES]...\n")

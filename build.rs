@@ -1,9 +1,9 @@
 #[cfg(feature = "manpages")]
-include!("src/cli.rs");
+include!("src/cli/builder.rs");
 
 #[cfg(feature = "manpages")]
 fn build_manpages(outdir: &std::path::Path) -> Result<(), std::io::Error> {
-    let app = cli();
+    let app = build();
 
     let file = std::path::Path::new(&outdir).join("example.1");
     let mut file = std::fs::File::create(&file)?;
@@ -16,7 +16,7 @@ fn build_manpages(outdir: &std::path::Path) -> Result<(), std::io::Error> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "manpages")]
     {
-        println!("cargo:rerun-if-changed=src/cli.rs");
+        println!("cargo:rerun-if-changed=src/cli/builder.rs");
         println!("cargo:rerun-if-changed=man");
 
         let outdir = match std::env::var_os("OUT_DIR") {

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2025-04-14 - [0.2.6]
+
+### Enhancements
+
+- Remove `walkdir` dependency.
+- Add public API to use `hledger-fmt` as a library (see
+  [docs.rs documentation](https://docs.rs/hledger-fmt)
+  for more information).
+
 ## 2025-02-09 - [0.2.5]
 
 ### Enhancements
