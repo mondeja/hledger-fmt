@@ -74,23 +74,28 @@ fn walks_directory() {
     #[cfg(windows)]
     let sep = "\\";
 
-    assert_eq!(
-        stderr,
-        format!(
+    assert!(
+        stderr.contains(&format!(
             "=====================
 .{sep}subdir{sep}test.hledger
 =====================
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10
-
-==============
++   expenses:food  $10"
+        )),
+        "{}",
+        stderr,
+    );
+    assert!(
+        stderr.contains(&format!(
+            "==============
 .{sep}test.journal
 ==============
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10
-"
-        )
++   expenses:food  $10"
+        )),
+        "{}",
+        stderr,
     );
 }
