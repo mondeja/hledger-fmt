@@ -436,8 +436,8 @@ fn assert_balance_transaction() {
     assets:bank:gold                   0 gold               =     -10 gold
     assets:pouch                       0 gold               =       4 gold
     assets:pouch                       0 "Chocolate Frogs"  =       3 "Chocolate Frogs"
-    assets:investments:2024-01-15      0.0 AAAA             =       2.0 AAAA
-    assets:investments:2024-01-15-02   0.0 AAAA             =       3.0 AAAA
+    assets:investments:2024-01-15      0.0 AAAA             =       2.0 AAAA  @   $1.50
+    assets:investments:2024-01-15-02   0.0 AAAA             =       3.0 AAAA  @@  $4
     liabilities:credit card           $0                    =   $-500
 "#,
     );
@@ -473,6 +473,20 @@ fn issue_13() {
 2022-01-01 SHELL OIL
     asset:checking         $-8.42  =  $11373.17
     expense:transport:gas   $8.42
+"#,
+    );
+}
+
+#[test]
+fn lots() {
+    assert_format(
+        r#"2024-01-15 foobar
+    assets:investments:2024-01-15      0.0 AAAA            =      2.0 AAAA @  $1.50
+    assets:investments:2024-01-15-02   0.0 AAAA            =      3.0 AAAA @@ $4
+"#,
+        r#"2024-01-15 foobar
+    assets:investments:2024-01-15     0.0 AAAA  =   2.0 AAAA  @   $1.50
+    assets:investments:2024-01-15-02  0.0 AAAA  =   3.0 AAAA  @@  $4
 "#,
     );
 }

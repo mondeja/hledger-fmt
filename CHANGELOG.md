@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2025-05-19 - [0.2.7]
+
+### Bug fixes
+
+- Fix balance assertion with prices stripped from result.
+
 ## 2025-04-14 - [0.2.6]
 
 ### Enhancements
