@@ -69,6 +69,8 @@ pub enum JournalCstNode {
         max_entry_value_second_separator_len: usize,
         max_entry_value_third_part_decimal_len: usize,
         max_entry_value_third_part_numeric_units_len: usize,
+        max_entry_value_third_separator_len: usize,
+        max_entry_value_fourth_part_numeric_units_len: usize,
     },
 }
 
@@ -140,6 +142,14 @@ pub struct TransactionEntry {
     pub value_third_part_numeric_units: String,
     /// Entry value third part decimal
     pub value_third_part_decimal: String,
+    /// Entry value third separator
+    pub value_third_separator: String,
+    /// Entry value fourth part units
+    pub value_fourth_part_units: String,
+    /// Entry value fourth part units without counting characters that are not numbers
+    pub value_fourth_part_numeric_units: String,
+    /// Entry value fourth part decimal
+    pub value_fourth_part_decimal: String,
     /// Comment associated with the entry
     pub comment: Option<SingleLineComment>,
 }
@@ -192,6 +202,8 @@ struct ParserTempData {
     max_entry_value_second_separator_len: usize,
     max_entry_value_third_part_decimal_len: usize,
     max_entry_value_third_part_numeric_units_len: usize,
+    max_entry_value_third_separator_len: usize,
+    max_entry_value_fourth_part_numeric_units_len: usize,
 }
 
 impl ParserTempData {
@@ -217,6 +229,8 @@ impl ParserTempData {
             max_entry_value_second_separator_len: 0,
             max_entry_value_third_part_decimal_len: 0,
             max_entry_value_third_part_numeric_units_len: 0,
+            max_entry_value_third_separator_len: 0,
+            max_entry_value_fourth_part_numeric_units_len: 0,
         }
     }
 }
@@ -512,6 +526,14 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 .max_entry_value_third_part_numeric_units_len
                                 .max(p.third_part_numeric_units.len());
 
+                            data.max_entry_value_third_separator_len = data
+                                .max_entry_value_third_separator_len
+                                .max(p.third_separator.len());
+
+                            data.max_entry_value_fourth_part_numeric_units_len = data
+                                .max_entry_value_fourth_part_numeric_units_len
+                                .max(p.fourth_part_numeric_units.len());
+
                             data.transaction_has_no_comment_entries = true;
                             data.transaction_entries
                                 .push(TransactionNode::TransactionEntry(Box::new(
@@ -529,6 +551,11 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                         value_third_part_decimal: p.third_part_decimal,
                                         value_third_part_units: p.third_part_units,
                                         value_third_part_numeric_units: p.third_part_numeric_units,
+                                        value_third_separator: p.third_separator,
+                                        value_fourth_part_decimal: p.fourth_part_decimal,
+                                        value_fourth_part_units: p.fourth_part_units,
+                                        value_fourth_part_numeric_units: p
+                                            .fourth_part_numeric_units,
                                         comment,
                                     },
                                 )));
@@ -741,6 +768,9 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
         max_entry_value_third_part_decimal_len: data.max_entry_value_third_part_decimal_len,
         max_entry_value_third_part_numeric_units_len: data
             .max_entry_value_third_part_numeric_units_len,
+        max_entry_value_third_separator_len: data.max_entry_value_third_separator_len,
+        max_entry_value_fourth_part_numeric_units_len: data
+            .max_entry_value_fourth_part_numeric_units_len,
     });
     data.transaction_title.clear();
     data.transaction_title_comment = None;
@@ -758,6 +788,8 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
     data.max_entry_value_second_separator_len = 0;
     data.max_entry_value_third_part_decimal_len = 0;
     data.max_entry_value_third_part_numeric_units_len = 0;
+    data.max_entry_value_third_separator_len = 0;
+    data.max_entry_value_fourth_part_numeric_units_len = 0;
 }
 
 fn split_number_in_units_decimal(value: &str) -> (String, String) {
@@ -799,6 +831,8 @@ fn split_number_in_units_decimal(value: &str) -> (String, String) {
 /// - `  = N`         (balance assignment)
 /// - `N @ N sep N`   (price per unit cost and balance assertion)
 /// - `N @@ N sep N`  (total price cost and balance assertion)
+/// - `N sep N @ N`   (balance assertion and price per unit cost)
+/// - `N sep N @@ N`  (balance assertion and total price cost)
 ///
 /// Where:
 ///
@@ -821,6 +855,13 @@ pub(crate) struct EntryValueParser {
     third_part_units: String,
     third_part_numeric_units: String,
     third_part_decimal: String,
+
+    // in case that a entry value has lots (balance assertion and price)
+    // we need to store another group of separator + units
+    third_separator: String,
+    fourth_part_units: String,
+    fourth_part_numeric_units: String,
+    fourth_part_decimal: String,
 }
 
 #[derive(Debug)]
@@ -836,6 +877,10 @@ enum EntryValueParserState {
     ThirdPartCommodityBefore,
     ThirdPartNumber,
     ThirdPartCommodityAfter,
+    ThirdSeparator,
+    FourthPartCommodityBefore,
+    FourthPartNumber,
+    FourthPartCommodityAfter,
     End,
 }
 
@@ -852,6 +897,7 @@ impl EntryValueParser {
         let mut first_part_value = String::with_capacity(value_length);
         let mut second_part_value = String::with_capacity(value_length);
         let mut third_part_value = String::with_capacity(value_length);
+        let mut fourth_part_value = String::with_capacity(value_length);
 
         for c in chars {
             //println!("state: {:?}, c: {:?}", state, c);
@@ -1014,7 +1060,7 @@ impl EntryValueParser {
                             third_part_value.push(c);
                         } else {
                             // no commodity
-                            state = End;
+                            state = ThirdSeparator;
                             current_spaces_in_a_row = 0;
                         }
                     } else if c.is_ascii_digit() || c == '.' || c == ',' {
@@ -1052,15 +1098,76 @@ impl EntryValueParser {
                     if current_commodity_is_quoted {
                         if c == '"' {
                             third_part_value.push(c);
-                            state = End;
+                            state = ThirdSeparator;
                         } else {
                             third_part_value.push(c);
+                        }
+                    } else if c.is_whitespace() {
+                        state = ThirdSeparator;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        third_part_value.push(c);
+                    }
+                }
+                ThirdSeparator => {
+                    if c == '@' {
+                        self.third_separator.push(c);
+                    } else if !c.is_whitespace() {
+                        fourth_part_value.push(c);
+                        state = FourthPartCommodityBefore;
+                    }
+                }
+                FourthPartCommodityBefore => {
+                    if c.is_whitespace() {
+                        if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                fourth_part_value.push(c);
+                            }
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            state = End;
+                            current_spaces_in_a_row = 0;
+                        }
+                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
+                        fourth_part_value.push(c);
+                        state = FourthPartNumber;
+                    } else if c == '"' {
+                        fourth_part_value.push(c);
+                        if current_commodity_is_quoted {
+                            state = FourthPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        fourth_part_value.push(c);
+                    }
+                }
+                FourthPartNumber => {
+                    if c.is_ascii_digit() || c == '.' || c == ',' {
+                        fourth_part_value.push(c);
+                    } else if c == ' ' {
+                        if !fourth_part_value.is_empty() {
+                            state = FourthPartCommodityAfter;
+                        }
+                    } else {
+                        fourth_part_value.push(c);
+                        state = FourthPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                FourthPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        if c == '"' {
+                            fourth_part_value.push(c);
+                            state = End;
+                        } else {
+                            fourth_part_value.push(c);
                         }
                     } else if c.is_whitespace() {
                         state = End;
                     } else {
                         // really numbers are forbidden by hledger, but don't care
-                        third_part_value.push(c);
+                        fourth_part_value.push(c);
                     }
                 }
                 End => {
@@ -1078,6 +1185,9 @@ impl EntryValueParser {
         if third_part_value.ends_with(' ') {
             third_part_value.pop();
         }
+        if fourth_part_value.ends_with(' ') {
+            fourth_part_value.pop();
+        }
 
         let (units, decimal) = split_number_in_units_decimal(&first_part_value);
         self.first_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
@@ -1094,6 +1204,11 @@ impl EntryValueParser {
         self.third_part_units = units;
         self.third_part_decimal = decimal;
 
+        let (units, decimal) = split_number_in_units_decimal(&fourth_part_value);
+        self.fourth_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
+        self.fourth_part_units = units;
+        self.fourth_part_decimal = decimal;
+
         Ok(())
     }
 }
@@ -1106,7 +1221,7 @@ mod test {
     #[test]
     fn test_parser() {
         let mut parser = EntryValueParser::default();
-        parser.parse("0 gold               =       4 gold");
+        _ = parser.parse("0.0 AAAA            =      2.0 AAAA @  $1.50");
         println!("{:?}", parser);
         assert!(false);
     }
