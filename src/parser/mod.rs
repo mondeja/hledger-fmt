@@ -367,7 +367,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                 }
                             }
                         } else {
-                            // inside transaction entry
+                            // maybe inside transaction entry
                             let mut at_indent = c != '\t';
                             let mut indent = if at_indent { 1 } else { 4 };
                             let mut entry_name = String::with_capacity(64);
@@ -381,7 +381,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                         indent += 1;
                                     } else if c == ';' || c == '#' {
                                         // transaction entry with empty value
-                                        let comment = parse_inline_comment(
+                                        let maybe_comment = parse_inline_comment(
                                             &mut chars_iter,
                                             lineno,
                                             coln + 1,
@@ -391,7 +391,7 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                                 CommentPrefix::Semicolon
                                             }),
                                         );
-                                        if comment.is_some() {
+                                        if let Some(comment) = maybe_comment {
                                             is_comment_only = true;
                                             // if the first comment is indented with >=2 and first entry indent
                                             // is not setted, set it
@@ -400,11 +400,8 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                             if indent >= 2 && data.first_entry_indent == 0 {
                                                 data.first_entry_indent = indent;
                                             }
-                                            data.transaction_entries.push(
-                                                TransactionNode::SingleLineComment(
-                                                    comment.unwrap(),
-                                                ),
-                                            );
+                                            data.transaction_entries
+                                                .push(TransactionNode::SingleLineComment(comment));
                                         }
                                         break;
                                     } else {
@@ -422,6 +419,23 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                         prev_was_whitespace = true;
                                     } else {
                                         prev_was_whitespace = false;
+
+                                        if c == ';' && entry_name.is_empty() {
+                                            // inside comment
+                                            let maybe_comment = parse_inline_comment(
+                                                &mut chars_iter,
+                                                lineno,
+                                                coln + 1,
+                                                Some(CommentPrefix::Semicolon),
+                                            );
+                                            if let Some(comment) = maybe_comment {
+                                                is_comment_only = true;
+                                                data.transaction_entries.push(
+                                                    TransactionNode::SingleLineComment(comment),
+                                                );
+                                            }
+                                            break;
+                                        }
                                     }
                                     entry_name.push(c);
                                 }
