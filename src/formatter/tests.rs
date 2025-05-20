@@ -490,3 +490,15 @@ fn lots() {
 "#,
     );
 }
+
+#[test]
+fn issue25() {
+    assert_format(
+        r#"1/1/1 * transaction
+	; vacation  $2350 hawaii flight
+"#,
+        r#"1/1/1 * transaction
+; vacation  $2350 hawaii flight
+"#,
+    );
+}

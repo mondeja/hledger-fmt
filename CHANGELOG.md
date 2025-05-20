@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2025-05-20 - [0.2.8]
+
+### Bug fixes
+
+- Fix core dump parsing transaction entry with only comment.
+
 ## 2025-05-19 - [0.2.7]
 
 ### Bug fixes
@@ -102,6 +108,7 @@
 
 First beta release
 
+[0.2.8]: https://github.com/mondeja/hledger-fmt/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/mondeja/hledger-fmt/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/mondeja/hledger-fmt/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/mondeja/hledger-fmt/compare/v0.2.4...v0.2.5
