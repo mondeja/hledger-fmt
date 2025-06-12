@@ -38,7 +38,7 @@ pub fn run(cmd: clap::Command) -> i32 {
                     "{}",
                     // Rewrite without concatenation
                     "No hledger journal files found in the current directory nor its subdirectories.\n\
-                    Ensure that have extensions '.hledger', '.journal' or '.j."
+                    Ensure that have extensions '.hledger', '.journal' or '.j'."
                 );
                 exitcode = 1;
                 return exitcode;
@@ -219,7 +219,7 @@ fn gather_files_from_directory_and_subdirectories(
                                 .contains(&ext)
                                 {
                                     let file_path = path.to_str().unwrap();
-                                    let maybe_file_content = read_file(&file_path);
+                                    let maybe_file_content = read_file(file_path);
                                     if let Ok(content) = maybe_file_content {
                                         files.push((file_path.to_string(), content));
                                     } else {

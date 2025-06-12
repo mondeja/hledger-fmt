@@ -118,7 +118,8 @@ pub(crate) fn format_content_with_options(
                 max_entry_value_first_part_commodity_trailing_len,
                 max_entry_value_first_separator_len,
                 max_entry_value_second_part_decimal_len,
-                max_entry_value_second_part_numeric_units_len,
+                max_entry_value_second_part_units_len,
+                max_entry_value_second_part_commodity_leading_len,
                 max_entry_value_second_separator_len,
                 max_entry_value_third_part_decimal_len,
                 max_entry_value_third_part_numeric_units_len,
@@ -193,15 +194,26 @@ pub(crate) fn format_content_with_options(
                                 if !value_second_part_units.is_empty()
                                     || !value_second_part_decimal.is_empty()
                                 {
-                                    " ".repeat(
-                                        3 + max_entry_value_first_separator_len
-                                            - value_first_separator.len()
+                                    " ".repeat({
+                                        let value_first_separator_len = value_first_separator.len();
+                                        let n = 3 + (*max_entry_value_first_separator_len as i32)
+                                            - value_first_separator_len as i32
                                             - leading_commodity_len_from_units(
                                                 value_second_part_units,
-                                            )
-                                            + max_entry_value_second_part_numeric_units_len
-                                            - value_second_part_numeric_units.chars().count(),
-                                    )
+                                            ) as i32
+                                            + (*max_entry_value_second_part_units_len as i32)
+                                            - value_second_part_numeric_units.chars().count()
+                                                as i32
+                                            - (*max_entry_value_second_part_commodity_leading_len
+                                                as i32);
+
+                                        if n > 3 {
+                                            n as usize
+                                        } else {
+                                            3 + max_entry_value_first_separator_len
+                                                - value_first_separator_len
+                                        }
+                                    })
                                 } else {
                                     "".to_string()
                                 },
