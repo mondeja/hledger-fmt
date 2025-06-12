@@ -65,7 +65,8 @@ pub enum JournalCstNode {
         max_entry_value_first_part_commodity_trailing_len: usize,
         max_entry_value_first_separator_len: usize,
         max_entry_value_second_part_decimal_len: usize,
-        max_entry_value_second_part_numeric_units_len: usize,
+        max_entry_value_second_part_units_len: usize,
+        max_entry_value_second_part_commodity_leading_len: usize,
         max_entry_value_second_separator_len: usize,
         max_entry_value_third_part_decimal_len: usize,
         max_entry_value_third_part_numeric_units_len: usize,
@@ -198,7 +199,8 @@ struct ParserTempData {
     max_entry_value_first_part_commodity_trailing_len: usize,
     max_entry_value_first_separator_len: usize,
     max_entry_value_second_part_decimal_len: usize,
-    max_entry_value_second_part_numeric_units_len: usize,
+    max_entry_value_second_part_units_len: usize,
+    max_entry_value_second_part_commodity_leading_len: usize,
     max_entry_value_second_separator_len: usize,
     max_entry_value_third_part_decimal_len: usize,
     max_entry_value_third_part_numeric_units_len: usize,
@@ -225,7 +227,8 @@ impl ParserTempData {
             max_entry_value_first_part_commodity_trailing_len: 0,
             max_entry_value_first_separator_len: 0,
             max_entry_value_second_part_decimal_len: 0,
-            max_entry_value_second_part_numeric_units_len: 0,
+            max_entry_value_second_part_units_len: 0,
+            max_entry_value_second_part_commodity_leading_len: 0,
             max_entry_value_second_separator_len: 0,
             max_entry_value_third_part_decimal_len: 0,
             max_entry_value_third_part_numeric_units_len: 0,
@@ -525,9 +528,12 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.max_entry_value_second_part_decimal_len = data
                                 .max_entry_value_second_part_decimal_len
                                 .max(p.second_part_decimal.chars().count());
-                            data.max_entry_value_second_part_numeric_units_len = data
-                                .max_entry_value_second_part_numeric_units_len
-                                .max(p.second_part_numeric_units.len());
+                            data.max_entry_value_second_part_units_len = data
+                                .max_entry_value_second_part_units_len
+                                .max(p.second_part_units.chars().count());
+                            data.max_entry_value_second_part_commodity_leading_len = data
+                                .max_entry_value_second_part_commodity_leading_len
+                                .max(leading_commodity_len_from_units(&p.second_part_units));
 
                             data.max_entry_value_second_separator_len = data
                                 .max_entry_value_second_separator_len
@@ -776,8 +782,9 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
             .max_entry_value_first_part_commodity_trailing_len,
         max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
         max_entry_value_second_part_decimal_len: data.max_entry_value_second_part_decimal_len,
-        max_entry_value_second_part_numeric_units_len: data
-            .max_entry_value_second_part_numeric_units_len,
+        max_entry_value_second_part_units_len: data.max_entry_value_second_part_units_len,
+        max_entry_value_second_part_commodity_leading_len: data
+            .max_entry_value_second_part_commodity_leading_len,
         max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
         max_entry_value_third_part_decimal_len: data.max_entry_value_third_part_decimal_len,
         max_entry_value_third_part_numeric_units_len: data
@@ -798,7 +805,8 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
     data.max_entry_value_first_part_commodity_trailing_len = 0;
     data.max_entry_value_first_separator_len = 0;
     data.max_entry_value_second_part_decimal_len = 0;
-    data.max_entry_value_second_part_numeric_units_len = 0;
+    data.max_entry_value_second_part_units_len = 0;
+    data.max_entry_value_second_part_commodity_leading_len = 0;
     data.max_entry_value_second_separator_len = 0;
     data.max_entry_value_third_part_decimal_len = 0;
     data.max_entry_value_third_part_numeric_units_len = 0;
@@ -1000,6 +1008,7 @@ impl EntryValueParser {
                     } else if !c.is_whitespace() {
                         second_part_value.push(c);
                         state = SecondPartCommodityBefore;
+                        current_spaces_in_a_row = 0;
                     }
                 }
                 SecondPartCommodityBefore => {
@@ -1235,7 +1244,7 @@ mod test {
     #[test]
     fn test_parser() {
         let mut parser = EntryValueParser::default();
-        _ = parser.parse("0.0 AAAA            =      2.0 AAAA @  $1.50");
+        _ = parser.parse("EUR -100 @@ USDT 120");
         println!("{:?}", parser);
         assert!(false);
     }

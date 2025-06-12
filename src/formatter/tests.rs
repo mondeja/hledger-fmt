@@ -330,8 +330,8 @@ fn transaction_with_shares() {
 "#,
         r#"
 2024-01-15 buy some shares, in two lots  ; Cost can be noted.
-    assets:investments:2024-01-15       2.0 AAAA   @   $1.50  ; @  means per-unit cost
-    assets:investments:2024-01-15-02    3.0 AAAA   @@  $4     ; @@ means total cost
+    assets:investments:2024-01-15       2.0 AAAA   @    $1.50  ; @  means per-unit cost
+    assets:investments:2024-01-15-02    3.0 AAAA   @@   $4     ; @@ means total cost
     ; ^ Per-lot subaccounts are sometimes useful.
     assets:checking                   $-7
 "#,
@@ -492,7 +492,7 @@ fn lots() {
 }
 
 #[test]
-fn issue25() {
+fn issue_25() {
     assert_format(
         r#"1/1/1 * transaction
 	; vacation  $2350 hawaii flight
@@ -501,4 +501,18 @@ fn issue25() {
 ; vacation  $2350 hawaii flight
 "#,
     );
+}
+
+#[test]
+fn issue_27() {
+    assert_format(
+        r#"2024-01-02 exchange imaginary currency
+    income:cash    EUR -100 @@ USDT 120
+    assets:cash    USDT 120
+"#,
+        r#"2024-01-02 exchange imaginary currency
+    income:cash  EUR-100   @@   USDT120
+    assets:cash  USDT120
+"#,
+    )
 }
