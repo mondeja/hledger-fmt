@@ -332,35 +332,37 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             let mut comment_prefix = None;
                             let mut colno = 0;
                             for (coln, c) in chars_iter.by_ref() {
-                                if comment_prefix.is_none() {
-                                    if !is_subdirective {
-                                        if c == '#' {
-                                            comment_prefix = Some(CommentPrefix::Hash);
-                                            colno = coln + 1;
-                                        } else if c == ';' {
-                                            comment_prefix = Some(CommentPrefix::Semicolon);
-                                            colno = coln + 1;
-                                        } else if !c.is_whitespace() {
-                                            // if we're inside a directives group, this can
-                                            // be a subdirective
-                                            if !data.directives_group_nodes.is_empty() {
-                                                is_subdirective = true;
-                                                content.push(c);
-                                            } else {
-                                                return Err(SyntaxError {
-                                                    message: format!("Unexpected character {c:?}"),
-                                                    lineno: lineno + 1,
-                                                    colno_start: coln + 1,
-                                                    colno_end: coln + 2,
-                                                    expected: "'#', ';' or newline",
-                                                });
-                                            }
-                                        }
-                                    } else {
-                                        content.push(c);
-                                    }
-                                } else {
+                                if comment_prefix.is_some() {
                                     content.push(c);
+                                    continue;
+                                }
+
+                                if is_subdirective {
+                                    content.push(c);
+                                    continue;
+                                }
+
+                                if c == '#' {
+                                    comment_prefix = Some(CommentPrefix::Hash);
+                                    colno = coln + 1;
+                                } else if c == ';' {
+                                    comment_prefix = Some(CommentPrefix::Semicolon);
+                                    colno = coln + 1;
+                                } else if !c.is_whitespace() {
+                                    // if we're inside a directives group, this can
+                                    // be a subdirective
+                                    if !data.directives_group_nodes.is_empty() {
+                                        is_subdirective = true;
+                                        content.push(c);
+                                    } else {
+                                        return Err(SyntaxError {
+                                            message: format!("Unexpected character {c:?}"),
+                                            lineno: lineno + 1,
+                                            colno_start: coln + 1,
+                                            colno_end: coln + 2,
+                                            expected: "'#', ';' or newline",
+                                        });
+                                    }
                                 }
                             }
 
