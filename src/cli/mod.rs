@@ -35,10 +35,8 @@ pub fn run(cmd: clap::Command) -> i32 {
 
             if files.is_empty() {
                 eprintln!(
-                    "{}",
-                    // Rewrite without concatenation
                     "No hledger journal files found in the current directory nor its subdirectories.\n\
-                    Ensure that have extensions '.hledger', '.journal' or '.j'."
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'."
                 );
                 exitcode = 1;
                 return exitcode;
@@ -72,7 +70,8 @@ pub fn run(cmd: clap::Command) -> i32 {
 
             if files.is_empty() {
                 eprintln!(
-                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
+                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\n\
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'.",
                 );
                 exitcode = 1;
                 return exitcode;
