@@ -120,7 +120,7 @@ pub fn run(cmd: clap::Command) -> i32 {
 
         #[cfg(feature = "diff")]
         {
-            if exitcode != 0 {
+            if exitcode == 0 {
                 exitcode = if no_diff { 0 } else { 2 };
             }
         }
