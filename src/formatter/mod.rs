@@ -90,6 +90,9 @@ pub(crate) fn format_content_with_options(
 
                             formatted.push('\n');
                         }
+                        DirectiveNode::Subdirective(content) => {
+                            _ = writeln!(formatted, "  {content}");
+                        }
                         DirectiveNode::SingleLineComment(SingleLineComment {
                             content,
                             prefix,

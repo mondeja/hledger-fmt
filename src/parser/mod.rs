@@ -113,6 +113,7 @@ pub struct Directive {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DirectiveNode {
     Directive(Directive),
+    Subdirective(String), // includes comments after the subdirective content
     SingleLineComment(SingleLineComment),
 }
 
@@ -280,7 +281,6 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             data.directives_group_nodes
                                 .push(DirectiveNode::SingleLineComment(comment));
                         }
-                        state = ParserState::Start;
                     } else if colno == 0 && line == "comment" {
                         state = ParserState::MultilineComment;
                         data.multiline_comment_start_lineno = lineno + 1;
@@ -327,25 +327,37 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                         if data.transaction_title.is_empty() {
                             // probably single line comment that starts with a space
                             let mut content = String::with_capacity(128);
+                            let mut is_subdirective = false;
 
                             let mut comment_prefix = None;
                             let mut colno = 0;
                             for (coln, c) in chars_iter.by_ref() {
                                 if comment_prefix.is_none() {
-                                    if c == '#' {
-                                        comment_prefix = Some(CommentPrefix::Hash);
-                                        colno = coln + 1;
-                                    } else if c == ';' {
-                                        comment_prefix = Some(CommentPrefix::Semicolon);
-                                        colno = coln + 1;
-                                    } else if !c.is_whitespace() {
-                                        return Err(SyntaxError {
-                                            message: format!("Unexpected character {c:?}"),
-                                            lineno: lineno + 1,
-                                            colno_start: coln + 1,
-                                            colno_end: coln + 2,
-                                            expected: "'#', ';' or newline",
-                                        });
+                                    if !is_subdirective {
+                                        if c == '#' {
+                                            comment_prefix = Some(CommentPrefix::Hash);
+                                            colno = coln + 1;
+                                        } else if c == ';' {
+                                            comment_prefix = Some(CommentPrefix::Semicolon);
+                                            colno = coln + 1;
+                                        } else if !c.is_whitespace() {
+                                            // if we're inside a directives group, this can
+                                            // be a subdirective
+                                            if !data.directives_group_nodes.is_empty() {
+                                                is_subdirective = true;
+                                                content.push(c);
+                                            } else {
+                                                return Err(SyntaxError {
+                                                    message: format!("Unexpected character {c:?}"),
+                                                    lineno: lineno + 1,
+                                                    colno_start: coln + 1,
+                                                    colno_end: coln + 2,
+                                                    expected: "'#', ';' or newline",
+                                                });
+                                            }
+                                        }
+                                    } else {
+                                        content.push(c);
                                     }
                                 } else {
                                     content.push(c);
@@ -368,6 +380,9 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                     data.directives_group_nodes
                                         .push(DirectiveNode::SingleLineComment(comment));
                                 }
+                            } else if is_subdirective {
+                                data.directives_group_nodes
+                                    .push(DirectiveNode::Subdirective(content));
                             }
                         } else {
                             // maybe inside transaction entry
