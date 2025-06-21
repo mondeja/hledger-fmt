@@ -349,13 +349,13 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                     comment_prefix = Some(CommentPrefix::Semicolon);
                                     colno = coln + 1;
                                 } else if !c.is_whitespace() {
-                                    // if we're inside a directives group, this can
-                                    // be a subdirective
+                                    // if we're inside a directives group, is a subdirective
                                     if !data.directives_group_nodes.is_empty() {
                                         is_subdirective = true;
                                         content.push(c);
                                         continue;
                                     }
+
                                     return Err(SyntaxError {
                                         message: format!("Unexpected character {c:?}"),
                                         lineno: lineno + 1,
