@@ -354,15 +354,15 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                                     if !data.directives_group_nodes.is_empty() {
                                         is_subdirective = true;
                                         content.push(c);
-                                    } else {
-                                        return Err(SyntaxError {
-                                            message: format!("Unexpected character {c:?}"),
-                                            lineno: lineno + 1,
-                                            colno_start: coln + 1,
-                                            colno_end: coln + 2,
-                                            expected: "'#', ';' or newline",
-                                        });
+                                        continue;
                                     }
+                                    return Err(SyntaxError {
+                                        message: format!("Unexpected character {c:?}"),
+                                        lineno: lineno + 1,
+                                        colno_start: coln + 1,
+                                        colno_end: coln + 2,
+                                        expected: "'#', ';' or newline",
+                                    });
                                 }
                             }
 
