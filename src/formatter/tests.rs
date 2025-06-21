@@ -516,3 +516,47 @@ fn issue_27() {
 "#,
     )
 }
+
+#[test]
+fn subdirective() {
+    assert_noop_format(
+        r#"
+commodity $
+  note USD ; US Dollar
+"#,
+    );
+}
+
+#[test]
+fn multiple_subdirectives_in_directives_group() {
+    // Subdirective comments are not aligned. The rationale is that
+    // currently, hledger ignores them.
+    assert_format(
+        r#"
+account assets:bank:checking
+  format subdirective  ; subdirective comments are not aligned
+    ; this is a comment
+tag foo
+  hola;
+  #another comment
+account assets:bank:savings
+  format subdirective  ; subdirective comments are not aligned
+    ; this is another comment
+tag foo
+  hola;
+"#,
+        r#"
+account assets:bank:checking
+  format subdirective  ; subdirective comments are not aligned
+                              ; this is a comment
+tag foo
+  hola;
+                              #another comment
+account assets:bank:savings
+  format subdirective  ; subdirective comments are not aligned
+                              ; this is another comment
+tag foo
+  hola;
+"#,
+    );
+}

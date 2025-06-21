@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2025-06-21 - [0.2.10]
+
+### Bug fixes
+
+- Do not generate a syntax error parsing subdirectives.
+
 ## 2025-06-13 - [0.2.9]
 
 ### Bug fixes
@@ -115,6 +121,7 @@
 
 First beta release
 
+[0.2.10]: https://github.com/mondeja/hledger-fmt/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/mondeja/hledger-fmt/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/mondeja/hledger-fmt/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/mondeja/hledger-fmt/compare/v0.2.6...v0.2.7

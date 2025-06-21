@@ -394,3 +394,21 @@ fn directives_group_with_comments() {
         }],
     )
 }
+
+#[test]
+fn subdirective() {
+    assert_journal(
+        "account Assets:Bank:Checking\n  subdirective foo bar",
+        vec![JournalCstNode::DirectivesGroup {
+            nodes: vec![
+                DirectiveNode::Directive(Directive {
+                    name: "account".to_string(),
+                    content: "Assets:Bank:Checking".to_string(),
+                    comment: None,
+                }),
+                DirectiveNode::Subdirective("subdirective foo bar".to_string()),
+            ],
+            max_name_content_len: 27,
+        }],
+    );
+}
