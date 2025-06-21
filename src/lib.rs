@@ -1,4 +1,5 @@
 #[doc(hidden)]
+#[cfg(feature = "cli")]
 pub mod cli;
 mod common;
 mod formatter;

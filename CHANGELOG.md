@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Unreleased - [0.2.11]
+
+### Enhancements
+
+- Add `diff` feature to allow installing `hledger-fmt` without diff support,
+  avoiding the installation of `similar` as dependency.
+- Add `cli` feature to allow installing `hledger-fmt` without CLI support,
+  avoiding the installation of `clap` as dependency.
+
+### Bug fixes
+
+- Fix error message when custom file passed to CLI is not found.
+
 ## 2025-06-21 - [0.2.10]
 
 ### Bug fixes

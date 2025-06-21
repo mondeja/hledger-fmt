@@ -9,6 +9,7 @@ pub struct SyntaxError {
 }
 
 /// Generate an error context similar to what hledger does.
+#[cfg(feature = "cli")]
 pub fn build_error_context(error: &SyntaxError, content: &str, file_path: &str) -> String {
     let lines = content.lines().collect::<Vec<&str>>();
     let mut context = format!(
