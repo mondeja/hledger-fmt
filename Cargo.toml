@@ -1,6 +1,6 @@
 [package]
 name = "hledger-fmt"
-version = "0.2.10"
+version = "0.2.11"
 rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
@@ -22,18 +22,26 @@ exclude = [
 
 [[bin]]
 name = "hledger-fmt"
+path = "src/main.rs"
+required-features = ["cli"]
 
 [dependencies]
-clap.workspace = true
-similar = "2"
+clap = { workspace = true, optional = true }
+similar = { version = "2", optional = true }
 anstream = { version = "0.6", optional = true, default-features = false }
 anstyle = { version = "1", optional = true, default-features = false }
 
+[build-dependencies]
+clap = { workspace = true, optional = true }
+clap_mangen = { version = ">=0.2", optional = true }
+
 [features]
-default = ["color", "auto-color"]
+default = ["color", "auto-color", "diff", "cli"]
 color = ["dep:anstream", "dep:anstyle", "clap/color"]
 auto-color = ["anstream?/auto", "anstream?/wincon"]
+diff = ["dep:similar"]
 manpages = ["dep:clap_mangen"]
+cli = ["dep:clap"]
 
 [profile.release]
 strip = true
@@ -47,10 +55,6 @@ members = ["."]
 
 [workspace.dependencies]
 clap = { version = "4", default-features = false, features = ["std", "help"] }
-
-[build-dependencies]
-clap.workspace = true
-clap_mangen = { version = ">=0.2", optional = true }
 
 [dev-dependencies]
 assert_cmd = "2"

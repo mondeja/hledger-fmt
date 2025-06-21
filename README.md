@@ -70,7 +70,19 @@ To format on save:
 }
 ```
 
+### Library
+
+You can use `hledger-fmt` as a standalone library in your Rust projects. Add the
+following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+hledger-fmt = { version = "0.2", default-features = false }
+```
+
 ## Usage
+
+### CLI
 
 When you don't pass files to format, it reads all the files with
 the extensions `.journal`, `.hledger` and `.j` in the current directory
@@ -92,11 +104,33 @@ hledger-fmt --fix [FILES]...
 
 See `hledger-fmt --help` for more information.
 
+### Library
+
+```rust
+use hledger_fmt::format_journal;
+
+fn main() {
+    let journal = r#"
+2024-01-01 * "Sample transaction"
+    Assets:Cash  $100
+    Expenses:Food  $100
+"#;
+    let result = format_journal(journal, true).unwrap();
+    match result {
+        Ok(formatted) => println!("{formatted}"),
+        Err(e) => eprintln!("Error formatting journal: {e}"),
+    }
+}
+```
+
 ## Features
 
 - **`color`** (enabled by default): Build with terminal color support.
 - **`auto-color`** (enabled by default): Automatically detects if your terminal
   supports colors.
+- **`diff`** (enabled by default): Show a diff of the changes made to the files.
+  Adds the `--no-diff` option to disable it.
+- **`cli`** (enabled by default): Build the CLI tool.
 
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org

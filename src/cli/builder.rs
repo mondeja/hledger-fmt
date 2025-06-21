@@ -3,7 +3,7 @@ use clap::{value_parser, Arg, ArgAction, Command};
 #[doc(hidden)]
 /// Build the hledger-fmt CLI with clap.
 pub fn build() -> Command {
-    Command::new("hledger-fmt")
+    let cmd = Command::new("hledger-fmt")
         .long_about("An opinionated hledger's journal files formatter.")
         .override_usage("hledger-fmt [OPTIONS] [FILES]...\n")
         .arg(
@@ -32,17 +32,20 @@ pub fn build() -> Command {
            original and the formatted file.",
                 )
                 .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("no-diff")
-                .long("no-diff")
-                .help(
-                    "Don't print diff between original and formatted files, \
-           but formatted content instead.",
-                )
-                .action(ArgAction::SetTrue),
-        )
-        .disable_help_flag(true)
+        );
+
+    #[cfg(feature = "diff")]
+    let cmd = cmd.arg(
+        Arg::new("no-diff")
+            .long("no-diff")
+            .help(
+                "Don't print diff between original and formatted files, \
+                 but formatted content instead.",
+            )
+            .action(ArgAction::SetTrue),
+    );
+
+    cmd.disable_help_flag(true)
         .arg(
             Arg::new("help")
                 .short('h')

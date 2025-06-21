@@ -14,6 +14,15 @@ unsafe fn check_cli_is_built() {
     if !std::path::Path::new(EXECUTABLE_PATH).exists() {
         panic!("CLI not built. Run `cargo build` to build the hledger-fmt debug executable!\n");
     }
+
+    // Check that the executable has been compiled with the `diff` feature enabled.
+    let mut cmd = build_cmd();
+    let output = cmd.arg("--help").output().unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if !stdout.contains("--no-diff") {
+        panic!("The CLI executable must be built with the `diff` feature enabled.\n\
+                Run `cargo build` to build the hledger-fmt debug executable with the `diff` feature enabled!\n");
+    }
 }
 
 fn build_cmd() -> assert_cmd::Command {
@@ -66,7 +75,8 @@ fn walks_directory() {
 
     let output = cmd.output().unwrap();
     assert!(!output.status.success());
-    assert!(output.stdout.is_empty());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.is_empty(), "{}", stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     #[cfg(not(windows))]
