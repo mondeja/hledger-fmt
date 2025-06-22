@@ -263,6 +263,7 @@ fn gather_files_from_directory_and_subdirectories(
         }
         Err(e) => {
             eprintln!("Error reading directory {root}: {e}");
+            error = true;
         }
     }
 
