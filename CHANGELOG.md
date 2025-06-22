@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased - [0.2.11]
+## 2025-06-23 - [0.2.11]
 
 ### Enhancements
 
@@ -134,6 +134,7 @@
 
 First beta release
 
+[0.2.11]: https://github.com/mondeja/hledger-fmt/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/mondeja/hledger-fmt/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/mondeja/hledger-fmt/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/mondeja/hledger-fmt/compare/v0.2.7...v0.2.8
