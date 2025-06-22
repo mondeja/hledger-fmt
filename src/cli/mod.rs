@@ -3,8 +3,6 @@ pub mod builder;
 #[cfg(test)]
 mod tests;
 
-use similar::{ChangeTag, TextDiff};
-
 #[doc(hidden)]
 /// Run the hledger-fmt CLI and return the exit code.
 pub fn run(cmd: clap::Command) -> i32 {
@@ -15,6 +13,8 @@ pub fn run(cmd: clap::Command) -> i32 {
         Vec::new()
     };
     let fix = args.get_flag("fix");
+
+    #[cfg(feature = "diff")]
     let no_diff = args.get_flag("no-diff");
 
     let mut exitcode = 0;
@@ -35,10 +35,8 @@ pub fn run(cmd: clap::Command) -> i32 {
 
             if files.is_empty() {
                 eprintln!(
-                    "{}",
-                    // Rewrite without concatenation
                     "No hledger journal files found in the current directory nor its subdirectories.\n\
-                    Ensure that have extensions '.hledger', '.journal' or '.j'."
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'."
                 );
                 exitcode = 1;
                 return exitcode;
@@ -66,9 +64,14 @@ pub fn run(cmd: clap::Command) -> i32 {
                 }
             }
 
+            if exitcode != 0 {
+                return exitcode;
+            }
+
             if files.is_empty() {
                 eprintln!(
-                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\nEnsure that have extensions '.hledger', '.journal' or '.j'.",
+                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\n\
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'.",
                 );
                 exitcode = 1;
                 return exitcode;
@@ -113,7 +116,13 @@ pub fn run(cmd: clap::Command) -> i32 {
         if formatted == content {
             continue;
         }
-        exitcode = if no_diff { 0 } else { 2 };
+
+        #[cfg(feature = "diff")]
+        {
+            if exitcode == 0 {
+                exitcode = if no_diff { 0 } else { 2 };
+            }
+        }
 
         if fix {
             match std::fs::write(&file, &formatted) {
@@ -139,45 +148,58 @@ pub fn run(cmd: clap::Command) -> i32 {
                 eprintln!("{separator}\n{file}\n{separator}");
             }
 
-            if no_diff {
+            #[cfg(not(feature = "diff"))]
+            {
                 #[allow(clippy::print_stdout)]
                 {
                     print!("{formatted}");
                 }
-                continue;
             }
 
-            let diff = TextDiff::from_lines(&content, &formatted);
-            for change in diff.iter_all_changes() {
-                #[cfg(not(feature = "color"))]
-                {
-                    let line = match change.tag() {
-                        ChangeTag::Delete => format!("- {change}"),
-                        ChangeTag::Insert => format!("+ {change}"),
-                        ChangeTag::Equal => format!("  {change}"),
-                    };
-                    eprint!("{line}");
+            #[cfg(feature = "diff")]
+            {
+                use similar::{ChangeTag, TextDiff};
+
+                if no_diff {
+                    #[allow(clippy::print_stdout)]
+                    {
+                        print!("{formatted}");
+                    }
+                    continue;
                 }
 
-                #[cfg(feature = "color")]
-                {
-                    let line = match change.tag() {
-                        ChangeTag::Delete => {
-                            let bright_red = anstyle::Style::new()
-                                .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
-                            format!("{bright_red}- {change}{bright_red:#}")
-                        }
-                        ChangeTag::Insert => {
-                            let bright_green = anstyle::Style::new()
-                                .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
-                            format!("{bright_green}+ {change}{bright_green:#}")
-                        }
-                        ChangeTag::Equal => {
-                            let dimmed = anstyle::Style::new().dimmed();
-                            format!("{dimmed}  {change}{dimmed:#}")
-                        }
-                    };
-                    anstream::eprint!("{line}");
+                let diff = TextDiff::from_lines(&content, &formatted);
+                for change in diff.iter_all_changes() {
+                    #[cfg(not(feature = "color"))]
+                    {
+                        let line = match change.tag() {
+                            ChangeTag::Delete => format!("- {change}"),
+                            ChangeTag::Insert => format!("+ {change}"),
+                            ChangeTag::Equal => format!("  {change}"),
+                        };
+                        eprint!("{line}");
+                    }
+
+                    #[cfg(feature = "color")]
+                    {
+                        let line = match change.tag() {
+                            ChangeTag::Delete => {
+                                let bright_red = anstyle::Style::new()
+                                    .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+                                format!("{bright_red}- {change}{bright_red:#}")
+                            }
+                            ChangeTag::Insert => {
+                                let bright_green = anstyle::Style::new()
+                                    .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+                                format!("{bright_green}+ {change}{bright_green:#}")
+                            }
+                            ChangeTag::Equal => {
+                                let dimmed = anstyle::Style::new().dimmed();
+                                format!("{dimmed}  {change}{dimmed:#}")
+                            }
+                        };
+                        anstream::eprint!("{line}");
+                    }
                 }
             }
         }
@@ -192,6 +214,10 @@ fn gather_files_from_directory_and_subdirectories(
     files: &mut Vec<(String, String)>,
 ) -> Result<(), ()> {
     let mut error = false;
+
+    let journal = std::ffi::OsStr::new("journal");
+    let hledger = std::ffi::OsStr::new("hledger");
+    let j = std::ffi::OsStr::new("j");
 
     match std::fs::read_dir(root) {
         Ok(read_dir_result) => {
@@ -211,13 +237,7 @@ fn gather_files_from_directory_and_subdirectories(
                         } else if path.is_file() {
                             let ext = path.extension();
                             if let Some(ext) = ext {
-                                if [
-                                    std::ffi::OsStr::new("journal"),
-                                    std::ffi::OsStr::new("hledger"),
-                                    std::ffi::OsStr::new("j"),
-                                ]
-                                .contains(&ext)
-                                {
+                                if [journal, hledger, j].contains(&ext) {
                                     let file_path = path.to_str().unwrap();
                                     let maybe_file_content = read_file(file_path);
                                     if let Ok(content) = maybe_file_content {
@@ -243,7 +263,7 @@ fn gather_files_from_directory_and_subdirectories(
         }
         Err(e) => {
             eprintln!("Error reading directory {root}: {e}");
-            return Err(());
+            error = true;
         }
     }
 
