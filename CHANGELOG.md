@@ -6,7 +6,7 @@
 
 - Stop exiting with code 0 when files are changed if `--no-diff` CLI option is
   passed. This means that you need to use `--exit-zero-on-changes` option
-  explicitly to get this behavior. This **affects to VSCode Custom Local
+  explicitly to get this behavior. This **affects to VSCode's Custom Local
   Formatters** extension configuration, so check the new documentation if you're
   using hledger-fmt with it.
 
