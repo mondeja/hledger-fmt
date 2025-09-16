@@ -48,6 +48,26 @@ fn init_cmd(dir: &TempDir) -> assert_cmd::Command {
     cmd
 }
 
+fn assert_contains_journal(value: &str, expected_journal_substring: &str) {
+    let normalized_value = value.replace(std::path::MAIN_SEPARATOR_STR, "/");
+    assert!(
+        normalized_value.contains(expected_journal_substring),
+        "Expected to find journal substring:\n\
+         --------------------\n\
+         {}\n\
+         --------------------\n\
+         in value:\n\
+         --------------------\n\
+         {}\n\
+         --------------------",
+        expected_journal_substring,
+        normalized_value
+    );
+}
+
+/// When no argument is passed and there are no journal files in the current
+/// directory nor its subdirectories, hledger-fmt prints help and exits with
+/// error code.
 #[test]
 fn no_args_and_no_journals_prints_help() {
     let dir = tempdir();
@@ -61,6 +81,7 @@ fn no_args_and_no_journals_prints_help() {
     ))
 }
 
+/// Walks the current directory and its subdirectories to find hledger journal files.
 #[test]
 fn walks_directory() {
     let dir = tempdir();
@@ -79,33 +100,68 @@ fn walks_directory() {
     assert!(stdout.is_empty(), "{}", stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
-    #[cfg(not(windows))]
-    let sep = "/";
-    #[cfg(windows)]
-    let sep = "\\";
-
-    assert!(
-        stderr.contains(&format!(
-            "=====================
-.{sep}subdir{sep}test.hledger
+    assert_contains_journal(&stderr, "=====================
+./subdir/test.hledger
 =====================
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10"
-        )),
-        "{}",
-        stderr,
-    );
-    assert!(
-        stderr.contains(&format!(
-            "==============
-.{sep}test.journal
++   expenses:food  $10");
+
+    assert_contains_journal(&stderr, "==============
+./test.journal
 ==============
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10"
-        )),
-        "{}",
-        stderr,
-    );
++   expenses:food  $10");
+}
+
+/// `--exit-zero-on-changes` exits with code 0 when there are changes.
+#[test]
+fn exit_zero_on_changes_with_changes() {
+    let dir = tempdir();
+    let file = dir.path().join("test.journal");
+    std::fs::write(&file, "2015-10-16 food\n  expenses:food     $10\n").unwrap();
+    let mut cmd = init_cmd(&dir);
+    let cmd = cmd.arg("--exit-zero-on-changes");
+
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(&stderr, "  2015-10-16 food
+-   expenses:food     $10
++   expenses:food  $10
+");
+}
+
+/// `--no-diff` does not print diff, but formatted content instead.
+#[test]
+fn no_diff_prints_formatted_content() {
+    let dir = tempdir();
+    let file = dir.path().join("test.journal");
+    std::fs::write(&file, "2015-10-16 food\n  expenses:food     $10\n").unwrap();
+    let mut cmd = init_cmd(&dir);
+    let cmd = cmd.arg("--no-diff");
+
+    let output = cmd.output().unwrap();
+    assert!(!output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(&stdout, "2015-10-16 food
+  expenses:food  $10
+");
+}
+
+/// `--no-diff` + `--exit-zero-on-changes`.
+#[test]
+fn no_diff_and_exit_zero_on_changes() {
+    let dir = tempdir();
+    let file = dir.path().join("test.journal");
+    std::fs::write(&file, "2015-10-16 food\n  expenses:food     $10\n").unwrap();
+    let mut cmd = init_cmd(&dir);
+    let cmd = cmd.arg("--no-diff").arg("--exit-zero-on-changes");
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(&stdout, "2015-10-16 food
+  expenses:food  $10
+");
 }

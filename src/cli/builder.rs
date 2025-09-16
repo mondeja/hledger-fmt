@@ -45,22 +45,30 @@ pub fn build() -> Command {
             .action(ArgAction::SetTrue),
     );
 
-    cmd.disable_help_flag(true)
-        .arg(
-            Arg::new("help")
-                .short('h')
-                .long("help")
-                .help("Print help.")
-                .action(ArgAction::Help),
-        )
-        .disable_version_flag(true)
-        .version(env!("CARGO_PKG_VERSION"))
-        .arg(
-            Arg::new("version")
-                .short('V')
-                .long("version")
-                .help("Print version.")
-                .action(ArgAction::Version),
-        )
-        .after_help("To disable colors in the output, use the environment variable NO_COLOR.")
+    cmd.arg(
+        Arg::new("exit-zero-on-changes")
+            .long("exit-zero-on-changes")
+            .help(
+                "Exit with code 0, even if files have been formatted.",
+            )
+            .action(ArgAction::SetTrue),
+    )
+    .disable_help_flag(true)
+    .arg(
+        Arg::new("help")
+            .short('h')
+            .long("help")
+            .help("Print help.")
+            .action(ArgAction::Help),
+    )
+    .disable_version_flag(true)
+    .version(env!("CARGO_PKG_VERSION"))
+    .arg(
+        Arg::new("version")
+            .short('V')
+            .long("version")
+            .help("Print version.")
+            .action(ArgAction::Version),
+    )
+    .after_help("To disable colors in the output, set the environment variable NO_COLOR.")
 }

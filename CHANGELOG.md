@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2025-09-11 - [0.3.0]
+
+### Breaking changes
+
+- Stop exiting with code 0 when files are changed if `--no-diff` CLI option is
+  passed. This means that you need to use `--exit-zero-on-changes` option
+  explicitly to get this behavior. This **affects to VSCode Custom Local
+  Formatters** extension configuration, so check the new documentation if you're
+  using hledger-fmt with it.
+
+### New features
+
+- Add `--exit-zero-on-changes` CLI option to exit with code 0 even when files
+  are formatted.
+
 ## 2025-06-23 - [0.2.11]
 
 ### Enhancements
@@ -134,6 +149,7 @@
 
 First beta release
 
+[0.3.0]: https://github.com/mondeja/hledger-fmt/compare/v0.2.11...v0.3.0
 [0.2.11]: https://github.com/mondeja/hledger-fmt/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/mondeja/hledger-fmt/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/mondeja/hledger-fmt/compare/v0.2.8...v0.2.9

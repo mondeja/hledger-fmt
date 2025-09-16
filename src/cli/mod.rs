@@ -13,6 +13,7 @@ pub fn run(cmd: clap::Command) -> i32 {
         Vec::new()
     };
     let fix = args.get_flag("fix");
+    let exit_zero_on_changes = args.get_flag("exit-zero-on-changes");
 
     #[cfg(feature = "diff")]
     let no_diff = args.get_flag("no-diff");
@@ -91,9 +92,12 @@ pub fn run(cmd: clap::Command) -> i32 {
     for (file, content) in files {
         // 1. Parse content
         // 2. Format content
-        // 3 Contents are the same? OK
-        // 3.1 Contents are different? If `--fix` passed, write new
-        // 3.2 Contents are different? If `--fix` not passed, print diff
+        // 3  Contents are the same?
+        // 3.1 YES
+        // 3.2 NO
+        // 3.2.1 `--fix` passed?
+        // 3.2.1.1 YES -> Write new
+        // 3.2.1.2 NO  ->  Print diff
 
         let parsed_or_err = crate::parser::parse_content(&content);
         if let Err(e) = parsed_or_err {
@@ -114,13 +118,20 @@ pub fn run(cmd: clap::Command) -> i32 {
             crate::formatter::FormatContentOptions::new().with_estimated_length(content.len());
         let formatted = crate::formatter::format_content_with_options(&parsed, &format_opts);
         if formatted == content {
+            #[cfg(feature = "diff")] {
+                if !no_diff {
+                    continue;
+                }
+            }
+
+            #[cfg(not(feature = "diff"))]
             continue;
         }
 
         #[cfg(feature = "diff")]
         {
-            if exitcode == 0 {
-                exitcode = if no_diff { 0 } else { 2 };
+            if exitcode == 0 && !exit_zero_on_changes {
+                exitcode = 2;
             }
         }
 

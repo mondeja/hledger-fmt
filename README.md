@@ -55,7 +55,7 @@ _settings.json_:
 {
   "customLocalFormatters.formatters": [
     {
-      "command": "hledger-fmt - --no-diff",
+      "command": "hledger-fmt - --no-diff --exit-zero-on-changes",
       "languages": ["hledger"]
     }
   ]
@@ -70,10 +70,38 @@ To format on save:
 }
 ```
 
+### Zed
+
+With hledger-fmt in your PATH, add the next configuration to your
+_settings.json_:
+
+```json
+{
+  "languages": {
+    "Ledger": {
+      "formatter": {
+        "external": {
+          "command": "hledger-fmt",
+          "arguments": ["--no-diff", "--exit-zero-on-changes"]
+        }
+      }
+    }
+  }
+}
+```
+
+To format on save:
+
+```json
+{
+  "format_on_save": "on"
+}
+```
+
 ### Library
 
 You can use `hledger-fmt` as a standalone library in your Rust projects. Add the
-following to your `Cargo.toml`:
+following to your _Cargo.toml_:
 
 ```toml
 [dependencies]
