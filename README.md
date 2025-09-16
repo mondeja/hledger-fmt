@@ -105,7 +105,7 @@ following to your _Cargo.toml_:
 
 ```toml
 [dependencies]
-hledger-fmt = { version = "0.2", default-features = false }
+hledger-fmt = { version = "0.3", default-features = false }
 ```
 
 ## Usage
