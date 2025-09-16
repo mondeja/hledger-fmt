@@ -45,9 +45,9 @@ repos:
       - id: hledger-fmt-check # Use this id to check files without formatting
 ```
 
-### VSCode
+### VS Code
 
-With hledger-fmt in your PATH, use the [VSCode Custom Local Formatters]
+With hledger-fmt in your PATH, use the [VS Code Custom Local Formatters]
 extension. Just install it and add the next configuration to your
 _settings.json_:
 
@@ -165,4 +165,4 @@ fn main() {
 [cargo]: https://doc.rust-lang.org/cargo/
 [releases page]: https://github.com/mondeja/hledger-fmt/releases
 [pre-commit]: https://pre-commit.com
-[VSCode Custom Local Formatters]: https://marketplace.visualstudio.com/items?itemName=jkillian.custom-local-formatters
+[VS Code Custom Local Formatters]: https://marketplace.visualstudio.com/items?itemName=jkillian.custom-local-formatters
