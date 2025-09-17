@@ -13,7 +13,7 @@ pub struct SyntaxError {
 pub fn build_error_context(error: &SyntaxError, content: &str, file_path: &str) -> String {
     let lines = content.lines().collect::<Vec<&str>>();
     let mut context = format!(
-        "hlegder-fmt error: {}:{}:{}:\n",
+        "hledger-fmt error: {}:{}:{}:\n",
         file_path, error.lineno, error.colno_start
     );
 
