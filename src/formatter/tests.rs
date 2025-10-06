@@ -518,6 +518,18 @@ fn issue_27() {
 }
 
 #[test]
+fn issue_32_unicode() {
+    assert_noop_format(
+        r#"2025-09-23 * Zakupy
+    a.ca      -106,98
+    słodycze     6,99  ; one unicode char
+    książki     77,77  ; two
+    alkohol     22,22  ; none
+"#,
+    );
+}
+
+#[test]
 fn subdirective() {
     assert_noop_format(
         r#"
