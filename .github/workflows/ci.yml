@@ -98,7 +98,7 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          RUSTFLAGS="-Zlocation-detail=none -Zunstable-options -Cpanic=inmediate-abort" \
+          RUSTFLAGS="-Zlocation-detail=none -Zunstable-options -Cpanic=immediate-abort" \
             cargo +nightly build \
               -Z build-std=std \
               -Z build-std-features=optimize_for_size \
