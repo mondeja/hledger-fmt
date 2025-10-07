@@ -48,9 +48,7 @@ pub fn build() -> Command {
     cmd.arg(
         Arg::new("exit-zero-on-changes")
             .long("exit-zero-on-changes")
-            .help(
-                "Exit with code 0, even if files have been formatted.",
-            )
+            .help("Exit with code 0, even if files have been formatted.")
             .action(ArgAction::SetTrue),
     )
     .disable_help_flag(true)
