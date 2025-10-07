@@ -33,7 +33,7 @@ anstyle = { version = "1", optional = true, default-features = false }
 
 [build-dependencies]
 clap = { workspace = true, optional = true }
-clap_mangen = { version = ">=0.2", optional = true }
+clap_mangen = { version = "^0.2", optional = true }
 
 [features]
 default = ["color", "auto-color", "diff", "cli"]
@@ -58,7 +58,7 @@ clap = { version = "4", default-features = false, features = ["std", "help"] }
 
 [dev-dependencies]
 assert_cmd = "2"
-ctor = "0.4"
+ctor = "0.5"
 tempfile = "3"
 
 [package.metadata.binstall]

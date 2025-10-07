@@ -100,19 +100,25 @@ fn walks_directory() {
     assert!(stdout.is_empty(), "{}", stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
-    assert_contains_journal(&stderr, "=====================
+    assert_contains_journal(
+        &stderr,
+        "=====================
 ./subdir/test.hledger
 =====================
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10");
++   expenses:food  $10",
+    );
 
-    assert_contains_journal(&stderr, "==============
+    assert_contains_journal(
+        &stderr,
+        "==============
 ./test.journal
 ==============
   2015-10-16 food
 -   expenses:food     $10
-+   expenses:food  $10");
++   expenses:food  $10",
+    );
 }
 
 /// `--exit-zero-on-changes` exits with code 0 when there are changes.
@@ -127,10 +133,13 @@ fn exit_zero_on_changes_with_changes() {
     let output = cmd.output().unwrap();
     assert!(output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert_eq!(&stderr, "  2015-10-16 food
+    assert_eq!(
+        &stderr,
+        "  2015-10-16 food
 -   expenses:food     $10
 +   expenses:food  $10
-");
+"
+    );
 }
 
 /// `--no-diff` does not print diff, but formatted content instead.
@@ -145,9 +154,12 @@ fn no_diff_prints_formatted_content() {
     let output = cmd.output().unwrap();
     assert!(!output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert_eq!(&stdout, "2015-10-16 food
+    assert_eq!(
+        &stdout,
+        "2015-10-16 food
   expenses:food  $10
-");
+"
+    );
 }
 
 /// `--no-diff` + `--exit-zero-on-changes`.
@@ -161,7 +173,10 @@ fn no_diff_and_exit_zero_on_changes() {
     let output = cmd.output().unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert_eq!(&stdout, "2015-10-16 food
+    assert_eq!(
+        &stdout,
+        "2015-10-16 food
   expenses:food  $10
-");
+"
+    );
 }

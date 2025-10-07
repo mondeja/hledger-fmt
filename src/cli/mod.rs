@@ -118,7 +118,8 @@ pub fn run(cmd: clap::Command) -> i32 {
             crate::formatter::FormatContentOptions::new().with_estimated_length(content.len());
         let formatted = crate::formatter::format_content_with_options(&parsed, &format_opts);
         if formatted == content {
-            #[cfg(feature = "diff")] {
+            #[cfg(feature = "diff")]
+            {
                 if !no_diff {
                     continue;
                 }
