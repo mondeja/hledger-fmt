@@ -98,10 +98,10 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          RUSTFLAGS="-Zlocation-detail=none -Cpanic=abort" \
+          RUSTFLAGS="-Zlocation-detail=none -Zunstable-options -Cpanic=immediate-abort" \
             cargo +nightly build \
-              -Z build-std=std,panic_abort \
-              -Z build-std-features=optimize_for_size,panic_immediate_abort \
+              -Z build-std=std \
+              -Z build-std-features=optimize_for_size \
               --target ${{ steps.get-rust-target.outputs.target }} \
               --release \
               --features=manpages
