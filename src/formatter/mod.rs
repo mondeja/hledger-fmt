@@ -169,7 +169,7 @@ pub(crate) fn format_content_with_options(
                                     || !value_first_part_decimal.is_empty()
                                 {
                                     " ".repeat(
-                                        2 + max_entry_name_len - name.len()
+                                        2 + max_entry_name_len - name.chars().count()
                                             + max_entry_value_first_part_commodity_leading_len
                                             - leading_commodity_len_from_units(
                                                 value_first_part_units,
