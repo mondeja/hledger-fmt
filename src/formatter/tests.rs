@@ -263,7 +263,7 @@ fn auto_posting_rule() {
 }
 
 #[test]
-fn two_full_transactions() {
+fn full_transaction_1() {
     assert_format(
         r#"
 2024-01-01 opening balances         ; At the start, declare pre-existing balances this way.
@@ -273,8 +273,23 @@ fn two_full_transactions() {
     equity:start                    ; One amount can be left blank. $-10500 is inferred here.
                                     ; Some of these accounts we didn't declare above,
                                     ; so -s/--strict would complain.
+"#,
+        r#"
+2024-01-01 opening balances  ; At the start, declare pre-existing balances this way.
+    assets:savings           $10000  ; Account names can be anything. lower case is easy to type.
+    assets:checking           $1000  ; assets, liabilities, equity, revenues, expenses are common.
+    liabilities:credit card   $-500  ; liabilities, equity, revenues balances are usually negative.
+    equity:start             ; One amount can be left blank. $-10500 is inferred here.
+    ; Some of these accounts we didn't declare above,
+    ; so -s/--strict would complain.
+"#,
+    );
+}
 
-2024-01-03 ! (12345) pay rent
+#[test]
+fn full_transaction_2() {
+    assert_format(
+        r#"2024-01-03 ! (12345) pay rent
     ; Additional transaction comment lines, indented.
     ; There can be a ! or * after the date meaning "pending" or "cleared".
     ; There can be a parenthesised (code) after the date/status.
@@ -282,16 +297,7 @@ fn two_full_transactions() {
     assets:checking          $-500  ; Minus means removed from this account (credit).
     expenses:rent             $500  ; Plus means added to this account (debit).
 "#,
-        r#"
-2024-01-01 opening balances  ; At the start, declare pre-existing balances this way.
-    assets:savings            $10000  ; Account names can be anything. lower case is easy to type.
-    assets:checking            $1000  ; assets, liabilities, equity, revenues, expenses are common.
-    liabilities:credit card    $-500  ; liabilities, equity, revenues balances are usually negative.
-    equity:start             ; One amount can be left blank. $-10500 is inferred here.
-    ; Some of these accounts we didn't declare above,
-    ; so -s/--strict would complain.
-
-2024-01-03 ! (12345) pay rent
+        r#"2024-01-03 ! (12345) pay rent
     ; Additional transaction comment lines, indented.
     ; There can be a ! or * after the date meaning "pending" or "cleared".
     ; There can be a parenthesised (code) after the date/status.
@@ -299,7 +305,7 @@ fn two_full_transactions() {
     assets:checking  $-500     ; Minus means removed from this account (credit).
     expenses:rent     $500     ; Plus means added to this account (debit).
 "#,
-    );
+    )
 }
 
 #[test]
@@ -330,8 +336,8 @@ fn transaction_with_shares() {
 "#,
         r#"
 2024-01-15 buy some shares, in two lots  ; Cost can be noted.
-    assets:investments:2024-01-15       2.0 AAAA   @    $1.50  ; @  means per-unit cost
-    assets:investments:2024-01-15-02    3.0 AAAA   @@   $4     ; @@ means total cost
+    assets:investments:2024-01-15       2.0 AAAA  @   $1.50  ; @  means per-unit cost
+    assets:investments:2024-01-15-02    3.0 AAAA  @@  $4     ; @@ means total cost
     ; ^ Per-lot subaccounts are sometimes useful.
     assets:checking                   $-7
 "#,
@@ -436,8 +442,8 @@ fn assert_balance_transaction() {
     assets:bank:gold                   0 gold               =     -10 gold
     assets:pouch                       0 gold               =       4 gold
     assets:pouch                       0 "Chocolate Frogs"  =       3 "Chocolate Frogs"
-    assets:investments:2024-01-15      0.0 AAAA             =       2.0 AAAA  @   $1.50
-    assets:investments:2024-01-15-02   0.0 AAAA             =       3.0 AAAA  @@  $4
+    assets:investments:2024-01-15      0.0 AAAA             =       2.0 AAAA             @   $1.50
+    assets:investments:2024-01-15-02   0.0 AAAA             =       3.0 AAAA             @@  $4
     liabilities:credit card           $0                    =   $-500
 "#,
     );
@@ -448,15 +454,17 @@ fn complex_transaction() {
     assert_format(
         r#"
 2024-01-15 hello  ; a comment
+    assets:checking   10000,00€  @ 32543.000345€  ==*  $56424324€  ; posting
     assets:checking  10000€  @ 32543.000345€  ==*  $56424324€  ; comments
     expenses:food      $10.010000 @@  $33.3  = 56€   ; must be
     foo  50000000.0000000000€   @@ 65579€  == $78.7   ; aligned
 "#,
         r#"
 2024-01-15 hello  ; a comment
-    assets:checking      10000€              @    32543.000345€  ==*  $56424324€   ; comments
-    expenses:food          $10.010000        @@     $33.3        =           56€   ; must be
-    foo               50000000.0000000000€   @@   65579€         ==         $78.7  ; aligned
+    assets:checking     10000,00€          @   32543.000345€  ==*  $56424324€   ; posting
+    assets:checking     10000€             @   32543.000345€  ==*  $56424324€   ; comments
+    expenses:food         $10.010000       @@    $33.3        =           56€   ; must be
+    foo              50000000.0000000000€  @@  65579€         ==         $78.7  ; aligned
 "#,
     );
 }
@@ -485,8 +493,8 @@ fn lots() {
     assets:investments:2024-01-15-02   0.0 AAAA            =      3.0 AAAA @@ $4
 "#,
         r#"2024-01-15 foobar
-    assets:investments:2024-01-15     0.0 AAAA  =   2.0 AAAA  @   $1.50
-    assets:investments:2024-01-15-02  0.0 AAAA  =   3.0 AAAA  @@  $4
+    assets:investments:2024-01-15     0.0 AAAA  =  2.0 AAAA  @   $1.50
+    assets:investments:2024-01-15-02  0.0 AAAA  =  3.0 AAAA  @@  $4
 "#,
     );
 }
@@ -511,8 +519,8 @@ fn issue_27() {
     assets:cash    USDT 120
 "#,
         r#"2024-01-02 exchange imaginary currency
-    income:cash  EUR-100   @@   USDT120
-    assets:cash  USDT120
+    income:cash  EUR -100  @@  USDT 120
+    assets:cash  USDT 120
 "#,
     )
 }
@@ -607,4 +615,18 @@ fn transaction_with_multi_spaced_description_and_valid_comment() {
     assets:B  -10 EUR
 "#,
     );
+}
+
+// https://github.com/mondeja/hledger-fmt/issues/32
+#[test]
+fn transaction_with_multiple_currency_formatting() {
+    assert_noop_format(
+        r#"2025-01-01 Example transaction
+    assets:acc1  £10,000.00
+    assets:acc2    1.000,00€
+    assets:acc3    £1000,00
+    assets:acc3    £1000€
+    equity
+"#,
+    )
 }
