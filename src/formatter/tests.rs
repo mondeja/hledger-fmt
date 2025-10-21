@@ -525,8 +525,9 @@ fn issue_27() {
     )
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/32
 #[test]
-fn issue_32_unicode() {
+fn unicode_in_entry_name() {
     assert_noop_format(
         r#"2025-09-23 * Zakupy
     a.ca      -106,98
