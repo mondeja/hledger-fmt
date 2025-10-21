@@ -572,3 +572,39 @@ tag foo
 "#,
     );
 }
+
+// https://github.com/mondeja/hledger-fmt/issues/40
+#[test]
+fn transaction_with_multi_spaced_description() {
+    assert_noop_format(
+        r#"2025-10-10  Description after two spaces
+    assets:A   10 EUR
+    assets:B  -10 EUR
+"#
+    );
+}
+
+#[test]
+fn transaction_with_multi_spaced_description_and_valid_comment() {
+    assert_format(
+        r#"2025-10-10               Description after multiple spaces; comment
+    assets:A   10 EUR
+    assets:B  -10 EUR
+"#,
+        r#"2025-10-10               Description after multiple spaces  ; comment
+    assets:A   10 EUR
+    assets:B  -10 EUR
+"#
+    );
+
+    assert_format(
+        r#"2025-10-10        Description after multiple spaces ; comment
+    assets:A   10 EUR
+    assets:B  -10 EUR
+"#,
+        r#"2025-10-10        Description after multiple spaces  ; comment
+    assets:A   10 EUR
+    assets:B  -10 EUR
+"#
+    );
+}
