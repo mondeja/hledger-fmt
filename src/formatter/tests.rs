@@ -580,7 +580,7 @@ fn transaction_with_multi_spaced_description() {
         r#"2025-10-10  Description after two spaces
     assets:A   10 EUR
     assets:B  -10 EUR
-"#
+"#,
     );
 }
 
@@ -594,7 +594,7 @@ fn transaction_with_multi_spaced_description_and_valid_comment() {
         r#"2025-10-10               Description after multiple spaces  ; comment
     assets:A   10 EUR
     assets:B  -10 EUR
-"#
+"#,
     );
 
     assert_format(
@@ -605,6 +605,6 @@ fn transaction_with_multi_spaced_description_and_valid_comment() {
         r#"2025-10-10        Description after multiple spaces  ; comment
     assets:A   10 EUR
     assets:B  -10 EUR
-"#
+"#,
     );
 }
