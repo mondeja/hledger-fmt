@@ -607,36 +607,22 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
 
                         let mut transaction_title = String::with_capacity(64);
                         transaction_title.push(c);
-                        let mut prev_was_whitespace = false;
-                        let mut is_periodic = false;
+                        let mut comment_prefix = None;
                         for (_, c) in chars_iter.by_ref() {
-                            if c.is_whitespace() {
-                                if prev_was_whitespace {
-                                    // periodic transactions (starts with "~ ") allow two
-                                    // spaces between the period and the title
-                                    if transaction_title.starts_with("~ ") && !is_periodic {
-                                        is_periodic = true;
-                                    } else {
-                                        transaction_title.pop(); // remove previous whitespace
-                                        break;
-                                    }
-                                }
-                                prev_was_whitespace = true;
-                            } else {
-                                prev_was_whitespace = false;
+                            if c == ';' {
+                                comment_prefix = Some(CommentPrefix::Semicolon);
+                                break;
+                            } else if c == '#' {
+                                comment_prefix = Some(CommentPrefix::Hash);
+                                break;
                             }
                             transaction_title.push(c);
                         }
 
-                        data.transaction_title = transaction_title;
-
-                        if !prev_was_whitespace {
-                            // end of line
-                            continue;
-                        }
+                        data.transaction_title = transaction_title.trim_end().to_string();
 
                         data.transaction_title_comment =
-                            parse_inline_comment(&mut chars_iter, lineno, 1, None);
+                            parse_inline_comment(&mut chars_iter, lineno, 1, comment_prefix);
                     }
                 }
             }
