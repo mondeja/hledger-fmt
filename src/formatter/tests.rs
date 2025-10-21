@@ -415,7 +415,7 @@ fn separate_transactions() {
 }
 
 #[test]
-fn assert_balance_transaction() {
+fn balance_transaction() {
     // assert balance transactions are formatted aligning the equal sign
     assert_format(
         r#"
@@ -627,6 +627,20 @@ fn transaction_with_multiple_currency_formatting() {
     assets:acc3    £1000,00
     assets:acc3    £1000€
     equity
+"#,
+    )
+}
+
+// https://github.com/mondeja/hledger-fmt/issues/32
+#[test]
+fn space_as_thousands_separator() {
+    assert_noop_format(
+        r#"2025-09-21 * Example transaction
+    a.bankaccount       -2 049,44
+    e.expanse              116,99
+    e.someotherexpense  $1 018,99
+    e.anotherexpense         1,99
+    e.thirdexpense
 "#,
     )
 }
