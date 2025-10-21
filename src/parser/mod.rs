@@ -2,7 +2,6 @@ pub mod errors;
 #[cfg(test)]
 mod tests;
 
-use crate::common::{leading_commodity_len_from_units, trailing_commodity_len_from_units};
 use errors::SyntaxError;
 
 /// A journal file
@@ -59,19 +58,14 @@ pub enum JournalCstNode {
         /// Maximum length of the entry names
         max_entry_name_len: usize,
 
-        max_entry_value_first_part_decimal_len: usize,
-        max_entry_value_first_part_numeric_units_len: usize,
-        max_entry_value_first_part_commodity_leading_len: usize,
-        max_entry_value_first_part_commodity_trailing_len: usize,
+        max_entry_value_first_part_before_decimals_len: usize,
+        max_entry_value_first_part_after_decimals_len: usize,
         max_entry_value_first_separator_len: usize,
-        max_entry_value_second_part_decimal_len: usize,
-        max_entry_value_second_part_units_len: usize,
-        max_entry_value_second_part_commodity_leading_len: usize,
+        max_entry_value_second_part_before_decimals_len: usize,
+        max_entry_value_second_part_after_decimals_len: usize,
         max_entry_value_second_separator_len: usize,
-        max_entry_value_third_part_decimal_len: usize,
-        max_entry_value_third_part_numeric_units_len: usize,
-        max_entry_value_third_separator_len: usize,
-        max_entry_value_fourth_part_numeric_units_len: usize,
+        max_entry_value_third_part_before_decimals_len: usize,
+        max_entry_value_third_part_after_decimals_len: usize,
     },
 }
 
@@ -122,36 +116,14 @@ pub enum DirectiveNode {
 pub struct TransactionEntry {
     /// Entry name
     pub name: String,
-    /// Entry value first part units
-    pub value_first_part_units: String,
-    /// Entry value first part units without counting characters that are not numbers
-    pub value_first_part_numeric_units: String,
-    /// Entry value first part decimal
-    pub value_first_part_decimal: String,
-    /// Entry value first separator
+    pub value_first_part_before_decimals: String,
+    pub value_first_part_after_decimals: String,
     pub value_first_separator: String,
-    /// Entry value sedonc part units
-    pub value_second_part_units: String,
-    /// Entry value second part units without counting characters that are not numbers
-    pub value_second_part_numeric_units: String,
-    /// Entry value second part decimal
-    pub value_second_part_decimal: String,
-    /// Entry value second separator
+    pub value_second_part_before_decimals: String,
+    pub value_second_part_after_decimals: String,
     pub value_second_separator: String,
-    /// Entry value third part units
-    pub value_third_part_units: String,
-    /// Entry value third part units without counting characters that are not numbers
-    pub value_third_part_numeric_units: String,
-    /// Entry value third part decimal
-    pub value_third_part_decimal: String,
-    /// Entry value third separator
-    pub value_third_separator: String,
-    /// Entry value fourth part units
-    pub value_fourth_part_units: String,
-    /// Entry value fourth part units without counting characters that are not numbers
-    pub value_fourth_part_numeric_units: String,
-    /// Entry value fourth part decimal
-    pub value_fourth_part_decimal: String,
+    pub value_third_part_before_decimals: String,
+    pub value_third_part_after_decimals: String,
     /// Comment associated with the entry
     pub comment: Option<SingleLineComment>,
 }
@@ -194,19 +166,14 @@ struct ParserTempData {
     first_entry_indent: usize,
     /// Maximum length of the entry names
     max_entry_name_len: usize,
-    max_entry_value_first_part_decimal_len: usize,
-    max_entry_value_first_part_numeric_units_len: usize,
-    max_entry_value_first_part_commodity_leading_len: usize,
-    max_entry_value_first_part_commodity_trailing_len: usize,
+    max_entry_value_first_part_before_decimals_len: usize,
+    max_entry_value_first_part_after_decimals_len: usize,
     max_entry_value_first_separator_len: usize,
-    max_entry_value_second_part_decimal_len: usize,
-    max_entry_value_second_part_units_len: usize,
-    max_entry_value_second_part_commodity_leading_len: usize,
+    max_entry_value_second_part_before_decimals_len: usize,
+    max_entry_value_second_part_after_decimals_len: usize,
     max_entry_value_second_separator_len: usize,
-    max_entry_value_third_part_decimal_len: usize,
-    max_entry_value_third_part_numeric_units_len: usize,
-    max_entry_value_third_separator_len: usize,
-    max_entry_value_fourth_part_numeric_units_len: usize,
+    max_entry_value_third_part_before_decimals_len: usize,
+    max_entry_value_third_part_after_decimals_len: usize,
 }
 
 impl ParserTempData {
@@ -222,19 +189,14 @@ impl ParserTempData {
             transaction_has_no_comment_entries: false,
             first_entry_indent: 0,
             max_entry_name_len: 0,
-            max_entry_value_first_part_decimal_len: 0,
-            max_entry_value_first_part_numeric_units_len: 0,
-            max_entry_value_first_part_commodity_leading_len: 0,
-            max_entry_value_first_part_commodity_trailing_len: 0,
+            max_entry_value_first_part_before_decimals_len: 0,
+            max_entry_value_first_part_after_decimals_len: 0,
             max_entry_value_first_separator_len: 0,
-            max_entry_value_second_part_decimal_len: 0,
-            max_entry_value_second_part_units_len: 0,
-            max_entry_value_second_part_commodity_leading_len: 0,
+            max_entry_value_second_part_before_decimals_len: 0,
+            max_entry_value_second_part_after_decimals_len: 0,
             max_entry_value_second_separator_len: 0,
-            max_entry_value_third_part_decimal_len: 0,
-            max_entry_value_third_part_numeric_units_len: 0,
-            max_entry_value_third_separator_len: 0,
-            max_entry_value_fourth_part_numeric_units_len: 0,
+            max_entry_value_third_part_before_decimals_len: 0,
+            max_entry_value_third_part_after_decimals_len: 0,
         }
     }
 }
@@ -525,74 +487,54 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
                             // for development: to raise errors, pass lineno and coln
                             p.parse(&entry_value)?; // , lineno + 1, coln)?;
 
-                            data.max_entry_value_first_part_decimal_len = data
-                                .max_entry_value_first_part_decimal_len
-                                .max(p.first_part_decimal.chars().count());
-                            data.max_entry_value_first_part_numeric_units_len = data
-                                .max_entry_value_first_part_numeric_units_len
-                                .max(p.first_part_numeric_units.len());
-                            data.max_entry_value_first_part_commodity_leading_len = data
-                                .max_entry_value_first_part_commodity_leading_len
-                                .max(leading_commodity_len_from_units(&p.first_part_units));
-                            data.max_entry_value_first_part_commodity_trailing_len = data
-                                .max_entry_value_first_part_commodity_trailing_len
-                                .max(trailing_commodity_len_from_units(&p.first_part_units));
+                            data.max_entry_value_first_part_before_decimals_len = data
+                                .max_entry_value_first_part_before_decimals_len
+                                .max(p.first_part_before_decimals.chars().count());
+                            data.max_entry_value_first_part_after_decimals_len = data
+                                .max_entry_value_first_part_after_decimals_len
+                                .max(p.first_part_after_decimals.chars().count());
 
                             data.max_entry_value_first_separator_len = data
                                 .max_entry_value_first_separator_len
                                 .max(p.first_separator.len());
 
-                            data.max_entry_value_second_part_decimal_len = data
-                                .max_entry_value_second_part_decimal_len
-                                .max(p.second_part_decimal.chars().count());
-                            data.max_entry_value_second_part_units_len = data
-                                .max_entry_value_second_part_units_len
-                                .max(p.second_part_units.chars().count());
-                            data.max_entry_value_second_part_commodity_leading_len = data
-                                .max_entry_value_second_part_commodity_leading_len
-                                .max(leading_commodity_len_from_units(&p.second_part_units));
+                            data.max_entry_value_second_part_before_decimals_len = data
+                                .max_entry_value_second_part_before_decimals_len
+                                .max(p.second_part_before_decimals.chars().count());
+                            data.max_entry_value_second_part_after_decimals_len = data
+                                .max_entry_value_second_part_after_decimals_len
+                                .max(p.second_part_after_decimals.chars().count());
 
                             data.max_entry_value_second_separator_len = data
                                 .max_entry_value_second_separator_len
                                 .max(p.second_separator.len());
 
-                            data.max_entry_value_third_part_decimal_len = data
-                                .max_entry_value_third_part_decimal_len
-                                .max(p.third_part_decimal.chars().count());
-                            data.max_entry_value_third_part_numeric_units_len = data
-                                .max_entry_value_third_part_numeric_units_len
-                                .max(p.third_part_numeric_units.len());
-
-                            data.max_entry_value_third_separator_len = data
-                                .max_entry_value_third_separator_len
-                                .max(p.third_separator.len());
-
-                            data.max_entry_value_fourth_part_numeric_units_len = data
-                                .max_entry_value_fourth_part_numeric_units_len
-                                .max(p.fourth_part_numeric_units.len());
+                            data.max_entry_value_third_part_before_decimals_len = data
+                                .max_entry_value_third_part_before_decimals_len
+                                .max(p.third_part_before_decimals.chars().count());
+                            data.max_entry_value_third_part_after_decimals_len = data
+                                .max_entry_value_third_part_after_decimals_len
+                                .max(p.third_part_after_decimals.chars().count());
 
                             data.transaction_has_no_comment_entries = true;
                             data.transaction_entries
                                 .push(TransactionNode::TransactionEntry(Box::new(
                                     TransactionEntry {
                                         name: entry_name,
-                                        value_first_part_decimal: p.first_part_decimal,
-                                        value_first_part_units: p.first_part_units,
-                                        value_first_part_numeric_units: p.first_part_numeric_units,
+                                        value_first_part_before_decimals: p
+                                            .first_part_before_decimals,
+                                        value_first_part_after_decimals: p
+                                            .first_part_after_decimals,
                                         value_first_separator: p.first_separator,
-                                        value_second_part_decimal: p.second_part_decimal,
-                                        value_second_part_units: p.second_part_units,
-                                        value_second_part_numeric_units: p
-                                            .second_part_numeric_units,
+                                        value_second_part_before_decimals: p
+                                            .second_part_before_decimals,
+                                        value_second_part_after_decimals: p
+                                            .second_part_after_decimals,
                                         value_second_separator: p.second_separator,
-                                        value_third_part_decimal: p.third_part_decimal,
-                                        value_third_part_units: p.third_part_units,
-                                        value_third_part_numeric_units: p.third_part_numeric_units,
-                                        value_third_separator: p.third_separator,
-                                        value_fourth_part_decimal: p.fourth_part_decimal,
-                                        value_fourth_part_units: p.fourth_part_units,
-                                        value_fourth_part_numeric_units: p
-                                            .fourth_part_numeric_units,
+                                        value_third_part_before_decimals: p
+                                            .third_part_before_decimals,
+                                        value_third_part_after_decimals: p
+                                            .third_part_after_decimals,
                                         comment,
                                     },
                                 )));
@@ -776,25 +718,20 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
         entries: data.transaction_entries.clone(),
         first_entry_indent: data.first_entry_indent,
         max_entry_name_len: data.max_entry_name_len,
-        max_entry_value_first_part_decimal_len: data.max_entry_value_first_part_decimal_len,
-        max_entry_value_first_part_numeric_units_len: data
-            .max_entry_value_first_part_numeric_units_len,
-        max_entry_value_first_part_commodity_leading_len: data
-            .max_entry_value_first_part_commodity_leading_len,
-        max_entry_value_first_part_commodity_trailing_len: data
-            .max_entry_value_first_part_commodity_trailing_len,
+        max_entry_value_first_part_before_decimals_len: data
+            .max_entry_value_first_part_before_decimals_len,
+        max_entry_value_first_part_after_decimals_len: data
+            .max_entry_value_first_part_after_decimals_len,
         max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
-        max_entry_value_second_part_decimal_len: data.max_entry_value_second_part_decimal_len,
-        max_entry_value_second_part_units_len: data.max_entry_value_second_part_units_len,
-        max_entry_value_second_part_commodity_leading_len: data
-            .max_entry_value_second_part_commodity_leading_len,
+        max_entry_value_second_part_before_decimals_len: data
+            .max_entry_value_second_part_before_decimals_len,
+        max_entry_value_second_part_after_decimals_len: data
+            .max_entry_value_second_part_after_decimals_len,
         max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
-        max_entry_value_third_part_decimal_len: data.max_entry_value_third_part_decimal_len,
-        max_entry_value_third_part_numeric_units_len: data
-            .max_entry_value_third_part_numeric_units_len,
-        max_entry_value_third_separator_len: data.max_entry_value_third_separator_len,
-        max_entry_value_fourth_part_numeric_units_len: data
-            .max_entry_value_fourth_part_numeric_units_len,
+        max_entry_value_third_part_before_decimals_len: data
+            .max_entry_value_third_part_before_decimals_len,
+        max_entry_value_third_part_after_decimals_len: data
+            .max_entry_value_third_part_after_decimals_len,
     });
     data.transaction_title.clear();
     data.transaction_title_comment = None;
@@ -802,45 +739,14 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
     data.transaction_has_no_comment_entries = false;
     data.first_entry_indent = 0;
     data.max_entry_name_len = 0;
-    data.max_entry_value_first_part_decimal_len = 0;
-    data.max_entry_value_first_part_numeric_units_len = 0;
-    data.max_entry_value_first_part_commodity_leading_len = 0;
-    data.max_entry_value_first_part_commodity_trailing_len = 0;
+    data.max_entry_value_first_part_before_decimals_len = 0;
+    data.max_entry_value_first_part_after_decimals_len = 0;
     data.max_entry_value_first_separator_len = 0;
-    data.max_entry_value_second_part_decimal_len = 0;
-    data.max_entry_value_second_part_units_len = 0;
-    data.max_entry_value_second_part_commodity_leading_len = 0;
+    data.max_entry_value_second_part_before_decimals_len = 0;
+    data.max_entry_value_second_part_after_decimals_len = 0;
     data.max_entry_value_second_separator_len = 0;
-    data.max_entry_value_third_part_decimal_len = 0;
-    data.max_entry_value_third_part_numeric_units_len = 0;
-    data.max_entry_value_third_separator_len = 0;
-    data.max_entry_value_fourth_part_numeric_units_len = 0;
-}
-
-fn split_number_in_units_decimal(value: &str) -> (String, String) {
-    let mut units_rev = String::with_capacity(value.len());
-    let mut decimal_rev = String::with_capacity(value.len());
-
-    let mut first_decimal_found = false;
-    for c in value.chars().rev() {
-        if !first_decimal_found {
-            decimal_rev.push(c);
-            if c == '.' || c == ',' {
-                first_decimal_found = true;
-            }
-        } else {
-            units_rev.push(c);
-        }
-    }
-
-    if decimal_rev.chars().count() == value.chars().count() {
-        (value.to_string(), "".to_string())
-    } else {
-        (
-            units_rev.chars().rev().collect(),
-            decimal_rev.chars().rev().collect(),
-        )
-    }
+    data.max_entry_value_third_part_before_decimals_len = 0;
+    data.max_entry_value_third_part_after_decimals_len = 0;
 }
 
 /// Entry value parser
@@ -869,24 +775,14 @@ fn split_number_in_units_decimal(value: &str) -> (String, String) {
 /// with their size in unit and decimal parts.
 #[derive(Default, Debug)]
 pub(crate) struct EntryValueParser {
-    first_part_units: String,
-    first_part_numeric_units: String,
-    first_part_decimal: String,
+    first_part_before_decimals: String,
+    first_part_after_decimals: String,
     first_separator: String,
-    second_part_units: String,
-    second_part_numeric_units: String,
-    second_part_decimal: String,
+    second_part_before_decimals: String,
+    second_part_after_decimals: String,
     second_separator: String,
-    third_part_units: String,
-    third_part_numeric_units: String,
-    third_part_decimal: String,
-
-    // in case that a entry value has lots (balance assertion and price)
-    // we need to store another group of separator + units
-    third_separator: String,
-    fourth_part_units: String,
-    fourth_part_numeric_units: String,
-    fourth_part_decimal: String,
+    third_part_before_decimals: String,
+    third_part_after_decimals: String,
 }
 
 #[derive(Debug)]
@@ -902,11 +798,6 @@ enum EntryValueParserState {
     ThirdPartCommodityBefore,
     ThirdPartNumber,
     ThirdPartCommodityAfter,
-    ThirdSeparator,
-    FourthPartCommodityBefore,
-    FourthPartNumber,
-    FourthPartCommodityAfter,
-    End,
 }
 
 impl EntryValueParser {
@@ -922,26 +813,29 @@ impl EntryValueParser {
         let mut first_part_value = String::with_capacity(value_length);
         let mut second_part_value = String::with_capacity(value_length);
         let mut third_part_value = String::with_capacity(value_length);
-        let mut fourth_part_value = String::with_capacity(value_length);
 
         for c in chars {
             //println!("state: {:?}, c: {:?}", state, c);
             match state {
                 FirstPartCommodityBefore => {
                     if c.is_whitespace() {
-                        if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                first_part_value.push(c);
-                            }
-                            current_spaces_in_a_row += 1;
-                        } else {
+                        current_spaces_in_a_row += 1;
+                        if current_commodity_is_quoted {
+                            first_part_value.push(c);
+                        } else if current_spaces_in_a_row > 1 {
                             // no commodity
                             state = FirstSeparator;
                             current_spaces_in_a_row = 0;
+                            current_commodity_is_quoted = false;
+                        } else {
+                            // first space
+                            first_part_value.push(c);
                         }
                     } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         first_part_value.push(c);
                         state = FirstPartNumber;
+                        current_spaces_in_a_row = 0;
+                        current_commodity_is_quoted = false;
                     } else if c == '"' {
                         first_part_value.push(c);
                         if current_commodity_is_quoted {
@@ -960,12 +854,9 @@ impl EntryValueParser {
                             first_part_value.push(c);
                             state = FirstPartCommodityAfter;
                         }
-                    } else if c == '@' {
+                    } else if c == '@' || c == '=' || c == '*' {
                         self.first_separator.push(c);
                         state = FirstSeparator;
-                    } else if c == '=' {
-                        self.second_separator.push(c);
-                        state = SecondSeparator;
                     } else if c == '"' {
                         first_part_value.push(c);
                         state = FirstPartCommodityAfter;
@@ -983,17 +874,17 @@ impl EntryValueParser {
                         if c == '"' {
                             first_part_value.push(c);
                             state = FirstSeparator;
+                            current_commodity_is_quoted = false;
                         } else {
                             first_part_value.push(c);
                         }
                     } else if c.is_whitespace() {
                         state = FirstSeparator;
-                    } else if c == '@' {
+                        current_commodity_is_quoted = false;
+                    } else if c == '@' || c == '*' || c == '=' {
                         self.first_separator.push(c);
                         state = FirstSeparator;
-                    } else if c == '=' {
-                        self.second_separator.push(c);
-                        state = SecondSeparator;
+                        current_commodity_is_quoted = false;
                     } else if c == '"' {
                         first_part_value.push(c);
                         current_commodity_is_quoted = true;
@@ -1003,11 +894,8 @@ impl EntryValueParser {
                     }
                 }
                 FirstSeparator => {
-                    if c == '@' {
+                    if c == '@' || c == '*' || c == '=' {
                         self.first_separator.push(c);
-                    } else if c == '=' {
-                        self.second_separator.push(c);
-                        state = SecondSeparator;
                     } else if !c.is_whitespace() {
                         second_part_value.push(c);
                         state = SecondPartCommodityBefore;
@@ -1016,19 +904,23 @@ impl EntryValueParser {
                 }
                 SecondPartCommodityBefore => {
                     if c.is_whitespace() {
-                        if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                second_part_value.push(c);
-                            }
-                            current_spaces_in_a_row += 1;
-                        } else {
+                        current_spaces_in_a_row += 1;
+                        if current_commodity_is_quoted {
+                            second_part_value.push(c);
+                        } else if current_spaces_in_a_row > 1 {
                             // no commodity
                             state = SecondSeparator;
                             current_spaces_in_a_row = 0;
+                            current_commodity_is_quoted = false;
+                        } else {
+                            // first space
+                            second_part_value.push(c);
                         }
                     } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         second_part_value.push(c);
                         state = SecondPartNumber;
+                        current_spaces_in_a_row = 0;
+                        current_commodity_is_quoted = false;
                     } else if c == '"' {
                         second_part_value.push(c);
                         if current_commodity_is_quoted {
@@ -1043,10 +935,11 @@ impl EntryValueParser {
                     if c.is_ascii_digit() || c == '.' || c == ',' {
                         second_part_value.push(c);
                     } else if c == ' ' {
+                        second_part_value.push(c);
                         if !second_part_value.is_empty() {
                             state = SecondPartCommodityAfter;
                         }
-                    } else if c == '=' {
+                    } else if c == '=' || c == '*' || c == '@' {
                         self.second_separator.push(c);
                         state = SecondSeparator;
                         current_spaces_in_a_row = 0;
@@ -1061,18 +954,27 @@ impl EntryValueParser {
                         if c == '"' {
                             second_part_value.push(c);
                             state = SecondSeparator;
+                            current_commodity_is_quoted = false;
                         } else {
                             second_part_value.push(c);
                         }
                     } else if c.is_whitespace() {
                         state = SecondSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if c == '@' || c == '*' || c == '=' {
+                        self.first_separator.push(c);
+                        state = SecondSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if c == '"' {
+                        second_part_value.push(c);
+                        current_commodity_is_quoted = true;
                     } else {
                         // really numbers are forbidden by hledger, but don't care
                         second_part_value.push(c);
                     }
                 }
                 SecondSeparator => {
-                    if c == '=' || c == '*' {
+                    if c == '=' || c == '*' || c == '@' {
                         self.second_separator.push(c);
                     } else if !c.is_whitespace() {
                         third_part_value.push(c);
@@ -1082,12 +984,15 @@ impl EntryValueParser {
                 ThirdPartCommodityBefore => {
                     if c.is_whitespace() {
                         if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                third_part_value.push(c);
+                            }
                             current_spaces_in_a_row += 1;
-                            third_part_value.push(c);
                         } else {
                             // no commodity
-                            state = ThirdSeparator;
-                            current_spaces_in_a_row = 0;
+                            //current_spaces_in_a_row = 0;
+                            // end
+                            break;
                         }
                     } else if c.is_ascii_digit() || c == '.' || c == ',' {
                         third_part_value.push(c);
@@ -1106,13 +1011,8 @@ impl EntryValueParser {
                     if c.is_ascii_digit() || c == '.' || c == ',' {
                         third_part_value.push(c);
                     } else if c == ' ' {
-                        if current_spaces_in_a_row == 0 {
-                            third_part_value.push(c);
-                            current_spaces_in_a_row += 1;
-                        } else {
-                            // no commodity
+                        if !third_part_value.is_empty() {
                             state = ThirdPartCommodityAfter;
-                            current_spaces_in_a_row = 0;
                         }
                     } else {
                         third_part_value.push(c);
@@ -1122,82 +1022,18 @@ impl EntryValueParser {
                 }
                 ThirdPartCommodityAfter => {
                     if current_commodity_is_quoted {
+                        third_part_value.push(c);
                         if c == '"' {
-                            third_part_value.push(c);
-                            state = ThirdSeparator;
-                        } else {
-                            third_part_value.push(c);
+                            // end
+                            break;
                         }
                     } else if c.is_whitespace() {
-                        state = ThirdSeparator;
+                        // end
+                        break;
                     } else {
                         // really numbers are forbidden by hledger, but don't care
                         third_part_value.push(c);
                     }
-                }
-                ThirdSeparator => {
-                    if c == '@' {
-                        self.third_separator.push(c);
-                    } else if !c.is_whitespace() {
-                        fourth_part_value.push(c);
-                        state = FourthPartCommodityBefore;
-                    }
-                }
-                FourthPartCommodityBefore => {
-                    if c.is_whitespace() {
-                        if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                fourth_part_value.push(c);
-                            }
-                            current_spaces_in_a_row += 1;
-                        } else {
-                            // no commodity
-                            state = End;
-                            current_spaces_in_a_row = 0;
-                        }
-                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
-                        fourth_part_value.push(c);
-                        state = FourthPartNumber;
-                    } else if c == '"' {
-                        fourth_part_value.push(c);
-                        if current_commodity_is_quoted {
-                            state = FourthPartNumber;
-                        }
-                        current_commodity_is_quoted = true;
-                    } else {
-                        fourth_part_value.push(c);
-                    }
-                }
-                FourthPartNumber => {
-                    if c.is_ascii_digit() || c == '.' || c == ',' {
-                        fourth_part_value.push(c);
-                    } else if c == ' ' {
-                        if !fourth_part_value.is_empty() {
-                            state = FourthPartCommodityAfter;
-                        }
-                    } else {
-                        fourth_part_value.push(c);
-                        state = FourthPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
-                    }
-                }
-                FourthPartCommodityAfter => {
-                    if current_commodity_is_quoted {
-                        if c == '"' {
-                            fourth_part_value.push(c);
-                            state = End;
-                        } else {
-                            fourth_part_value.push(c);
-                        }
-                    } else if c.is_whitespace() {
-                        state = End;
-                    } else {
-                        // really numbers are forbidden by hledger, but don't care
-                        fourth_part_value.push(c);
-                    }
-                }
-                End => {
-                    break;
                 }
             }
         }
@@ -1211,45 +1047,166 @@ impl EntryValueParser {
         if third_part_value.ends_with(' ') {
             third_part_value.pop();
         }
-        if fourth_part_value.ends_with(' ') {
-            fourth_part_value.pop();
-        }
 
-        let (units, decimal) = split_number_in_units_decimal(&first_part_value);
-        self.first_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
-        self.first_part_units = units;
-        self.first_part_decimal = decimal;
+        let (before_decimals, after_decimals) =
+            split_value_in_before_decimals_after_decimals(&first_part_value);
+        self.first_part_before_decimals = before_decimals;
+        self.first_part_after_decimals = after_decimals;
 
-        let (units, decimal) = split_number_in_units_decimal(&second_part_value);
-        self.second_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
-        self.second_part_units = units;
-        self.second_part_decimal = decimal;
+        let (before_decimals, after_decimals) =
+            split_value_in_before_decimals_after_decimals(&second_part_value);
+        self.second_part_before_decimals = before_decimals;
+        self.second_part_after_decimals = after_decimals;
 
-        let (units, decimal) = split_number_in_units_decimal(&third_part_value);
-        self.third_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
-        self.third_part_units = units;
-        self.third_part_decimal = decimal;
-
-        let (units, decimal) = split_number_in_units_decimal(&fourth_part_value);
-        self.fourth_part_numeric_units = units.chars().filter(|c| c.is_ascii_digit()).collect();
-        self.fourth_part_units = units;
-        self.fourth_part_decimal = decimal;
+        let (before_decimals, after_decimals) =
+            split_value_in_before_decimals_after_decimals(&third_part_value);
+        self.third_part_before_decimals = before_decimals;
+        self.third_part_after_decimals = after_decimals;
 
         Ok(())
     }
 }
 
-/*
-#[cfg(test)]
-mod test {
-    use crate::parser::EntryValueParser;
+fn split_value_in_before_decimals_after_decimals(value: &str) -> (String, String) {
+    if let Some(pos) = value.rfind(['.', ',']) {
+        let after = &value[pos + 1..];
+        if after.len() == 3 && after.chars().all(|c| c.is_ascii_digit()) {
+            return (value.to_string(), "".to_string());
+        } else {
+            let before = &value[..pos];
+            let after = &value[pos..];
+            return (before.to_string(), after.to_string());
+        }
+    }
 
-    #[test]
-    fn test_parser() {
-        let mut parser = EntryValueParser::default();
-        _ = parser.parse("EUR -100 @@ USDT 120");
-        println!("{:?}", parser);
-        assert!(false);
+    let mut idx = 0;
+    for c in value.chars() {
+        if c.is_ascii_digit() || c == ',' || c == '.' || c == '-' || c == '+' {
+            idx += c.len_utf8();
+        } else {
+            break;
+        }
+    }
+
+    let (before, after) = value.split_at(idx);
+    if before.is_empty() {
+        if after.ends_with(|c: char| c.is_ascii_digit()) {
+            // case $-1
+            (after.to_string(), before.to_string())
+        } else {
+            // case $453534€
+            for c in after.chars().rev() {
+                if c.is_ascii_digit() {
+                    break;
+                }
+                idx += c.len_utf8();
+            }
+            let (before, after) = value.split_at(after.len() - idx);
+            (before.to_string(), after.to_string())
+        }
+    } else {
+        (before.to_string(), after.to_string())
     }
 }
-*/
+
+#[cfg(test)]
+mod test {
+    use super::split_value_in_before_decimals_after_decimals;
+
+    #[test]
+    fn test_split_value_in_before_decimals_after_decimals() {
+        let (before, after) = split_value_in_before_decimals_after_decimals("1000.50€");
+        assert_eq!(before, "1000");
+        assert_eq!(after, ".50€");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("2000,75 USD");
+        assert_eq!(before, "2000");
+        assert_eq!(after, ",75 USD");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("3000 JPY");
+        assert_eq!(before, "3000");
+        assert_eq!(after, " JPY");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("4000");
+        assert_eq!(before, "4000");
+        assert_eq!(after, "");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("4000.");
+        assert_eq!(before, "4000");
+        assert_eq!(after, ".");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("5,000");
+        assert_eq!(before, "5,000");
+        assert_eq!(after, "");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("$-1");
+        assert_eq!(before, "$-1");
+        assert_eq!(after, "");
+
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("$-100000000000,000000000");
+        assert_eq!(before, "$-100000000000");
+        assert_eq!(after, ",000000000");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("100€");
+        assert_eq!(before, "100");
+        assert_eq!(after, "€");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("0 gold");
+        assert_eq!(before, "0");
+        assert_eq!(after, " gold");
+
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("0 \"Chocolate Frogs\"");
+        assert_eq!(before, "0");
+        assert_eq!(after, " \"Chocolate Frogs\"");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("$56424324€");
+        assert_eq!(before, "$56424324");
+        assert_eq!(after, "€");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("-10 gold");
+        assert_eq!(before, "-10");
+        assert_eq!(after, " gold");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("2.0 AAAA");
+        assert_eq!(before, "2");
+        assert_eq!(after, ".0 AAAA");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("$1.50");
+        assert_eq!(before, "$1");
+        assert_eq!(after, ".50");
+    }
+
+    #[test]
+    fn test_entry_value_parser_stock_lot() {
+        let mut parser = super::EntryValueParser::default();
+        parser.parse("0.0 AAAA  =  2.0 AAAA  @   $1.50").unwrap();
+
+        assert_eq!(parser.first_part_before_decimals, "0");
+        assert_eq!(parser.first_part_after_decimals, ".0 AAAA");
+        assert_eq!(parser.first_separator, "=");
+        assert_eq!(parser.second_part_before_decimals, "2");
+        assert_eq!(parser.second_part_after_decimals, ".0 AAAA");
+        assert_eq!(parser.second_separator, "@");
+        assert_eq!(parser.third_part_before_decimals, "$1");
+        assert_eq!(parser.third_part_after_decimals, ".50");
+    }
+
+    #[test]
+    fn test_entry_value_parser_chocolate_balance() {
+        let mut parser = super::EntryValueParser::default();
+        parser
+            .parse(r#"0 "Chocolate Frogs"  =       3 "Chocolate Frogs""#)
+            .unwrap();
+
+        assert_eq!(parser.first_part_before_decimals, "0");
+        assert_eq!(parser.first_part_after_decimals, " \"Chocolate Frogs\"");
+        assert_eq!(parser.first_separator, "=");
+        assert_eq!(parser.second_part_before_decimals, "3");
+        assert_eq!(parser.second_part_after_decimals, " \"Chocolate Frogs\"");
+        assert_eq!(parser.second_separator, "");
+        assert_eq!(parser.third_part_before_decimals, "");
+        assert_eq!(parser.third_part_after_decimals, "");
+    }
+}

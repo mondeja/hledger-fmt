@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 2025-10-21 - [0.3.3]
+
+- Fix alignments formatting multiple currency formats.
+
 ## 2025-10-21 - [0.3.2]
 
 ### Bug fixes
