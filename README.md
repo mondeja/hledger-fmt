@@ -135,7 +135,7 @@ See `hledger-fmt --help` for more information.
 ### Library
 
 ```rust
-use hledger_fmt::format_journal;
+use hledger_fmt::{format_journal, format_journal_bytes};
 
 fn main() {
     let journal = r#"
@@ -143,9 +143,13 @@ fn main() {
     Assets:Cash  $100
     Expenses:Food  $100
 "#;
-    let result = format_journal(journal, true).unwrap();
-    match result {
+    match format_journal(journal) {
         Ok(formatted) => println!("{formatted}"),
+        Err(e) => eprintln!("Error formatting journal: {e}"),
+    }
+
+    match format_journal_bytes(journal.as_bytes()) {
+        Ok(formatted_bytes) => println!("{}", String::from_utf8_lossy(&formatted_bytes)),
         Err(e) => eprintln!("Error formatting journal: {e}"),
     }
 }
