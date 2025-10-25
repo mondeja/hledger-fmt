@@ -2,38 +2,32 @@ pub mod errors;
 #[cfg(test)]
 mod tests;
 
+use crate::byte_str::ByteStr;
 use errors::SyntaxError;
 
 /// A journal file
-pub type JournalFile = Vec<JournalCstNode>;
+pub type JournalFile<'a> = Vec<JournalCstNode<'a>>;
 
 /// Each node in a journal file
-#[derive(Debug, PartialEq)]
-pub enum JournalCstNode {
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub enum JournalCstNode<'a> {
     /// An empty line
-    EmptyLine {
-        /// Line number in the file (1-indexed)
-        lineno: usize,
-    },
+    EmptyLine,
 
     /// Multiline comment
     MultilineComment {
         /// The comment content
-        content: String,
-        /// Starting line number in the file (1-indexed)
-        lineno_start: usize,
-        /// Ending line number in the file (1-indexed)
-        lineno_end: usize,
+        content: ByteStr<'a>,
     },
 
-    SingleLineComment(SingleLineComment),
+    SingleLineComment(SingleLineComment<'a>),
 
     /// Directives group
     DirectivesGroup {
         /// Directives in the group
-        nodes: Vec<DirectiveNode>,
+        nodes: Vec<DirectiveNode<'a>>,
         /// Maximum length of the directive name + content
-        max_name_content_len: usize,
+        max_name_content_len: u16,
     },
 
     /// A transaction.
@@ -48,30 +42,31 @@ pub enum JournalCstNode {
     /// ```
     Transaction {
         /// Transaction title
-        title: String,
+        title: ByteStr<'a>,
         /// Transaction title comment
-        title_comment: Option<SingleLineComment>,
+        title_comment: Option<SingleLineComment<'a>>,
         /// Transaction entries
-        entries: Vec<TransactionNode>,
+        entries: Vec<TransactionNode<'a>>,
         /// Indent of the first transaction entry
-        first_entry_indent: usize,
+        first_entry_indent: u8,
         /// Maximum length of the entry names
-        max_entry_name_len: usize,
+        max_entry_name_len: u8,
 
-        max_entry_value_first_part_before_decimals_len: usize,
-        max_entry_value_first_part_after_decimals_len: usize,
-        max_entry_value_first_separator_len: usize,
-        max_entry_value_second_part_before_decimals_len: usize,
-        max_entry_value_second_part_after_decimals_len: usize,
-        max_entry_value_second_separator_len: usize,
-        max_entry_value_third_part_before_decimals_len: usize,
-        max_entry_value_third_part_after_decimals_len: usize,
+        max_entry_value_first_part_before_decimals_len: u8,
+        max_entry_value_first_part_after_decimals_len: u8,
+        max_entry_value_first_separator_len: u8,
+        max_entry_value_second_part_before_decimals_len: u8,
+        max_entry_value_second_part_after_decimals_len: u8,
+        max_entry_value_second_separator_len: u8,
+        max_entry_value_third_part_before_decimals_len: u8,
+        max_entry_value_third_part_after_decimals_len: u8,
     },
 }
 
 /// Prefix of a single line comment
-#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u8)]
+#[derive(Clone, Copy)]
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
 pub enum CommentPrefix {
     /// '#'
     Hash = b'#',
@@ -80,63 +75,62 @@ pub enum CommentPrefix {
 }
 
 /// A single line comment (starting with '#' or ';')
-#[derive(Debug, Clone, PartialEq)]
-pub struct SingleLineComment {
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub struct SingleLineComment<'a> {
     /// The comment content
-    pub content: String,
+    pub content: ByteStr<'a>,
     /// The comment prefix ('#' or ';')
     pub prefix: CommentPrefix,
-    /// Line number in the file (1-indexed)
-    lineno: usize,
-    /// Column number in the file (1-indexed)
-    pub colno: usize,
+    /// The column number where the comment starts
+    pub indent: u8,
 }
 
 /// A directive
-#[derive(Debug, Clone, PartialEq)]
-pub struct Directive {
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub struct Directive<'a> {
     /// The directive name
-    pub name: String,
+    pub name: ByteStr<'a>,
     /// The directive content
-    pub content: String,
+    pub content: ByteStr<'a>,
     /// Comment associated with the directive
-    pub comment: Option<SingleLineComment>,
+    pub comment: Option<SingleLineComment<'a>>,
 }
 
 /// A directive or a single line comment
-#[derive(Debug, Clone, PartialEq)]
-pub enum DirectiveNode {
-    Directive(Directive),
-    Subdirective(String), // includes comments after the subdirective content
-    SingleLineComment(SingleLineComment),
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub enum DirectiveNode<'a> {
+    Directive(Directive<'a>),
+    Subdirective(ByteStr<'a>), // includes comments after the subdirective content
+    SingleLineComment(SingleLineComment<'a>),
 }
 
 /// A transaction entry
-#[derive(Debug, Clone, PartialEq)]
-pub struct TransactionEntry {
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub struct TransactionEntry<'a> {
     /// Entry name
-    pub name: String,
-    pub value_first_part_before_decimals: String,
-    pub value_first_part_after_decimals: String,
-    pub value_first_separator: String,
-    pub value_second_part_before_decimals: String,
-    pub value_second_part_after_decimals: String,
-    pub value_second_separator: String,
-    pub value_third_part_before_decimals: String,
-    pub value_third_part_after_decimals: String,
+    pub name: ByteStr<'a>,
+    pub value_first_part_before_decimals: ByteStr<'a>,
+    pub value_first_part_after_decimals: ByteStr<'a>,
+    pub value_first_separator: ByteStr<'a>,
+    pub value_second_part_before_decimals: ByteStr<'a>,
+    pub value_second_part_after_decimals: ByteStr<'a>,
+    pub value_second_separator: ByteStr<'a>,
+    pub value_third_part_before_decimals: ByteStr<'a>,
+    pub value_third_part_after_decimals: ByteStr<'a>,
     /// Comment associated with the entry
-    pub comment: Option<SingleLineComment>,
+    pub comment: Option<SingleLineComment<'a>>,
 }
 
 /// A transaction entry or a single line comment
-#[derive(Debug, Clone, PartialEq)]
-pub enum TransactionNode {
-    TransactionEntry(Box<TransactionEntry>),
-    SingleLineComment(SingleLineComment),
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub enum TransactionNode<'a> {
+    TransactionEntry(Box<TransactionEntry<'a>>),
+    SingleLineComment(SingleLineComment<'a>),
 }
 
+#[derive(PartialEq)]
 /// Current state of the parser
-#[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Debug))]
 enum ParserState {
     /// Start state
     Start,
@@ -144,22 +138,23 @@ enum ParserState {
     MultilineComment,
 }
 
+#[derive(Default)]
 /// Temporary data used by the parser
-struct ParserTempData {
-    /// Line number where the current multiline comment started
-    multiline_comment_start_lineno: usize,
-    /// Content of the current multiline comment
-    multiline_comment_content: String,
+struct ParserTempData<'a> {
+    /// Location of the content of the current multiline comment
+    multiline_comment_byte_start: usize,
+    multiline_comment_byte_end: usize,
     /// Directives group nodes
-    directives_group_nodes: Vec<DirectiveNode>,
+    directives_group_nodes: Vec<DirectiveNode<'a>>,
     /// Maximum length of the directive names + contents
     directives_group_max_name_content_len: usize,
     /// Transaction title
-    transaction_title: String,
+    transaction_title_byte_start: usize,
+    transaction_title_byte_end: usize,
     /// Transaction title comment
-    transaction_title_comment: Option<SingleLineComment>,
+    transaction_title_comment: Option<SingleLineComment<'a>>,
     /// Transaction entries
-    transaction_entries: Vec<TransactionNode>,
+    transaction_entries: Vec<TransactionNode<'a>>,
     /// If the current transaction has entries (ignoring comments)
     transaction_has_no_comment_entries: bool,
     /// Indent of the first transaction entry
@@ -176,405 +171,181 @@ struct ParserTempData {
     max_entry_value_third_part_after_decimals_len: usize,
 }
 
-impl ParserTempData {
+impl<'a> ParserTempData<'a> {
     fn new() -> Self {
-        Self {
-            multiline_comment_start_lineno: 0,
-            multiline_comment_content: String::new(),
-            directives_group_nodes: Vec::new(),
-            directives_group_max_name_content_len: 0,
-            transaction_title: String::new(),
-            transaction_title_comment: None,
-            transaction_entries: Vec::new(),
-            transaction_has_no_comment_entries: false,
-            first_entry_indent: 0,
-            max_entry_name_len: 0,
-            max_entry_value_first_part_before_decimals_len: 0,
-            max_entry_value_first_part_after_decimals_len: 0,
-            max_entry_value_first_separator_len: 0,
-            max_entry_value_second_part_before_decimals_len: 0,
-            max_entry_value_second_part_after_decimals_len: 0,
-            max_entry_value_second_separator_len: 0,
-            max_entry_value_third_part_before_decimals_len: 0,
-            max_entry_value_third_part_after_decimals_len: 0,
-        }
+        Self::default()
     }
 }
 
-pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> {
+pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
+    #[cfg(any(test, feature = "tracing"))]
+    {
+        // TODO: if not using here, the `bytes` argument is propagared to all children
+        // even when using skip(bytes)
+        let _span = tracing::span!(
+            tracing::Level::TRACE,
+            "parse_content",
+            bytes = format!("{}", crate::tracing::Utf8Slice(bytes))
+        )
+        .entered();
+    }
+
     let mut state = ParserState::Start;
     let mut data = ParserTempData::new();
     let mut journal = Vec::new();
 
-    for (lineno, line) in content.lines().enumerate() {
-        let mut chars_iter = line.chars().enumerate();
+    let mut lineno = 0;
+    let mut byteno = 0;
+    let bytes_length = bytes.len();
+    while byteno < bytes_length {
+        lineno += 1;
 
-        if line.is_empty() {
-            process_empty_line(lineno + 1, &mut journal, &mut data);
+        let newline_pos = bytes[byteno..].iter().position(|&b| b == b'\n');
+        println!("newline_pos: {:?}", newline_pos);
+        let line_end = match newline_pos {
+            Some(pos) => {
+                // byteno + pos + 1, // including \n byte index
+                // if next position is \r\n, skip also \r
+                if bytes[byteno + pos + 1..].get(0) == Some(&b'\r') {
+                    byteno + pos + 2
+                } else {
+                    byteno + pos + 1
+                }
+            }
+            None => bytes_length
+        };
+        let line = &bytes[byteno..line_end];
+        byteno = line_end; // +1 to skip \n
+
+        if line == b"\n" || line == b"\r\n" {
+            process_empty_line(&mut journal, &mut data, &bytes);
             continue;
+        }
+
+        #[cfg(any(test, feature = "tracing"))]
+        {
+            let _span = tracing::span!(
+                tracing::Level::TRACE,
+                "parse_content(line)",
+                line = format!("{}", crate::tracing::Utf8Slice(line)),
+                lineno,
+                state = ?state,
+            )
+            .entered();
         }
 
         match state {
             ParserState::Start => {
-                if let Some((colno, c)) = chars_iter.next() {
-                    if c == '#' || c == ';' {
-                        let prefix = if c == '#' {
-                            CommentPrefix::Hash
-                        } else {
-                            CommentPrefix::Semicolon
-                        };
-
-                        let content = line[colno + 1..].to_string();
-                        let comment = SingleLineComment {
-                            content,
-                            prefix,
-                            lineno: lineno + 1,
-                            colno: colno + 1,
-                        };
-
-                        if data.directives_group_nodes.is_empty()
-                            && data.transaction_title.is_empty()
-                        {
-                            journal.push(JournalCstNode::SingleLineComment(comment));
-                        } else if !data.transaction_title.is_empty() {
-                            data.transaction_entries
-                                .push(TransactionNode::SingleLineComment(comment));
-                        } else {
-                            data.directives_group_nodes
-                                .push(DirectiveNode::SingleLineComment(comment));
-                        }
-                    } else if colno == 0 && line == "comment" {
-                        state = ParserState::MultilineComment;
-                        data.multiline_comment_start_lineno = lineno + 1;
-                        data.multiline_comment_content = String::with_capacity(128);
-                    } else if colno == 0 && line.chars().all(char::is_whitespace) {
-                        process_empty_line(lineno + 1, &mut journal, &mut data);
-                    } else if colno == 0
-                        && (line.starts_with("account ")
-                            || line.starts_with("commodity ")
-                            || line.starts_with("decimal-mark ")
-                            || line.starts_with("payee ")
-                            || line.starts_with("tag ")
-                            || line.starts_with("include ")
-                            || line.starts_with("P ")
-                            || line.starts_with("apply account ")
-                            || line.starts_with("D ")
-                            || line.starts_with("Y ")
-                            // other Ledger directives
-                            || line.starts_with("apply fixed ")
-                            || line.starts_with("apply tag ")
-                            || line.starts_with("assert ")
-                            || line.starts_with("capture ")
-                            || line.starts_with("check ")
-                            || line.starts_with("define ")
-                            || line.starts_with("bucket / A ")
-                            || line.starts_with("end apply fixed")
-                            || line.starts_with("end apply tag")
-                            || line.starts_with("end apply year")
-                            || line.starts_with("end tag")
-                            || line.starts_with("eval")
-                            || line.starts_with("expr")
-                            || line.starts_with("python")  // 'python' CODE not supported
-                            || line.starts_with("tag ")
-                            || line.starts_with("value ")
-                            || line.starts_with("--command-line-flags"))
+                if line[0] == b'#' || line[0] == b';' {
+                    #[cfg(any(test, feature = "tracing"))]
                     {
-                        parse_directive(
-                            line.split_whitespace().next().unwrap(),
-                            &mut chars_iter,
+                        let _span = tracing::span!(
+                            tracing::Level::TRACE,
+                            "parse_content(single line comment)",
+                            "line[0]" = format!("{}", line[0] as char),
+                        )
+                        .entered();
+                    }
+                    // single line comment
+                    let prefix = if line[0] == b'#' {
+                        CommentPrefix::Hash
+                    } else {
+                        CommentPrefix::Semicolon
+                    };
+
+                    let content = ByteStr::from(&line[1..]);
+                    let comment = SingleLineComment {
+                        content,
+                        prefix,
+                        indent: 0u8,
+                    };
+
+                    if data.directives_group_nodes.is_empty()
+                        && data.transaction_title_byte_start == 0
+                        && data.transaction_title_byte_end == 0
+                    {
+                        journal.push(JournalCstNode::SingleLineComment(comment));
+                    } else if data.transaction_title_byte_start != 0
+                        || data.transaction_title_byte_end != 0
+                    {
+                        data.transaction_entries
+                            .push(TransactionNode::SingleLineComment(comment));
+                    } else {
+                        data.directives_group_nodes
+                            .push(DirectiveNode::SingleLineComment(comment));
+                    }
+                } else if line == b"comment" {
+                    state = ParserState::MultilineComment;
+                    data.multiline_comment_byte_start = byteno;
+                } else if line.iter().all(|&b| b.is_ascii_whitespace()) {
+                    process_empty_line(&mut journal, &mut data, &bytes);
+                } else if line.starts_with(b"account ")
+                        || line.starts_with(b"commodity ")
+                        || line.starts_with(b"decimal-mark ")
+                        || line.starts_with(b"payee ")
+                        || line.starts_with(b"tag ")
+                        || line.starts_with(b"include ")
+                        || line.starts_with(b"P ")
+                        || line.starts_with(b"apply account ")
+                        || line.starts_with(b"D ")
+                        || line.starts_with(b"Y ")
+                        // other Ledger directives
+                        || line.starts_with(b"apply fixed ")
+                        || line.starts_with(b"apply tag ")
+                        || line.starts_with(b"assert ")
+                        || line.starts_with(b"capture ")
+                        || line.starts_with(b"check ")
+                        || line.starts_with(b"define ")
+                        || line.starts_with(b"bucket / A ")
+                        || line.starts_with(b"end apply fixed")
+                        || line.starts_with(b"end apply tag")
+                        || line.starts_with(b"end apply year")
+                        || line.starts_with(b"end tag")
+                        || line.starts_with(b"eval")
+                        || line.starts_with(b"expr")
+                        || line.starts_with(b"python")  // 'python' CODE not supported
+                        || line.starts_with(b"tag ")
+                        || line.starts_with(b"value ")
+                        || line.starts_with(b"--command-line-flags")
+                {
+                    parse_directive(first_word(&line), &line, &mut data);
+                } else if line[0].is_ascii_whitespace() {
+                    if data.transaction_title_byte_start == 0
+                        && data.transaction_title_byte_end == 0
+                    {
+                        // probably single line comment that starts with a space,
+                        // but could be also a subdirective
+                        parse_single_line_comment_or_subdirective(
+                            &line,
                             lineno,
                             &mut data,
-                        );
-                    } else if colno == 0 && c.is_whitespace() {
-                        if data.transaction_title.is_empty() {
-                            // probably single line comment that starts with a space
-                            let mut content = String::with_capacity(128);
-                            let mut is_subdirective = false;
-
-                            let mut comment_prefix = None;
-                            let mut colno = 0;
-                            for (coln, c) in chars_iter.by_ref() {
-                                if comment_prefix.is_some() {
-                                    content.push(c);
-                                    continue;
-                                }
-
-                                if is_subdirective {
-                                    content.push(c);
-                                    continue;
-                                }
-
-                                if c == '#' {
-                                    comment_prefix = Some(CommentPrefix::Hash);
-                                    colno = coln + 1;
-                                } else if c == ';' {
-                                    comment_prefix = Some(CommentPrefix::Semicolon);
-                                    colno = coln + 1;
-                                } else if !c.is_whitespace() {
-                                    // if we're inside a directives group, is a subdirective
-                                    if !data.directives_group_nodes.is_empty() {
-                                        is_subdirective = true;
-                                        content.push(c);
-                                        continue;
-                                    }
-
-                                    return Err(SyntaxError {
-                                        message: format!("Unexpected character {c:?}"),
-                                        lineno: lineno + 1,
-                                        colno_start: coln + 1,
-                                        colno_end: coln + 2,
-                                        expected: "'#', ';' or newline",
-                                    });
-                                }
-                            }
-
-                            if let Some(prefix) = comment_prefix {
-                                let comment = SingleLineComment {
-                                    content,
-                                    prefix,
-                                    lineno: lineno + 1,
-                                    colno,
-                                };
-                                if data.directives_group_nodes.is_empty() {
-                                    journal.push(JournalCstNode::SingleLineComment(comment));
-                                } else if !data.transaction_title.is_empty() {
-                                    data.transaction_entries
-                                        .push(TransactionNode::SingleLineComment(comment));
-                                } else {
-                                    data.directives_group_nodes
-                                        .push(DirectiveNode::SingleLineComment(comment));
-                                }
-                            } else if is_subdirective {
-                                data.directives_group_nodes
-                                    .push(DirectiveNode::Subdirective(content));
-                            }
-                        } else {
-                            // maybe inside transaction entry
-                            let mut at_indent = c != '\t';
-                            let mut indent = if at_indent { 1 } else { 4 };
-                            let mut entry_name = String::with_capacity(64);
-                            let mut prev_was_whitespace = c.is_whitespace();
-                            let mut is_comment_only = false;
-                            while let Some((coln, c)) = chars_iter.next() {
-                                if at_indent {
-                                    if c == '\t' {
-                                        indent += 4;
-                                    } else if c.is_whitespace() {
-                                        indent += 1;
-                                    } else if c == ';' || c == '#' {
-                                        // transaction entry with empty value
-                                        let maybe_comment = parse_inline_comment(
-                                            &mut chars_iter,
-                                            lineno,
-                                            coln + 1,
-                                            Some(if c == '#' {
-                                                CommentPrefix::Hash
-                                            } else {
-                                                CommentPrefix::Semicolon
-                                            }),
-                                        );
-                                        if let Some(comment) = maybe_comment {
-                                            is_comment_only = true;
-                                            // if the first comment is indented with >=2 and first entry indent
-                                            // is not setted, set it
-                                            //
-                                            // this is needed for transactions without entries, only comments
-                                            if indent >= 2 && data.first_entry_indent == 0 {
-                                                data.first_entry_indent = indent;
-                                            }
-                                            data.transaction_entries
-                                                .push(TransactionNode::SingleLineComment(comment));
-                                        }
-                                        break;
-                                    } else {
-                                        at_indent = false;
-                                        entry_name.push(c);
-                                    }
-                                } else {
-                                    if c == '\t' {
-                                        break;
-                                    } else if c.is_whitespace() {
-                                        if prev_was_whitespace {
-                                            entry_name.pop(); // remove previous whitespace
-                                            break;
-                                        }
-                                        prev_was_whitespace = true;
-                                    } else {
-                                        prev_was_whitespace = false;
-
-                                        if c == ';' && entry_name.is_empty() {
-                                            // inside comment
-                                            let maybe_comment = parse_inline_comment(
-                                                &mut chars_iter,
-                                                lineno,
-                                                coln + 1,
-                                                Some(CommentPrefix::Semicolon),
-                                            );
-                                            if let Some(comment) = maybe_comment {
-                                                is_comment_only = true;
-                                                data.transaction_entries.push(
-                                                    TransactionNode::SingleLineComment(comment),
-                                                );
-                                            }
-                                            break;
-                                        }
-                                    }
-                                    entry_name.push(c);
-                                }
-                            }
-
-                            if is_comment_only {
-                                continue;
-                            }
-
-                            if data.first_entry_indent == 0 {
-                                data.first_entry_indent = indent;
-                            } else if !data.transaction_has_no_comment_entries {
-                                // if the first entry is a comment, the indent is not
-                                // properly setted so we need to set it here
-                                data.first_entry_indent = indent;
-                            }
-                            data.max_entry_name_len =
-                                data.max_entry_name_len.max(entry_name.chars().count());
-
-                            let mut entry_value = String::with_capacity(64);
-                            let mut inside_entry_value = false;
-                            let mut comment = None;
-
-                            while let Some((coln, c)) = chars_iter.next() {
-                                if !inside_entry_value {
-                                    if c == ';' || c == '#' {
-                                        // transaction entry with empty value
-                                        comment = parse_inline_comment(
-                                            &mut chars_iter,
-                                            lineno,
-                                            coln + 1,
-                                            Some(if c == '#' {
-                                                CommentPrefix::Hash
-                                            } else {
-                                                CommentPrefix::Semicolon
-                                            }),
-                                        );
-                                        break;
-                                    } else if !c.is_whitespace() {
-                                        inside_entry_value = true;
-                                        entry_value.push(c);
-                                        continue;
-                                    }
-                                } else if c == ';' || c == '#' {
-                                    comment = parse_inline_comment(
-                                        &mut chars_iter,
-                                        lineno,
-                                        coln + 1,
-                                        Some(if c == '#' {
-                                            CommentPrefix::Hash
-                                        } else {
-                                            CommentPrefix::Semicolon
-                                        }),
-                                    );
-                                    break;
-                                } else {
-                                    entry_value.push(c);
-                                }
-                            }
-
-                            // let coln = entry_value.chars().count()
-                            //     + entry_name.chars().count()
-                            //     + indent + 1;
-                            entry_value = entry_value.trim_end().to_string();
-
-                            let mut p = EntryValueParser::default();
-                            // for development: to raise errors, pass lineno and coln
-                            p.parse(&entry_value)?; // , lineno + 1, coln)?;
-
-                            data.max_entry_value_first_part_before_decimals_len = data
-                                .max_entry_value_first_part_before_decimals_len
-                                .max(p.first_part_before_decimals.chars().count());
-                            data.max_entry_value_first_part_after_decimals_len = data
-                                .max_entry_value_first_part_after_decimals_len
-                                .max(p.first_part_after_decimals.chars().count());
-
-                            data.max_entry_value_first_separator_len = data
-                                .max_entry_value_first_separator_len
-                                .max(p.first_separator.len());
-
-                            data.max_entry_value_second_part_before_decimals_len = data
-                                .max_entry_value_second_part_before_decimals_len
-                                .max(p.second_part_before_decimals.chars().count());
-                            data.max_entry_value_second_part_after_decimals_len = data
-                                .max_entry_value_second_part_after_decimals_len
-                                .max(p.second_part_after_decimals.chars().count());
-
-                            data.max_entry_value_second_separator_len = data
-                                .max_entry_value_second_separator_len
-                                .max(p.second_separator.len());
-
-                            data.max_entry_value_third_part_before_decimals_len = data
-                                .max_entry_value_third_part_before_decimals_len
-                                .max(p.third_part_before_decimals.chars().count());
-                            data.max_entry_value_third_part_after_decimals_len = data
-                                .max_entry_value_third_part_after_decimals_len
-                                .max(p.third_part_after_decimals.chars().count());
-
-                            data.transaction_has_no_comment_entries = true;
-                            data.transaction_entries
-                                .push(TransactionNode::TransactionEntry(Box::new(
-                                    TransactionEntry {
-                                        name: entry_name,
-                                        value_first_part_before_decimals: p
-                                            .first_part_before_decimals,
-                                        value_first_part_after_decimals: p
-                                            .first_part_after_decimals,
-                                        value_first_separator: p.first_separator,
-                                        value_second_part_before_decimals: p
-                                            .second_part_before_decimals,
-                                        value_second_part_after_decimals: p
-                                            .second_part_after_decimals,
-                                        value_second_separator: p.second_separator,
-                                        value_third_part_before_decimals: p
-                                            .third_part_before_decimals,
-                                        value_third_part_after_decimals: p
-                                            .third_part_after_decimals,
-                                        comment,
-                                    },
-                                )));
-                        }
-                    } else if colno == 0 {
-                        // starts transaction
-
-                        // if we are in a current transaction, save it adding a newline
-                        if !data.transaction_title.is_empty() {
-                            process_empty_line(lineno, &mut journal, &mut data);
-                        }
-
-                        let mut transaction_title = String::with_capacity(64);
-                        transaction_title.push(c);
-                        let mut comment_prefix = None;
-                        for (_, c) in chars_iter.by_ref() {
-                            if c == ';' {
-                                comment_prefix = Some(CommentPrefix::Semicolon);
-                                break;
-                            } else if c == '#' {
-                                comment_prefix = Some(CommentPrefix::Hash);
-                                break;
-                            }
-                            transaction_title.push(c);
-                        }
-
-                        data.transaction_title = transaction_title.trim_end().to_string();
-
-                        data.transaction_title_comment =
-                            parse_inline_comment(&mut chars_iter, lineno, 1, comment_prefix);
+                            &mut journal,
+                        )?;
+                    } else {
+                        // maybe inside transaction entry, but could be also a single
+                        // line comment inside a transaction group
+                        parse_transaction_entry(&line, &mut data);
                     }
+                } else {
+                    // starts transaction
+
+                    // if we are in a current transaction, save it adding a newline
+                    if data.transaction_title_byte_start == 0
+                        && data.transaction_title_byte_end == 0
+                    {
+                        process_empty_line(&mut journal, &mut data, &bytes);
+                    }
+
+                    data.transaction_title_byte_start = byteno;
+                    parse_transaction_title(&line, &mut data);
                 }
             }
             ParserState::MultilineComment => {
-                if line == "end comment" {
-                    save_multiline_comment(&mut data, &mut journal, lineno + 1);
+                if line == b"end comment" {
+                    save_multiline_comment(&mut data, &mut journal, &bytes);
                     state = ParserState::Start;
                 } else {
-                    data.multiline_comment_content.push_str(line);
-                    data.multiline_comment_content.push('\n');
+                    data.multiline_comment_byte_end = byteno;
                 }
             }
         }
@@ -582,160 +353,619 @@ pub fn parse_content(content: &str) -> Result<JournalFile, errors::SyntaxError> 
 
     // Hledger v1.40 traits not ended multiline comments as a multiline comment
     if state == ParserState::MultilineComment {
-        save_multiline_comment(&mut data, &mut journal, content.lines().count());
+        save_multiline_comment(&mut data, &mut journal, &bytes);
     }
 
     if !data.directives_group_nodes.is_empty() {
         save_directives_group_nodes(&mut data, &mut journal);
-    } else if !data.transaction_title.is_empty() {
-        save_transaction(&mut data, &mut journal);
+    } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
+        save_transaction(&mut data, &mut journal, &bytes);
     }
 
     Ok(journal)
 }
 
-fn process_empty_line(lineno: usize, journal: &mut Vec<JournalCstNode>, data: &mut ParserTempData) {
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(journal, bytes),
+        fields(
+            data = %{
+                let directives_count = data.directives_group_nodes.len();
+                let transaction_title_byte_start = data.transaction_title_byte_start;
+                let transaction_title_byte_end = data.transaction_title_byte_end;
+                format!(
+                    "[directives={directives_count} \
+                    transaction_title_byte_start={transaction_title_byte_start}, \
+                    transaction_title_byte_end={transaction_title_byte_end}]"
+                )
+            }
+        )
+    )
+)]
+fn process_empty_line<'a>(
+    journal: &mut Vec<JournalCstNode<'a>>,
+    data: &mut ParserTempData<'a>,
+    bytes: &'a [u8],
+) {
     if !data.directives_group_nodes.is_empty() {
         save_directives_group_nodes(data, journal);
-    } else if !data.transaction_title.is_empty() {
-        save_transaction(data, journal);
+    } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
+        save_transaction(data, journal, &bytes);
     }
-    journal.push(JournalCstNode::EmptyLine { lineno });
+    journal.push(JournalCstNode::EmptyLine);
 }
 
-fn parse_directive(
-    name: &str,
-    chars_iter: &mut impl Iterator<Item = (usize, char)>,
-    lineno: usize,
-    data: &mut ParserTempData,
-) {
-    let name_chars_count = name.chars().count();
-    let mut content = String::with_capacity(name_chars_count);
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        fields(
+            line = %format!("{:?}", crate::tracing::Utf8Slice(line)),
+            name = %format!("{:?}", crate::tracing::Utf8Slice(name)),
+            data = %{
+                let directives_count = data.directives_group_nodes.len();
+                let directives_group_max_name_content_len = data.directives_group_max_name_content_len;
+                format!("[directives={directives_count} \
+                         directives_group_max_name_content_len={directives_group_max_name_content_len}]")
+            }
+        )
+    )
+)]
+fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData<'a>) {
+    let name_length = name.len();
+    let line_length = line.len();
+    let start = name_length + 1;
+    let mut end = start;
+
     let mut prev_was_whitespace = false;
     let mut last_colno = 0;
-    for _ in 0..name.chars().count() {
-        chars_iter.next();
-    }
     let mut comment_colno_padding = 1;
-    for (colno, c) in chars_iter.by_ref() {
-        if c == '\t' {
-            last_colno = colno;
+
+    while end < line_length {
+        let c = line[end];
+        if c == b'\t' {
+            last_colno = end;
             comment_colno_padding = 4;
             break;
         }
-        if c.is_whitespace() {
+
+        if c.is_ascii_whitespace() {
             if prev_was_whitespace {
                 // double whitespace, end of content
-                last_colno = colno;
-                content.pop(); // remove previous whitespace
+                last_colno = end - 1;
                 break;
             }
             prev_was_whitespace = true;
         } else {
             prev_was_whitespace = false;
         }
-        content.push(c);
+        end += 1;
     }
     let mut comment = None;
     if last_colno != 0 {
-        // not end of line
-        comment = parse_inline_comment(chars_iter, lineno, comment_colno_padding, None);
+        // it should be a comment
+        comment = parse_inline_comment(line, line_length, comment_colno_padding, None);
     }
 
-    let content_len = content.chars().count();
+    let name = ByteStr::from(name);
+    let content = ByteStr::from(&line[start..last_colno]);
+    save_directive(name, content, comment, data);
+}
+
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(data),
+        fields(
+            comment = %match &comment {
+                Some(c) => format!("Some({:?})", crate::tracing::Utf8Slice(&c.content)),
+                None => "None".to_string(),
+            },
+        )
+    )
+)]
+fn save_directive<'a>(
+    name: ByteStr<'a>,
+    content: ByteStr<'a>,
+    comment: Option<SingleLineComment<'a>>,
+    data: &mut ParserTempData<'a>,
+) {
+    let content_len = content.chars_count();
+    let name_length = name.chars_count();
     data.directives_group_nodes
         .push(DirectiveNode::Directive(Directive {
-            name: name.to_string(),
+            name,
             content,
             comment,
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
-        .max(content_len + name_chars_count);
+        .max(content_len + name_length);
 }
 
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        fields(
+            line = %format!("{:?}", crate::tracing::Utf8Slice(line)),
+        )
+    )
+)]
 fn parse_inline_comment(
-    chars_iter: &mut impl Iterator<Item = (usize, char)>,
-    lineno: usize,
+    line: &[u8],
+    line_length: usize,
     colno_padding: usize,
     from_comment_prefix: Option<CommentPrefix>,
 ) -> Option<SingleLineComment> {
     let mut comment_prefix = from_comment_prefix;
-    let mut comment_content = String::with_capacity(128);
-    let mut first_colno = colno_padding;
-    for (colno, c) in chars_iter.by_ref() {
+    let mut start = colno_padding;
+    let mut end = start;
+    while end < line_length {
         if comment_prefix.is_none() {
-            if c == '#' {
+            let c = line[end];
+            if c == b'#' {
                 comment_prefix = Some(CommentPrefix::Hash);
-                first_colno += colno;
-            } else if c == ';' {
+                start = end + 1;
+                end = line_length;
+                break;
+            } else if c == b';' {
                 comment_prefix = Some(CommentPrefix::Semicolon);
-                first_colno += colno;
-            } else if c == '\t' {
-                first_colno += 3;
-            } else {
-                continue;
+                start = end + 1;
+                end = line_length;
+                break;
             }
-        } else {
-            comment_content.push(c);
         }
+        end += 1;
     }
+
+    let content = ByteStr::from(&line[start..end]);
     comment_prefix.map(|prefix| SingleLineComment {
-        content: comment_content,
+        content,
         prefix,
-        lineno: lineno + 1,
-        colno: first_colno,
+        indent: colno_padding as u8,
     })
 }
 
-fn save_multiline_comment(
-    data: &mut ParserTempData,
-    journal: &mut Vec<JournalCstNode>,
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(journal),
+        fields(
+            line = %format!("{:?}", crate::tracing::Utf8Slice(line)),
+            data = %{
+                let directives_count = data.directives_group_nodes.len();
+                let entries_count = data.transaction_entries.len();
+                format!("[directives={directives_count} entries={entries_count}]")
+            }
+        )
+    )
+)]
+fn parse_single_line_comment_or_subdirective<'a>(
+    line: &'a [u8],
     lineno: usize,
-) {
-    journal.push(JournalCstNode::MultilineComment {
-        content: data.multiline_comment_content.clone(),
-        lineno_start: data.multiline_comment_start_lineno,
-        lineno_end: lineno,
-    });
-    data.multiline_comment_content.clear();
-    data.multiline_comment_start_lineno = 0;
+    data: &mut ParserTempData<'a>,
+    journal: &mut Vec<JournalCstNode<'a>>,
+) -> Result<(), SyntaxError> {
+    let mut is_subdirective = false;
+    let mut comment_prefix = None;
+    let mut content_start = 0;
+    let mut end = content_start;
+    let line_length = line.len();
+
+    while end < line_length {
+        let c = line[end];
+        if c == b'#' {
+            comment_prefix = Some(CommentPrefix::Hash);
+            content_start = end;
+            end = line_length;
+            break;
+        } else if c == b';' {
+            comment_prefix = Some(CommentPrefix::Semicolon);
+            content_start = end;
+            end = line_length;
+            break;
+        } else if !c.is_ascii_whitespace() {
+            // if we're inside a directives group, is a subdirective
+            if !data.directives_group_nodes.is_empty() {
+                is_subdirective = true;
+                content_start = end;
+                end = line_length;
+                break;
+            }
+
+            return Err(SyntaxError {
+                message: format!("Unexpected character {c:?}"),
+                lineno: lineno + 1,
+                colno_start: end + 1,
+                colno_end: end + 2,
+                expected: "'#', ';' or newline",
+            });
+        }
+        end += 1;
+    }
+
+    let content = ByteStr::from(&line[content_start..end]);
+    if let Some(prefix) = comment_prefix {
+        let comment = SingleLineComment {
+            content,
+            prefix,
+            indent: content_start as u8,
+        };
+        if data.directives_group_nodes.is_empty() {
+            journal.push(JournalCstNode::SingleLineComment(comment));
+        } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
+            data.transaction_entries
+                .push(TransactionNode::SingleLineComment(comment));
+        } else {
+            data.directives_group_nodes
+                .push(DirectiveNode::SingleLineComment(comment));
+        }
+    } else if is_subdirective {
+        data.directives_group_nodes
+            .push(DirectiveNode::Subdirective(content));
+    }
+
+    Ok(())
 }
 
-fn save_directives_group_nodes(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>) {
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(bytes, journal),
+        fields(
+            data = %{
+                let multiline_comment_byte_start = data.multiline_comment_byte_start;
+                let multiline_comment_byte_end = data.multiline_comment_byte_end;
+                format!(
+                    "[multiline_comment_byte_start={multiline_comment_byte_start} \
+                      multiline_comment_byte_end={multiline_comment_byte_end}]"
+                )
+            }
+        )
+    )
+)]
+fn save_multiline_comment<'a>(
+    data: &mut ParserTempData<'a>,
+    journal: &mut Vec<JournalCstNode<'a>>,
+    bytes: &'a [u8],
+) {
+    let content = ByteStr::from(
+        &bytes[data.multiline_comment_byte_start - 1..data.multiline_comment_byte_end],
+    );
+    journal.push(JournalCstNode::MultilineComment { content });
+    data.multiline_comment_byte_start = 0;
+    data.multiline_comment_byte_end = 0;
+}
+
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(journal),
+        fields(
+            data = %{
+                let directives_count = data.directives_group_nodes.len();
+                let directives_group_max_name_content_len = data.directives_group_max_name_content_len;
+                format!(
+                    "[directives={directives_count} \
+                     directives_group_max_name_content_len={directives_group_max_name_content_len}]"
+                )
+            }
+        )
+    )
+)]
+fn save_directives_group_nodes<'a>(
+    data: &mut ParserTempData<'a>,
+    journal: &mut Vec<JournalCstNode<'a>>,
+) {
     journal.push(JournalCstNode::DirectivesGroup {
-        nodes: data.directives_group_nodes.clone(),
-        max_name_content_len: data.directives_group_max_name_content_len,
+        nodes: std::mem::take(&mut data.directives_group_nodes),
+        max_name_content_len: data.directives_group_max_name_content_len as u16,
     });
-    data.directives_group_nodes.clear();
     data.directives_group_max_name_content_len = 0;
 }
 
-fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>) {
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        fields(
+            line = %format!("{:?}", crate::tracing::Utf8Slice(line)),
+            data = %{
+                let first_entry_indent = data.first_entry_indent;
+                let transaction_has_no_comment_entries = data.transaction_has_no_comment_entries;
+                let entries_count = data.transaction_entries.len();
+                format!(
+                    "[first_entry_indent={first_entry_indent} \
+                     transaction_has_no_comment_entries={transaction_has_no_comment_entries} \
+                     entries={entries_count}]"
+                )
+            }
+        )
+    )
+)]
+fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
+    let mut at_indent = line[0] != b'\t';
+    let mut indent = if at_indent { 1 } else { 4 };
+    let mut entry_name_start = 0;
+    let mut entry_name_end = 0;
+    let mut prev_was_whitespace = line[0].is_ascii_whitespace();
+
+    let line_length = line.len();
+    let start = 0;
+    let mut end = start;
+    while end < line_length {
+        let c = line[end];
+        end += 1;
+        if at_indent {
+            if c == b'\t' {
+                indent += 4;
+            } else if c.is_ascii_whitespace() {
+                indent += 1;
+            } else if c == b';' || c == b'#' {
+                // transaction entry with empty value
+                let maybe_comment = parse_inline_comment(
+                    line,
+                    line_length,
+                    end,
+                    Some(if c == b'#' {
+                        CommentPrefix::Hash
+                    } else {
+                        CommentPrefix::Semicolon
+                    }),
+                );
+                if let Some(comment) = maybe_comment {
+                    // if the first comment is indented with >=2 and first entry indent
+                    // is not setted, set it
+                    //
+                    // this is needed for transactions without entries, only comments
+                    if indent >= 2 && data.first_entry_indent == 0 {
+                        data.first_entry_indent = indent;
+                    }
+                    data.transaction_entries
+                        .push(TransactionNode::SingleLineComment(comment));
+                    return; // is comment only
+                }
+                break;
+            } else {
+                at_indent = false;
+                entry_name_start = end - 1;
+                entry_name_end = entry_name_start;
+            }
+        } else {
+            if c == b'\t' {
+                break;
+            } else if c.is_ascii_whitespace() {
+                if prev_was_whitespace {
+                    entry_name_end = end - 1; // remove previous whitespace
+                    break;
+                }
+                prev_was_whitespace = true;
+            } else {
+                prev_was_whitespace = false;
+
+                if c == b';' && entry_name_end == 0 {
+                    // inside comment in transactions group
+                    let maybe_comment = parse_inline_comment(
+                        line,
+                        line_length,
+                        end,
+                        Some(CommentPrefix::Semicolon),
+                    );
+                    if let Some(comment) = maybe_comment {
+                        data.transaction_entries
+                            .push(TransactionNode::SingleLineComment(comment));
+                        return; // is comment only
+                    }
+                    break;
+                }
+            }
+            entry_name_end = end;
+        }
+    }
+
+    let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
+
+    if data.first_entry_indent == 0 {
+        data.first_entry_indent = indent;
+    } else if !data.transaction_has_no_comment_entries {
+        // if the first entry is a comment, the indent is not
+        // properly setted so we need to set it here
+        data.first_entry_indent = indent;
+    }
+    data.max_entry_name_len = data.max_entry_name_len.max(entry_name.chars_count());
+
+    let mut inside_entry_value = false;
+    let mut comment = None;
+    let mut entry_value_start = end;
+    let mut entry_value_end = entry_value_start;
+
+    while end < line_length {
+        let c = line[end];
+        end += 1;
+        if !inside_entry_value {
+            if c == b';' || c == b'#' {
+                // transaction entry with empty value
+                comment = parse_inline_comment(
+                    line,
+                    line_length,
+                    end,
+                    Some(if c == b'#' {
+                        CommentPrefix::Hash
+                    } else {
+                        CommentPrefix::Semicolon
+                    }),
+                );
+                break;
+            } else if !c.is_ascii_whitespace() {
+                inside_entry_value = true;
+                entry_value_start = end - 1;
+                entry_value_end = entry_value_start;
+                continue;
+            }
+        } else if c == b';' || c == b'#' {
+            comment = parse_inline_comment(
+                line,
+                line_length,
+                end,
+                Some(if c == b'#' {
+                    CommentPrefix::Hash
+                } else {
+                    CommentPrefix::Semicolon
+                }),
+            );
+            break;
+        } else {
+            entry_value_end = end;
+        }
+    }
+
+    // let coln = entry_value.chars().count()
+    //     + entry_name.chars().count()
+    //     + indent + 1;
+    let entry_value = &line[entry_value_start..entry_value_end];
+    let mut parser = EntryValueParser::new();
+    let p = parser.parse(&entry_value);
+
+    data.max_entry_value_first_part_before_decimals_len = data
+        .max_entry_value_first_part_before_decimals_len
+        .max(p.first_part_before_decimals.chars_count());
+    data.max_entry_value_first_part_after_decimals_len = data
+        .max_entry_value_first_part_after_decimals_len
+        .max(p.first_part_after_decimals.chars_count());
+
+    data.max_entry_value_first_separator_len = data
+        .max_entry_value_first_separator_len
+        .max(p.first_separator.len());
+
+    data.max_entry_value_second_part_before_decimals_len = data
+        .max_entry_value_second_part_before_decimals_len
+        .max(p.second_part_before_decimals.chars_count());
+    data.max_entry_value_second_part_after_decimals_len = data
+        .max_entry_value_second_part_after_decimals_len
+        .max(p.second_part_after_decimals.chars_count());
+
+    data.max_entry_value_second_separator_len = data
+        .max_entry_value_second_separator_len
+        .max(p.second_separator.len());
+
+    data.max_entry_value_third_part_before_decimals_len = data
+        .max_entry_value_third_part_before_decimals_len
+        .max(p.third_part_before_decimals.chars_count());
+    data.max_entry_value_third_part_after_decimals_len = data
+        .max_entry_value_third_part_after_decimals_len
+        .max(p.third_part_after_decimals.chars_count());
+
+    data.transaction_has_no_comment_entries = true;
+    data.transaction_entries
+        .push(TransactionNode::TransactionEntry(Box::new(
+            TransactionEntry {
+                name: entry_name,
+                value_first_part_before_decimals: p.first_part_before_decimals,
+                value_first_part_after_decimals: p.first_part_after_decimals,
+                value_first_separator: p.first_separator,
+                value_second_part_before_decimals: p.second_part_before_decimals,
+                value_second_part_after_decimals: p.second_part_after_decimals,
+                value_second_separator: p.second_separator,
+                value_third_part_before_decimals: p.third_part_before_decimals,
+                value_third_part_after_decimals: p.third_part_after_decimals,
+                comment,
+            },
+        )));
+}
+
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(data),
+        fields(
+            line = %format!("{:?}", crate::tracing::Utf8Slice(line)),
+        )
+    )
+)]
+fn parse_transaction_title<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
+    let line_length = line.len();
+    let mut end = 0;
+    let mut comment_prefix = None;
+    while end < line_length {
+        let c = line[end];
+        end += 1;
+        if c == b';' {
+            comment_prefix = Some(CommentPrefix::Semicolon);
+            break;
+        } else if c == b'#' {
+            comment_prefix = Some(CommentPrefix::Hash);
+            break;
+        }
+    }
+
+    data.transaction_title_byte_end = end;
+    data.transaction_title_comment = parse_inline_comment(line, line_length, end, comment_prefix);
+}
+
+#[cfg_attr(
+    any(test, feature = "tracing"),
+    tracing::instrument(
+        level = "trace",
+        skip(bytes, journal),
+        fields(
+            data = %{
+                let transaction_title_byte_start = data.transaction_title_byte_start;
+                let transaction_title_byte_end = data.transaction_title_byte_end;
+                let entries_count = data.transaction_entries.len();
+                format!(
+                    "[transaction_title_byte_start={transaction_title_byte_start} \
+                     transaction_title_byte_end={transaction_title_byte_end} \
+                     entries={entries_count}]"
+                )
+            }
+        )
+    )
+)]
+fn save_transaction<'a>(
+    data: &mut ParserTempData<'a>,
+    journal: &mut Vec<JournalCstNode<'a>>,
+    bytes: &'a [u8],
+) {
+    let title = ByteStr::from(
+        &bytes[data.transaction_title_byte_start - 1..data.transaction_title_byte_end],
+    );
     journal.push(JournalCstNode::Transaction {
-        title: data.transaction_title.clone(),
-        title_comment: data.transaction_title_comment.clone(),
-        entries: data.transaction_entries.clone(),
-        first_entry_indent: data.first_entry_indent,
-        max_entry_name_len: data.max_entry_name_len,
+        title,
+        title_comment: data.transaction_title_comment.take(),
+        entries: std::mem::take(&mut data.transaction_entries),
+        first_entry_indent: data.first_entry_indent as u8,
+        max_entry_name_len: data.max_entry_name_len as u8,
         max_entry_value_first_part_before_decimals_len: data
-            .max_entry_value_first_part_before_decimals_len,
+            .max_entry_value_first_part_before_decimals_len
+            as u8,
         max_entry_value_first_part_after_decimals_len: data
-            .max_entry_value_first_part_after_decimals_len,
-        max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
+            .max_entry_value_first_part_after_decimals_len
+            as u8,
+        max_entry_value_first_separator_len: data.max_entry_value_first_separator_len as u8,
         max_entry_value_second_part_before_decimals_len: data
-            .max_entry_value_second_part_before_decimals_len,
+            .max_entry_value_second_part_before_decimals_len
+            as u8,
         max_entry_value_second_part_after_decimals_len: data
-            .max_entry_value_second_part_after_decimals_len,
-        max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
+            .max_entry_value_second_part_after_decimals_len
+            as u8,
+        max_entry_value_second_separator_len: data.max_entry_value_second_separator_len as u8,
         max_entry_value_third_part_before_decimals_len: data
-            .max_entry_value_third_part_before_decimals_len,
+            .max_entry_value_third_part_before_decimals_len
+            as u8,
         max_entry_value_third_part_after_decimals_len: data
-            .max_entry_value_third_part_after_decimals_len,
+            .max_entry_value_third_part_after_decimals_len
+            as u8,
     });
-    data.transaction_title.clear();
-    data.transaction_title_comment = None;
-    data.transaction_entries.clear();
+    data.transaction_title_byte_start = 0;
+    data.transaction_title_byte_end = 0;
     data.transaction_has_no_comment_entries = false;
     data.first_entry_indent = 0;
     data.max_entry_name_len = 0;
@@ -773,16 +1003,29 @@ fn save_transaction(data: &mut ParserTempData, journal: &mut Vec<JournalCstNode>
 ///
 /// In order to format the transaction entries, we must extract each part of the value
 /// with their size in unit and decimal parts.
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub(crate) struct EntryValueParser {
-    first_part_before_decimals: String,
-    first_part_after_decimals: String,
-    first_separator: String,
-    second_part_before_decimals: String,
-    second_part_after_decimals: String,
-    second_separator: String,
-    third_part_before_decimals: String,
-    third_part_after_decimals: String,
+    first_part_value_start: usize,
+    first_part_value_end: usize,
+    first_separator_start: usize,
+    first_separator_end: usize,
+    second_part_value_start: usize,
+    second_part_value_end: usize,
+    second_separator_start: usize,
+    second_separator_end: usize,
+    third_part_value_start: usize,
+    third_part_value_end: usize,
+}
+
+pub(crate) struct EntryValueParserReturn<'a> {
+    pub first_part_before_decimals: ByteStr<'a>,
+    pub first_part_after_decimals: ByteStr<'a>,
+    pub first_separator: ByteStr<'a>,
+    pub second_part_before_decimals: ByteStr<'a>,
+    pub second_part_after_decimals: ByteStr<'a>,
+    pub second_separator: ByteStr<'a>,
+    pub third_part_before_decimals: ByteStr<'a>,
+    pub third_part_after_decimals: ByteStr<'a>,
 }
 
 #[derive(Debug)]
@@ -801,8 +1044,77 @@ enum EntryValueParserState {
 }
 
 impl EntryValueParser {
-    pub(crate) fn parse(&mut self, value: &str) -> Result<(), SyntaxError> {
-        let chars = value.chars();
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[inline]
+    fn is_number_char(c: u8) -> bool {
+        c.is_ascii_digit() || c == b'.' || c == b','
+    }
+
+    #[inline]
+    fn is_separator_char(c: u8) -> bool {
+        c == b'@' || c == b'*' || c == b'='
+    }
+
+    #[inline]
+    fn update_first_part_value(&mut self, end: usize) {
+        if self.first_part_value_start == 0 && self.first_part_value_end == 0 {
+            self.first_part_value_start = end - 1;
+        }
+        self.first_part_value_end = end;
+    }
+
+    #[inline]
+    fn is_first_part_value_empty(&self) -> bool {
+        self.first_part_value_start == 0 && self.first_part_value_end == 0
+    }
+
+    #[inline]
+    fn update_first_separator(&mut self, end: usize) {
+        if self.first_separator_start == 0 && self.first_separator_end == 0 {
+            self.first_separator_start = end - 1;
+        }
+        self.first_separator_end = end;
+    }
+
+    #[inline]
+    fn update_second_part_value(&mut self, end: usize) {
+        if self.second_part_value_start == 0 && self.second_part_value_end == 0 {
+            self.second_part_value_start = end - 1;
+        }
+        self.second_part_value_end = end;
+    }
+
+    #[inline]
+    fn is_second_part_value_empty(&self) -> bool {
+        self.second_part_value_start == 0 && self.second_part_value_end == 0
+    }
+
+    #[inline]
+    fn update_second_separator(&mut self, end: usize) {
+        if self.second_separator_start == 0 && self.second_separator_end == 0 {
+            self.second_separator_start = end - 1;
+        }
+        self.second_separator_end = end;
+    }
+
+    #[inline]
+    fn update_third_part_value(&mut self, end: usize) {
+        if self.third_part_value_start == 0 && self.third_part_value_end == 0 {
+            self.third_part_value_start = end - 1;
+        }
+        self.third_part_value_end = end;
+    }
+
+    #[inline]
+    fn is_third_part_value_empty(&self) -> bool {
+        self.third_part_value_start == 0 && self.third_part_value_end == 0
+    }
+
+    pub(crate) fn parse<'a>(&mut self, value: &'a [u8]) -> EntryValueParserReturn<'a> {
+        //let chars = value.chars();
         let value_length = value.len();
 
         use EntryValueParserState::*;
@@ -810,10 +1122,241 @@ impl EntryValueParser {
 
         let mut current_spaces_in_a_row = 0;
         let mut current_commodity_is_quoted = false;
+
+        /*
         let mut first_part_value = String::with_capacity(value_length);
         let mut second_part_value = String::with_capacity(value_length);
         let mut third_part_value = String::with_capacity(value_length);
+        */
 
+        let mut end = 0;
+        while end < value_length {
+            let c = value[end];
+            end += 1;
+            match state {
+                FirstPartCommodityBefore => {
+                    if c.is_ascii_whitespace() {
+                        current_spaces_in_a_row += 1;
+                        if current_commodity_is_quoted {
+                            self.update_first_part_value(end);
+                        } else if current_spaces_in_a_row > 1 {
+                            // no commodity
+                            state = FirstSeparator;
+                            current_spaces_in_a_row = 0;
+                            current_commodity_is_quoted = false;
+                        } else {
+                            // first space
+                            current_spaces_in_a_row = 1;
+                        }
+                    } else if Self::is_number_char(c) {
+                        self.update_first_part_value(end);
+                        state = FirstPartNumber;
+                        current_spaces_in_a_row = 0;
+                        current_commodity_is_quoted = false;
+                    } else if c == b'"' {
+                        self.update_first_part_value(end);
+                        if current_commodity_is_quoted {
+                            state = FirstPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        self.update_first_part_value(end);
+                    }
+                }
+                FirstPartNumber => {
+                    if Self::is_number_char(c) {
+                        self.update_first_part_value(end);
+                    } else if c.is_ascii_whitespace() {
+                        if self.is_first_part_value_empty() {
+                            continue;
+                        }
+                        state = FirstPartCommodityAfter;
+                    } else if Self::is_separator_char(c) {
+                        self.update_first_separator(end);
+                        state = FirstSeparator;
+                    } else if c == b'"' {
+                        self.update_first_part_value(end);
+                        state = FirstPartCommodityAfter;
+                    } else {
+                        if c == b'"' {
+                            current_commodity_is_quoted = true;
+                        }
+                        self.update_first_part_value(end);
+                        state = FirstPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                FirstPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        self.update_first_part_value(end);
+                        if c == b'"' {
+                            state = FirstSeparator;
+                            current_commodity_is_quoted = false;
+                        }
+                    } else if c.is_ascii_whitespace() {
+                        state = FirstSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if Self::is_separator_char(c) {
+                        self.update_first_separator(end);
+                        state = FirstSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if c == b'"' {
+                        self.update_first_part_value(end);
+                        current_commodity_is_quoted = true;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        self.update_first_part_value(end);
+                    }
+                }
+                FirstSeparator => {
+                    if Self::is_separator_char(c) {
+                        self.update_first_separator(end);
+                    } else if !c.is_ascii_whitespace() {
+                        self.update_second_part_value(end);
+                        state = SecondPartCommodityBefore;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                SecondPartCommodityBefore => {
+                    if c.is_ascii_whitespace() {
+                        current_spaces_in_a_row += 1;
+                        if current_commodity_is_quoted || current_spaces_in_a_row < 2 {
+                            self.update_second_part_value(end);
+                        } else {
+                            // no commodity
+                            state = SecondSeparator;
+                            current_spaces_in_a_row = 0;
+                            current_commodity_is_quoted = false;
+                        }
+                    } else if Self::is_number_char(c) {
+                        self.update_second_part_value(end);
+                        state = SecondPartNumber;
+                        current_spaces_in_a_row = 0;
+                        current_commodity_is_quoted = false;
+                    } else if c == b'"' {
+                        self.update_second_part_value(end);
+                        if current_commodity_is_quoted {
+                            state = SecondPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        self.update_second_part_value(end);
+                    }
+                }
+                SecondPartNumber => {
+                    if Self::is_number_char(c) {
+                        self.update_second_part_value(end);
+                    } else if c.is_ascii_whitespace() {
+                        if self.is_second_part_value_empty() {
+                            continue;
+                        }
+                        self.update_second_part_value(end);
+                        state = SecondPartCommodityAfter;
+                    } else if Self::is_separator_char(c) {
+                        self.update_second_separator(end);
+                        state = SecondSeparator;
+                        current_spaces_in_a_row = 0;
+                    } else {
+                        self.update_second_part_value(end);
+                        if c == b'"' {
+                            current_commodity_is_quoted = true;
+                        }
+                        state = SecondPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                SecondPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        self.update_second_part_value(end);
+                        if c == b'"' {
+                            state = SecondSeparator;
+                            current_commodity_is_quoted = false;
+                        }
+                    } else if c.is_ascii_whitespace() {
+                        state = SecondSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if Self::is_separator_char(c) {
+                        self.update_second_separator(end);
+                        state = SecondSeparator;
+                        current_commodity_is_quoted = false;
+                    } else if c == b'"' {
+                        self.update_second_part_value(end);
+                        current_commodity_is_quoted = true;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        self.update_second_part_value(end);
+                    }
+                }
+                SecondSeparator => {
+                    if Self::is_separator_char(c) {
+                        self.update_second_separator(end);
+                    } else if !c.is_ascii_whitespace() {
+                        self.update_third_part_value(end);
+                        state = ThirdPartCommodityBefore;
+                    }
+                }
+                ThirdPartCommodityBefore => {
+                    if c.is_ascii_whitespace() {
+                        if current_spaces_in_a_row == 0 {
+                            if current_commodity_is_quoted {
+                                self.update_third_part_value(end);
+                            }
+                            current_spaces_in_a_row += 1;
+                        } else {
+                            // no commodity
+                            //current_spaces_in_a_row = 0;
+                            // end
+                            break;
+                        }
+                    } else if Self::is_number_char(c) {
+                        self.update_third_part_value(end);
+                        state = ThirdPartNumber;
+                    } else if c == b'"' {
+                        self.update_third_part_value(end);
+                        if current_commodity_is_quoted {
+                            state = ThirdPartNumber;
+                        }
+                        current_commodity_is_quoted = true;
+                    } else {
+                        self.update_third_part_value(end);
+                    }
+                }
+                ThirdPartNumber => {
+                    if Self::is_number_char(c) {
+                        self.update_third_part_value(end);
+                    } else if c.is_ascii_whitespace() {
+                        if self.is_third_part_value_empty() {
+                            continue;
+                        }
+                        state = ThirdPartCommodityAfter;
+                    } else {
+                        self.update_third_part_value(end);
+                        if c == b'"' {
+                            current_commodity_is_quoted = true;
+                        }
+                        state = ThirdPartCommodityAfter;
+                        current_spaces_in_a_row = 0;
+                    }
+                }
+                ThirdPartCommodityAfter => {
+                    if current_commodity_is_quoted {
+                        self.update_third_part_value(end);
+                        if c == b'"' {
+                            // end
+                            break;
+                        }
+                    } else if c.is_ascii_whitespace() {
+                        // end
+                        break;
+                    } else {
+                        // really numbers are forbidden by hledger, but don't care
+                        self.update_third_part_value(end);
+                    }
+                }
+            }
+        }
+
+        /*
         for c in chars {
             //println!("state: {:?}, c: {:?}", state, c);
             match state {
@@ -1036,9 +1579,9 @@ impl EntryValueParser {
                     }
                 }
             }
-        }
+        }*/
 
-        if first_part_value.ends_with(' ') {
+        /*if first_part_value.ends_with(' ') {
             first_part_value.pop();
         }
         if second_part_value.ends_with(' ') {
@@ -1046,8 +1589,20 @@ impl EntryValueParser {
         }
         if third_part_value.ends_with(' ') {
             third_part_value.pop();
-        }
+        }*/
 
+        let first_part_value = &value[self.first_part_value_start..self.first_part_value_end];
+        let second_part_value = &value[self.second_part_value_start..self.second_part_value_end];
+        let third_part_value = &value[self.third_part_value_start..self.third_part_value_end];
+
+        let (first_part_value_before_decimals, first_part_value_after_decimals) =
+            split_value_in_before_decimals_after_decimals(&first_part_value);
+        let (second_part_value_before_decimals, second_part_value_after_decimals) =
+            split_value_in_before_decimals_after_decimals(&second_part_value);
+        let (third_part_value_before_decimals, third_part_value_after_decimals) =
+            split_value_in_before_decimals_after_decimals(&third_part_value);
+
+        /*
         let (before_decimals, after_decimals) =
             split_value_in_before_decimals_after_decimals(&first_part_value);
         self.first_part_before_decimals = before_decimals;
@@ -1062,27 +1617,41 @@ impl EntryValueParser {
             split_value_in_before_decimals_after_decimals(&third_part_value);
         self.third_part_before_decimals = before_decimals;
         self.third_part_after_decimals = after_decimals;
+        */
 
-        Ok(())
+        EntryValueParserReturn {
+            first_part_before_decimals: ByteStr::from(first_part_value_before_decimals),
+            first_part_after_decimals: ByteStr::from(first_part_value_after_decimals),
+            first_separator: ByteStr::from(
+                &value[self.first_separator_start..self.first_separator_end],
+            ),
+            second_part_before_decimals: ByteStr::from(second_part_value_before_decimals),
+            second_part_after_decimals: ByteStr::from(second_part_value_after_decimals),
+            second_separator: ByteStr::from(
+                &value[self.second_separator_start..self.second_separator_end],
+            ),
+            third_part_before_decimals: ByteStr::from(third_part_value_before_decimals),
+            third_part_after_decimals: ByteStr::from(third_part_value_after_decimals),
+        }
     }
 }
 
-fn split_value_in_before_decimals_after_decimals(value: &str) -> (String, String) {
-    if let Some(pos) = value.rfind(['.', ',']) {
+fn split_value_in_before_decimals_after_decimals<'a>(value: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+    if let Some(pos) = value.iter().rposition(|&c| c == b'.' || c == b',') {
         let after = &value[pos + 1..];
-        if after.len() == 3 && after.chars().all(|c| c.is_ascii_digit()) {
-            return (value.to_string(), "".to_string());
+        if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
+            return (value, &[]);
         } else {
             let before = &value[..pos];
             let after = &value[pos..];
-            return (before.to_string(), after.to_string());
+            return (before, after);
         }
     }
 
     let mut idx = 0;
-    for c in value.chars() {
-        if c.is_ascii_digit() || c == ',' || c == '.' || c == '-' || c == '+' {
-            idx += c.len_utf8();
+    for c in value.iter() {
+        if c.is_ascii_digit() || *c == b',' || *c == b'.' || *c == b'-' || *c == b'+' {
+            idx += 1;
         } else {
             break;
         }
@@ -1090,123 +1659,142 @@ fn split_value_in_before_decimals_after_decimals(value: &str) -> (String, String
 
     let (before, after) = value.split_at(idx);
     if before.is_empty() {
-        if after.ends_with(|c: char| c.is_ascii_digit()) {
+        if after[after.len() - 1].is_ascii_digit() {
             // case $-1
-            (after.to_string(), before.to_string())
+            (after, before)
         } else {
             // case $453534€
-            for c in after.chars().rev() {
+            for c in after.iter().rev() {
                 if c.is_ascii_digit() {
                     break;
                 }
-                idx += c.len_utf8();
+                idx += 1;
             }
             let (before, after) = value.split_at(after.len() - idx);
-            (before.to_string(), after.to_string())
+            (before, after)
         }
     } else {
-        (before.to_string(), after.to_string())
+        (before, after)
     }
+}
+
+/// Returns the first word in a line, skipping leading whitespace.
+fn first_word(line: &[u8]) -> &[u8] {
+    // TODO: maybe this function is too much for the context in which it is used
+    let start = line
+        .iter()
+        .position(|b| !b.is_ascii_whitespace())
+        .unwrap_or(0);
+    let end = line[start..]
+        .iter()
+        .position(|b| b.is_ascii_whitespace())
+        .map_or(line.len(), |i| start + i);
+    &line[start..end]
 }
 
 #[cfg(test)]
 mod test {
-    use super::split_value_in_before_decimals_after_decimals;
+    use super::{split_value_in_before_decimals_after_decimals, EntryValueParser};
 
     #[test]
     fn test_split_value_in_before_decimals_after_decimals() {
-        let (before, after) = split_value_in_before_decimals_after_decimals("1000.50€");
-        assert_eq!(before, "1000");
-        assert_eq!(after, ".50€");
+        let (before, after) = split_value_in_before_decimals_after_decimals("1000.50€".as_bytes());
+        assert_eq!(before, b"1000");
+        assert_eq!(after, ".50€".as_bytes());
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("2000,75 USD");
-        assert_eq!(before, "2000");
-        assert_eq!(after, ",75 USD");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"2000,75 USD");
+        assert_eq!(before, b"2000");
+        assert_eq!(after, b",75 USD");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("3000 JPY");
-        assert_eq!(before, "3000");
-        assert_eq!(after, " JPY");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"3000 JPY");
+        assert_eq!(before, b"3000");
+        assert_eq!(after, b" JPY");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("4000");
-        assert_eq!(before, "4000");
-        assert_eq!(after, "");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"4000");
+        assert_eq!(before, b"4000");
+        assert_eq!(after, b"");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("4000.");
-        assert_eq!(before, "4000");
-        assert_eq!(after, ".");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"4000.");
+        assert_eq!(before, b"4000");
+        assert_eq!(after, b".");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("5,000");
-        assert_eq!(before, "5,000");
-        assert_eq!(after, "");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"5,000");
+        assert_eq!(before, b"5,000");
+        assert_eq!(after, b"");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("$-1");
-        assert_eq!(before, "$-1");
-        assert_eq!(after, "");
-
-        let (before, after) =
-            split_value_in_before_decimals_after_decimals("$-100000000000,000000000");
-        assert_eq!(before, "$-100000000000");
-        assert_eq!(after, ",000000000");
-
-        let (before, after) = split_value_in_before_decimals_after_decimals("100€");
-        assert_eq!(before, "100");
-        assert_eq!(after, "€");
-
-        let (before, after) = split_value_in_before_decimals_after_decimals("0 gold");
-        assert_eq!(before, "0");
-        assert_eq!(after, " gold");
+        let (before, after) = split_value_in_before_decimals_after_decimals("$-1".as_bytes());
+        assert_eq!(before, "$-1".as_bytes());
+        assert_eq!(after, b"");
 
         let (before, after) =
-            split_value_in_before_decimals_after_decimals("0 \"Chocolate Frogs\"");
-        assert_eq!(before, "0");
-        assert_eq!(after, " \"Chocolate Frogs\"");
+            split_value_in_before_decimals_after_decimals("$-100000000000,000000000".as_bytes());
+        assert_eq!(before, "$-100000000000".as_bytes());
+        assert_eq!(after, b",000000000");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("$56424324€");
-        assert_eq!(before, "$56424324");
-        assert_eq!(after, "€");
+        let (before, after) = split_value_in_before_decimals_after_decimals("100€".as_bytes());
+        assert_eq!(before, b"100");
+        assert_eq!(after, "€".as_bytes());
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("-10 gold");
-        assert_eq!(before, "-10");
-        assert_eq!(after, " gold");
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"0 gold");
+        assert_eq!(before, b"0");
+        assert_eq!(after, b" gold");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("2.0 AAAA");
-        assert_eq!(before, "2");
-        assert_eq!(after, ".0 AAAA");
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals(b"0 \"Chocolate Frogs\"");
+        assert_eq!(before, b"0");
+        assert_eq!(after, b" \"Chocolate Frogs\"");
 
-        let (before, after) = split_value_in_before_decimals_after_decimals("$1.50");
-        assert_eq!(before, "$1");
-        assert_eq!(after, ".50");
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("$56424324€".as_bytes());
+        assert_eq!(before, "$56424324".as_bytes());
+        assert_eq!(after, "€".as_bytes());
+
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"-10 gold");
+        assert_eq!(before, b"-10");
+        assert_eq!(after, b" gold");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals(b"2.0 AAAA");
+        assert_eq!(before, b"2");
+        assert_eq!(after, b".0 AAAA");
+
+        let (before, after) = split_value_in_before_decimals_after_decimals("$1.50".as_bytes());
+        assert_eq!(before, "$1".as_bytes());
+        assert_eq!(after, b".50");
     }
 
     #[test]
     fn test_entry_value_parser_stock_lot() {
-        let mut parser = super::EntryValueParser::default();
-        parser.parse("0.0 AAAA  =  2.0 AAAA  @   $1.50").unwrap();
+        let mut parser = EntryValueParser::default();
+        let p = parser.parse("0.0 AAAA  =  2.0 AAAA  @   $1.50".as_bytes());
 
-        assert_eq!(parser.first_part_before_decimals, "0");
-        assert_eq!(parser.first_part_after_decimals, ".0 AAAA");
-        assert_eq!(parser.first_separator, "=");
-        assert_eq!(parser.second_part_before_decimals, "2");
-        assert_eq!(parser.second_part_after_decimals, ".0 AAAA");
-        assert_eq!(parser.second_separator, "@");
-        assert_eq!(parser.third_part_before_decimals, "$1");
-        assert_eq!(parser.third_part_after_decimals, ".50");
+        assert_eq!(p.first_part_before_decimals, "0".as_bytes().into());
+        assert_eq!(p.first_part_after_decimals, ".0 AAAA".as_bytes().into());
+        assert_eq!(p.first_separator, "=".as_bytes().into());
+        assert_eq!(p.second_part_before_decimals, "2".as_bytes().into());
+        assert_eq!(p.second_part_after_decimals, ".0 AAAA".as_bytes().into());
+        assert_eq!(p.second_separator, "@".as_bytes().into());
+        assert_eq!(p.third_part_before_decimals, "$1".as_bytes().into());
+        assert_eq!(p.third_part_after_decimals, ".50".as_bytes().into());
     }
 
     #[test]
     fn test_entry_value_parser_chocolate_balance() {
-        let mut parser = super::EntryValueParser::default();
-        parser
-            .parse(r#"0 "Chocolate Frogs"  =       3 "Chocolate Frogs""#)
-            .unwrap();
+        let mut parser = EntryValueParser::default();
+        let p = parser.parse(br#"0 "Chocolate Frogs"  =       3 "Chocolate Frogs""#);
 
-        assert_eq!(parser.first_part_before_decimals, "0");
-        assert_eq!(parser.first_part_after_decimals, " \"Chocolate Frogs\"");
-        assert_eq!(parser.first_separator, "=");
-        assert_eq!(parser.second_part_before_decimals, "3");
-        assert_eq!(parser.second_part_after_decimals, " \"Chocolate Frogs\"");
-        assert_eq!(parser.second_separator, "");
-        assert_eq!(parser.third_part_before_decimals, "");
-        assert_eq!(parser.third_part_after_decimals, "");
+        assert_eq!(p.first_part_before_decimals, "0".as_bytes().into());
+        assert_eq!(
+            p.first_part_after_decimals,
+            " \"Chocolate Frogs\"".as_bytes().into()
+        );
+        assert_eq!(p.first_separator, "=".as_bytes().into());
+        assert_eq!(p.second_part_before_decimals, "3".as_bytes().into());
+        assert_eq!(
+            p.second_part_after_decimals,
+            " \"Chocolate Frogs\"".as_bytes().into()
+        );
+        assert_eq!(p.second_separator, "".as_bytes().into());
+        assert_eq!(p.third_part_before_decimals, "".as_bytes().into());
+        assert_eq!(p.third_part_after_decimals, "".as_bytes().into());
     }
 }

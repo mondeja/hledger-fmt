@@ -3,6 +3,9 @@ pub mod builder;
 #[cfg(test)]
 mod tests;
 
+use crate::file_path::FilePath;
+use std::io::Read;
+
 #[doc(hidden)]
 /// Run the hledger-fmt CLI and return the exit code.
 pub fn run(cmd: clap::Command) -> i32 {
@@ -12,6 +15,8 @@ pub fn run(cmd: clap::Command) -> i32 {
     } else {
         Vec::new()
     };
+    let files_arg: Vec<FilePath> =
+        files_arg.iter().map(|s| FilePath::from(s.as_str())).collect();
     let fix = args.get_flag("fix");
     let exit_zero_on_changes = args.get_flag("exit-zero-on-changes");
 
@@ -21,16 +26,18 @@ pub fn run(cmd: clap::Command) -> i32 {
     let mut exitcode = 0;
 
     // if no files, search in current directory and its subdirectories
-    let mut files = Vec::new();
+    let mut files: Vec<(FilePath, Vec<u8>)> = Vec::new();
     let stdin = if std::env::args().any(|arg| arg == "-") {
         read_stdin()
     } else {
-        "".to_string()
+        Vec::with_capacity(0)
     };
 
     if stdin.is_empty() {
         if files_arg.is_empty() {
-            if gather_files_from_directory_and_subdirectories(".", &mut files).is_err() {
+            if gather_files_from_directory_and_subdirectories(&FilePath::from(b'.'), &mut files)
+                .is_err()
+            {
                 exitcode = 1;
             }
 
@@ -43,24 +50,26 @@ pub fn run(cmd: clap::Command) -> i32 {
                 return exitcode;
             }
         } else {
-            for file in &files_arg {
-                let pathbuf = std::path::PathBuf::from(&file);
+            for file_path in &files_arg {
+                let pathbuf = std::path::PathBuf::from(file_path);
                 if pathbuf.is_dir() {
-                    if gather_files_from_directory_and_subdirectories(file, &mut files).is_err() {
+                    if gather_files_from_directory_and_subdirectories(file_path, &mut files)
+                        .is_err()
+                    {
                         exitcode = 1;
                     }
                     break;
                 } else if pathbuf.is_file() {
-                    if let Ok(content) = read_file(file) {
-                        files.push((file.clone(), content));
+                    if let Ok(content) = read_file(file_path) {
+                        files.push((file_path.clone(), content));
                     } else {
                         exitcode = 1;
                     }
                 } else if !pathbuf.exists() {
-                    eprintln!("Path '{file}' does not exist.");
+                    eprintln!("Path '{file_path}' does not exist.");
                     exitcode = 1;
                 } else if pathbuf.is_symlink() {
-                    eprintln!("Path '{file}' is a symlink. Symbolic links are not supported.");
+                    eprintln!("Path '{file_path}' is a symlink. Symbolic links are not supported.");
                     exitcode = 1;
                 }
             }
@@ -79,7 +88,7 @@ pub fn run(cmd: clap::Command) -> i32 {
             }
         }
     } else if files.is_empty() {
-        files.push(("".into(), stdin));
+        files.push((FilePath::new(), stdin));
     } else {
         eprintln!("Cannot read from STDIN and pass files at the same time.");
         exitcode = 1;
@@ -116,8 +125,8 @@ pub fn run(cmd: clap::Command) -> i32 {
         let parsed = parsed_or_err.unwrap();
         let format_opts =
             crate::formatter::FormatContentOptions::new().with_estimated_length(content.len());
-        let formatted = crate::formatter::format_content_with_options(&parsed, &format_opts);
-        if formatted == content {
+        let buffer = crate::formatter::format_content_with_options(&parsed, &format_opts);
+        if buffer == content {
             #[cfg(feature = "diff")]
             {
                 if !no_diff {
@@ -137,7 +146,7 @@ pub fn run(cmd: clap::Command) -> i32 {
         }
 
         if fix {
-            match std::fs::write(&file, &formatted) {
+            match std::fs::write(&file, &buffer) {
                 Ok(_) => {}
                 Err(e) => {
                     if !something_printed {
@@ -156,9 +165,12 @@ pub fn run(cmd: clap::Command) -> i32 {
                     something_printed = true;
                 }
                 // only print the file name if there are more than one file
-                let separator = "=".repeat(file.len());
+                let file_name = file.to_string_lossy();
+                let separator = "=".repeat(file_name.chars().count());
                 eprintln!("{separator}\n{file}\n{separator}");
             }
+
+            let formatted = String::from_utf8_lossy(&buffer);
 
             #[cfg(not(feature = "diff"))]
             {
@@ -180,7 +192,9 @@ pub fn run(cmd: clap::Command) -> i32 {
                     continue;
                 }
 
-                let diff = TextDiff::from_lines(&content, &formatted);
+                let content_as_str = String::from_utf8_lossy(&content);
+
+                let diff = TextDiff::from_lines(&content_as_str, &formatted);
                 for change in diff.iter_all_changes() {
                     #[cfg(not(feature = "color"))]
                     {
@@ -222,8 +236,8 @@ pub fn run(cmd: clap::Command) -> i32 {
 
 /// Search for hledger files in the passed directory and its subdirectories
 fn gather_files_from_directory_and_subdirectories(
-    root: &str,
-    files: &mut Vec<(String, String)>,
+    root: &FilePath,
+    files: &mut Vec<(FilePath, Vec<u8>)>,
 ) -> Result<(), ()> {
     let mut error = false;
 
@@ -239,7 +253,7 @@ fn gather_files_from_directory_and_subdirectories(
                         let path = entry.path();
                         if path.is_dir() {
                             if gather_files_from_directory_and_subdirectories(
-                                path.to_str().unwrap(),
+                                &FilePath::from(path),
                                 files,
                             )
                             .is_err()
@@ -250,10 +264,10 @@ fn gather_files_from_directory_and_subdirectories(
                             let ext = path.extension();
                             if let Some(ext) = ext {
                                 if [journal, hledger, j].contains(&ext) {
-                                    let file_path = path.to_str().unwrap();
-                                    let maybe_file_content = read_file(file_path);
+                                    let file_path: FilePath = path.into();
+                                    let maybe_file_content = read_file(&file_path);
                                     if let Ok(content) = maybe_file_content {
-                                        files.push((file_path.to_string(), content));
+                                        files.push((file_path, content));
                                     } else {
                                         error = true;
                                     }
@@ -286,21 +300,16 @@ fn gather_files_from_directory_and_subdirectories(
     }
 }
 
-fn read_file(file_path: &str) -> Result<String, ()> {
-    match std::fs::read_to_string(file_path) {
-        Ok(content) => Ok(content),
-        Err(e) => {
-            eprintln!("Error reading file {file_path}: {e}");
-            Err(())
-        }
-    }
+fn read_file(file_path: &FilePath) -> Result<Vec<u8>, ()> {
+    std::fs::read(file_path).map_err(|e| {
+        eprintln!("Error reading file {file_path}: {e}");
+    })
 }
 
-fn read_stdin() -> String {
-    let mut buffer = String::new();
-    for line in std::io::stdin().lines() {
-        buffer.push_str(&line.unwrap());
-        buffer.push('\n');
-    }
+fn read_stdin() -> Vec<u8> {
+    let mut buffer = Vec::new();
+    _ = std::io::stdin().read_to_end(&mut buffer).map_err(|e| {
+        eprintln!("Error reading from STDIN: {e}");
+    });
     buffer
 }

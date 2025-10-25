@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Unreleased - [0.3.4]
+
+### New features
+
+- Add `format_journal_bytes` function to format hledger journal content
+  from a byte slice and return the formatted content as a byte vector.
+
+### Enhancements
+
+- Major performance improvements.
+
 ## 2025-10-21 - [0.3.3]
 
 - Fix alignments formatting multiple currency formats.

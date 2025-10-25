@@ -30,6 +30,11 @@ clap = { workspace = true, optional = true }
 similar = { version = "2", optional = true }
 anstream = { version = "0.6", optional = true, default-features = false }
 anstyle = { version = "1", optional = true, default-features = false }
+smallvec = "1"
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+tracing-attributes = { workspace = true, optional = true }
+ctor = { workspace = true, optional = true }
 
 [build-dependencies]
 clap = { workspace = true, optional = true }
@@ -42,6 +47,8 @@ auto-color = ["anstream?/auto", "anstream?/wincon"]
 diff = ["dep:similar"]
 manpages = ["dep:clap_mangen"]
 cli = ["dep:clap"]
+bench = []
+tracing = ["dep:tracing", "dep:tracing-subscriber", "dep:tracing-attributes", "dep:ctor"]
 
 [profile.release]
 strip = true
@@ -55,11 +62,26 @@ members = ["."]
 
 [workspace.dependencies]
 clap = { version = "4", default-features = false, features = ["std", "help"] }
+tracing = { version = "0.1", features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+tracing-attributes = "0.1"
+ctor = "0.6"
 
 [dev-dependencies]
 assert_cmd = "2"
-ctor = "0.5"
+ctor = { workspace = true }
 tempfile = "3"
+criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"
+
+[[bench]]
+name = "parse"
+harness = false
+
+[[bench]]
+name = "format"
+harness = false

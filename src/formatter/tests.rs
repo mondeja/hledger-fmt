@@ -13,8 +13,9 @@ fn with_ending_newline(s: &str) -> String {
 }
 
 fn assert_raw_format(content: &str, expected: &str) {
-    let parsed = parse_content(content).unwrap();
-    let formatted = format_content(&parsed);
+    let parsed = parse_content(content.as_bytes()).unwrap();
+    let buffer = format_content(&parsed);
+    let formatted = String::from_utf8_lossy(&buffer).to_string();
     assert_eq!(formatted, expected, "{}", {
         let expected_as_string = expected.to_string();
         let diff = TextDiff::from_lines(&expected_as_string, &formatted);
