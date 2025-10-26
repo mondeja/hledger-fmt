@@ -6,6 +6,8 @@
 
 - Add `format_journal_bytes` function to format hledger journal content
   from a byte slice and return the formatted content as a byte vector.
+- Add tracing feature to allow building with tracing support for better
+  debugging.
 
 ### Enhancements
 

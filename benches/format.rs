@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use hledger_fmt::{parse_content, format_parsed_journal};
+use hledger_fmt::{format_parsed_journal, parse_content};
 use std::fs;
 
 fn benchmark_formatter(c: &mut Criterion) {

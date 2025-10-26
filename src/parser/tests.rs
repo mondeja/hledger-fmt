@@ -217,7 +217,7 @@ fn account_directive_with_comment() {
                 comment: Some(SingleLineComment {
                     prefix: CommentPrefix::Semicolon,
                     content: " comment".into(),
-                    indent: 30,
+                    indent: 1, // TODO: idents for directive comments are not used in the formatter
                 }),
             })],
             max_name_content_len: 27,

@@ -201,26 +201,21 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
         lineno += 1;
 
         let newline_pos = bytes[byteno..].iter().position(|&b| b == b'\n');
-        println!("newline_pos: {:?}", newline_pos);
-        let line_end = match newline_pos {
+        let (line_end_including_newline_chars, line_end) = match newline_pos {
             Some(pos) => {
+                let end = byteno + pos;
                 // byteno + pos + 1, // including \n byte index
                 // if next position is \r\n, skip also \r
-                if bytes[byteno + pos + 1..].get(0) == Some(&b'\r') {
-                    byteno + pos + 2
+                let end_or_1 = end.max(1);
+                if bytes[end_or_1 - 1..].get(0) == Some(&b'\r') {
+                    (end + 1, end_or_1 - 1)
                 } else {
-                    byteno + pos + 1
+                    (end + 1, end)
                 }
             }
-            None => bytes_length
+            None => (bytes_length, bytes_length),
         };
         let line = &bytes[byteno..line_end];
-        byteno = line_end; // +1 to skip \n
-
-        if line == b"\n" || line == b"\r\n" {
-            process_empty_line(&mut journal, &mut data, &bytes);
-            continue;
-        }
 
         #[cfg(any(test, feature = "tracing"))]
         {
@@ -236,7 +231,9 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
 
         match state {
             ParserState::Start => {
-                if line[0] == b'#' || line[0] == b';' {
+                if line.is_empty() {
+                    process_empty_line(&mut journal, &mut data, &bytes);
+                } else if line[0] == b'#' || line[0] == b';' {
                     #[cfg(any(test, feature = "tracing"))]
                     {
                         let _span = tracing::span!(
@@ -279,36 +276,8 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     data.multiline_comment_byte_start = byteno;
                 } else if line.iter().all(|&b| b.is_ascii_whitespace()) {
                     process_empty_line(&mut journal, &mut data, &bytes);
-                } else if line.starts_with(b"account ")
-                        || line.starts_with(b"commodity ")
-                        || line.starts_with(b"decimal-mark ")
-                        || line.starts_with(b"payee ")
-                        || line.starts_with(b"tag ")
-                        || line.starts_with(b"include ")
-                        || line.starts_with(b"P ")
-                        || line.starts_with(b"apply account ")
-                        || line.starts_with(b"D ")
-                        || line.starts_with(b"Y ")
-                        // other Ledger directives
-                        || line.starts_with(b"apply fixed ")
-                        || line.starts_with(b"apply tag ")
-                        || line.starts_with(b"assert ")
-                        || line.starts_with(b"capture ")
-                        || line.starts_with(b"check ")
-                        || line.starts_with(b"define ")
-                        || line.starts_with(b"bucket / A ")
-                        || line.starts_with(b"end apply fixed")
-                        || line.starts_with(b"end apply tag")
-                        || line.starts_with(b"end apply year")
-                        || line.starts_with(b"end tag")
-                        || line.starts_with(b"eval")
-                        || line.starts_with(b"expr")
-                        || line.starts_with(b"python")  // 'python' CODE not supported
-                        || line.starts_with(b"tag ")
-                        || line.starts_with(b"value ")
-                        || line.starts_with(b"--command-line-flags")
-                {
-                    parse_directive(first_word(&line), &line, &mut data);
+                } else if let Some(name) = unsafe { maybe_start_with_directive(line) } {
+                    parse_directive(name, &line, &mut data);
                 } else if line[0].is_ascii_whitespace() {
                     if data.transaction_title_byte_start == 0
                         && data.transaction_title_byte_end == 0
@@ -330,8 +299,8 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     // starts transaction
 
                     // if we are in a current transaction, save it adding a newline
-                    if data.transaction_title_byte_start == 0
-                        && data.transaction_title_byte_end == 0
+                    if data.transaction_title_byte_start != 0
+                        && data.transaction_title_byte_end != 0
                     {
                         process_empty_line(&mut journal, &mut data, &bytes);
                     }
@@ -349,6 +318,8 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                 }
             }
         }
+
+        byteno = line_end_including_newline_chars;
     }
 
     // Hledger v1.40 traits not ended multiline comments as a multiline comment
@@ -420,13 +391,11 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
     let mut end = start;
 
     let mut prev_was_whitespace = false;
-    let mut last_colno = 0;
     let mut comment_colno_padding = 1;
 
     while end < line_length {
         let c = line[end];
         if c == b'\t' {
-            last_colno = end;
             comment_colno_padding = 4;
             break;
         }
@@ -434,7 +403,7 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
         if c.is_ascii_whitespace() {
             if prev_was_whitespace {
                 // double whitespace, end of content
-                last_colno = end - 1;
+                end = end - 1;
                 break;
             }
             prev_was_whitespace = true;
@@ -444,13 +413,13 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
         end += 1;
     }
     let mut comment = None;
-    if last_colno != 0 {
+    if end != start {
         // it should be a comment
         comment = parse_inline_comment(line, line_length, comment_colno_padding, None);
     }
 
     let name = ByteStr::from(name);
-    let content = ByteStr::from(&line[start..last_colno]);
+    let content = ByteStr::from(&line[start..end]);
     save_directive(name, content, comment, data);
 }
 
@@ -501,11 +470,13 @@ fn parse_inline_comment(
     colno_padding: usize,
     from_comment_prefix: Option<CommentPrefix>,
 ) -> Option<SingleLineComment> {
-    let mut comment_prefix = from_comment_prefix;
-    let mut start = colno_padding;
-    let mut end = start;
-    while end < line_length {
-        if comment_prefix.is_none() {
+    let (content_bytes, prefix) = if let Some(comment_prefix) = from_comment_prefix {
+        (&line[colno_padding..line_length], comment_prefix)
+    } else {
+        let mut comment_prefix = None;
+        let mut start = colno_padding;
+        let mut end = start;
+        while end < line_length {
             let c = line[end];
             if c == b'#' {
                 comment_prefix = Some(CommentPrefix::Hash);
@@ -518,13 +489,21 @@ fn parse_inline_comment(
                 end = line_length;
                 break;
             }
+            end += 1;
         }
-        end += 1;
-    }
+        if comment_prefix.is_none() {
+            return None;
+        }
+        (&line[start..end], comment_prefix.unwrap())
+    };
 
-    let content = ByteStr::from(&line[start..end]);
-    comment_prefix.map(|prefix| SingleLineComment {
-        content,
+    println!(
+        "content_bytes: {:?}",
+        String::from_utf8_lossy(content_bytes)
+    );
+
+    Some(SingleLineComment {
+        content: ByteStr::from(content_bytes),
         prefix,
         indent: colno_padding as u8,
     })
@@ -561,26 +540,26 @@ fn parse_single_line_comment_or_subdirective<'a>(
         let c = line[end];
         if c == b'#' {
             comment_prefix = Some(CommentPrefix::Hash);
-            content_start = end;
+            content_start = end + 1;
             end = line_length;
             break;
         } else if c == b';' {
             comment_prefix = Some(CommentPrefix::Semicolon);
-            content_start = end;
+            content_start = end + 1;
             end = line_length;
             break;
         } else if !c.is_ascii_whitespace() {
             // if we're inside a directives group, is a subdirective
             if !data.directives_group_nodes.is_empty() {
                 is_subdirective = true;
-                content_start = end;
+                content_start = end + 1;
                 end = line_length;
                 break;
             }
 
             return Err(SyntaxError {
-                message: format!("Unexpected character {c:?}"),
-                lineno: lineno + 1,
+                message: format!("Unexpected character {:?}", c as char),
+                lineno: lineno,
                 colno_start: end + 1,
                 colno_end: end + 2,
                 expected: "'#', ';' or newline",
@@ -594,7 +573,7 @@ fn parse_single_line_comment_or_subdirective<'a>(
         let comment = SingleLineComment {
             content,
             prefix,
-            indent: content_start as u8,
+            indent: (content_start - 1) as u8,
         };
         if data.directives_group_nodes.is_empty() {
             journal.push(JournalCstNode::SingleLineComment(comment));
@@ -692,7 +671,7 @@ fn save_directives_group_nodes<'a>(
 )]
 fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     let mut at_indent = line[0] != b'\t';
-    let mut indent = if at_indent { 1 } else { 4 };
+    let mut indent = if at_indent { 0 } else { 4 };
     let mut entry_name_start = 0;
     let mut entry_name_end = 0;
     let mut prev_was_whitespace = line[0].is_ascii_whitespace();
@@ -743,7 +722,7 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                 break;
             } else if c.is_ascii_whitespace() {
                 if prev_was_whitespace {
-                    entry_name_end = end - 1; // remove previous whitespace
+                    entry_name_end -= 1;
                     break;
                 }
                 prev_was_whitespace = true;
@@ -894,6 +873,7 @@ fn parse_transaction_title<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     let line_length = line.len();
     let mut end = 0;
     let mut comment_prefix = None;
+    // TODO: handle title + description to standarize?
     while end < line_length {
         let c = line[end];
         end += 1;
@@ -906,8 +886,23 @@ fn parse_transaction_title<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
         }
     }
 
-    data.transaction_title_byte_end = end;
-    data.transaction_title_comment = parse_inline_comment(line, line_length, end, comment_prefix);
+    let original_end = end;
+
+    if end < line_length {
+        // go backwards to not include spaces in title
+        let mut ends_with_space = line[end] == b' ' || line[end] == b'\t';
+        while ends_with_space {
+            end -= 1;
+            ends_with_space = line[end - 1] == b' ' || line[end - 1] == b'\t';
+        }
+    }
+
+    data.transaction_title_byte_end = data.transaction_title_byte_start + end;
+    if comment_prefix.is_none() {
+        return;
+    }
+    data.transaction_title_comment =
+        parse_inline_comment(line, line_length, original_end, comment_prefix);
 }
 
 #[cfg_attr(
@@ -934,9 +929,8 @@ fn save_transaction<'a>(
     journal: &mut Vec<JournalCstNode<'a>>,
     bytes: &'a [u8],
 ) {
-    let title = ByteStr::from(
-        &bytes[data.transaction_title_byte_start - 1..data.transaction_title_byte_end],
-    );
+    let title =
+        ByteStr::from(&bytes[data.transaction_title_byte_start..data.transaction_title_byte_end]);
     journal.push(JournalCstNode::Transaction {
         title,
         title_comment: data.transaction_title_comment.take(),
@@ -977,6 +971,365 @@ fn save_transaction<'a>(
     data.max_entry_value_second_separator_len = 0;
     data.max_entry_value_third_part_before_decimals_len = 0;
     data.max_entry_value_third_part_after_decimals_len = 0;
+}
+
+/// Extremely performant function to check if a line starts with a directive
+/// and return the name of the directive.
+///
+/// Supposes that:
+///
+/// - line is not empty
+unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
+    /*
+        "account "  (x)
+        "commodity "  (x)
+        "decimal-mark "  (x)
+        "payee " (x)
+        "tag "  (x)
+        "include "  (x)
+        "P "  (x)
+        "apply account "  (x)
+        "D "  (x)
+        "Y "  (x)
+                                 // other Ledger directives
+        "apply fixed "  (x)
+        "apply tag "  (x)
+        "assert "  (x)
+        "capture "  (x)
+        "check "  (x)
+        "define "  (x)
+        "bucket / A "  (x)
+        "end apply fixed"
+        "end apply tag"
+        "end apply year"
+        "end tag"
+        "eval"
+        "expr"
+        "python"  // 'python' CODE not supported  (x)
+        "value "  (x)
+        "--command-line-flags"  // longest directive, 20 chars
+    */
+    let l = line;
+    let line_length = l.len();
+
+    if line_length >= 8 && *l.get_unchecked(0) == b'a' {
+        // "account "
+        if *l.get_unchecked(1) == b'c'
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'o'
+            && *l.get_unchecked(4) == b'u'
+            && *l.get_unchecked(5) == b'n'
+            && *l.get_unchecked(6) == b't'
+            && *l.get_unchecked(7) == b' '
+        {
+            return Some(&line[0..7]); // only the word without space
+        }
+
+        if *l.get_unchecked(1) == b'p'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b'l'
+            && *l.get_unchecked(4) == b'y'
+            && *l.get_unchecked(5) == b' '
+        {
+            // "apply account "
+            if line_length >= 14
+                && *l.get_unchecked(6) == b'a'
+                && *l.get_unchecked(7) == b'c'
+                && *l.get_unchecked(8) == b'c'
+                && *l.get_unchecked(9) == b'o'
+                && *l.get_unchecked(10) == b'u'
+                && *l.get_unchecked(11) == b'n'
+                && *l.get_unchecked(12) == b't'
+                && *l.get_unchecked(13) == b' '
+            {
+                return Some(&line[0..13]);
+            }
+
+            // "apply fixed "
+            if line_length >= 12
+                && *l.get_unchecked(6) == b'f'
+                && *l.get_unchecked(7) == b'i'
+                && *l.get_unchecked(8) == b'x'
+                && *l.get_unchecked(9) == b'e'
+                && *l.get_unchecked(10) == b'd'
+                && *l.get_unchecked(11) == b' '
+            {
+                return Some(&line[0..11]);
+            }
+
+            // "apply tag "
+            if line_length >= 10
+                && *l.get_unchecked(6) == b't'
+                && *l.get_unchecked(7) == b'a'
+                && *l.get_unchecked(8) == b'g'
+                && *l.get_unchecked(9) == b' '
+            {
+                return Some(&line[0..9]);
+            }
+        }
+
+        // "assert "
+        if *l.get_unchecked(1) == b's'
+            && *l.get_unchecked(2) == b's'
+            && *l.get_unchecked(3) == b'e'
+            && *l.get_unchecked(4) == b'r'
+            && *l.get_unchecked(5) == b't'
+            && *l.get_unchecked(6) == b' '
+        {
+            return Some(&line[0..6]);
+        }
+    }
+
+    if line_length >= 9 && *l.get_unchecked(0) == b'c' {
+        // "commodity "
+        if *l.get_unchecked(1) == b'o'
+            && *l.get_unchecked(2) == b'm'
+            && *l.get_unchecked(3) == b'm'
+            && *l.get_unchecked(4) == b'o'
+            && *l.get_unchecked(5) == b'd'
+            && *l.get_unchecked(6) == b'i'
+            && *l.get_unchecked(7) == b't'
+            && *l.get_unchecked(8) == b'y'
+            && *l.get_unchecked(9) == b' '
+        {
+            return Some(&line[0..9]);
+        }
+
+        // "capture "
+        if *l.get_unchecked(1) == b'a'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b't'
+            && *l.get_unchecked(4) == b'u'
+            && *l.get_unchecked(5) == b'r'
+            && *l.get_unchecked(6) == b'e'
+            && *l.get_unchecked(7) == b' '
+        {
+            return Some(&line[0..7]);
+        }
+
+        // "check "
+        if *l.get_unchecked(1) == b'h'
+            && *l.get_unchecked(2) == b'e'
+            && *l.get_unchecked(3) == b'c'
+            && *l.get_unchecked(4) == b'k'
+            && *l.get_unchecked(5) == b' '
+        {
+            return Some(&line[0..5]);
+        }
+    }
+
+    if line_length >= 2 {
+        // "P ", "D ", "Y "
+        if (*l.get_unchecked(0) == b'P'
+            || *l.get_unchecked(0) == b'D'
+            || *l.get_unchecked(0) == b'Y')
+            && *l.get_unchecked(1) == b' '
+        {
+            return Some(&line[0..1]);
+        }
+
+        if *l.get_unchecked(0) == b'd' && *l.get_unchecked(1) == b'e' {
+            // "define "
+            if line_length >= 7 {
+                if *l.get_unchecked(2) == b'f'
+                    && *l.get_unchecked(3) == b'i'
+                    && *l.get_unchecked(4) == b'n'
+                    && *l.get_unchecked(5) == b'e'
+                    && *l.get_unchecked(6) == b' '
+                {
+                    return Some(&line[0..6]);
+                }
+
+                // "decimal-mark "
+                if line_length >= 14
+                    && *l.get_unchecked(2) == b'c'
+                    && *l.get_unchecked(3) == b'i'
+                    && *l.get_unchecked(4) == b'm'
+                    && *l.get_unchecked(5) == b'a'
+                    && *l.get_unchecked(6) == b'l'
+                    && *l.get_unchecked(7) == b'-'
+                    && *l.get_unchecked(8) == b'm'
+                    && *l.get_unchecked(9) == b'a'
+                    && *l.get_unchecked(10) == b'r'
+                    && *l.get_unchecked(11) == b'k'
+                    && *l.get_unchecked(12) == b' '
+                {
+                    return Some(&line[0..13]);
+                }
+            }
+        }
+
+        if *l.get_unchecked(0) == b'e' && *l.get_unchecked(1) == b'n' {
+            // "end apply year"
+            if line_length >= 15
+                && *l.get_unchecked(2) == b'd'
+                && *l.get_unchecked(3) == b' '
+                && *l.get_unchecked(4) == b'a'
+                && *l.get_unchecked(5) == b'p'
+                && *l.get_unchecked(6) == b'p'
+                && *l.get_unchecked(7) == b'l'
+                && *l.get_unchecked(8) == b'y'
+                && *l.get_unchecked(9) == b' '
+                && *l.get_unchecked(10) == b'y'
+                && *l.get_unchecked(11) == b'e'
+                && *l.get_unchecked(12) == b'a'
+                && *l.get_unchecked(13) == b'r'
+            {
+                return Some(&line[0..14]);
+            }
+
+            // "end apply fixed"
+            if line_length >= 15
+                && *l.get_unchecked(2) == b'd'
+                && *l.get_unchecked(3) == b' '
+                && *l.get_unchecked(4) == b'a'
+                && *l.get_unchecked(5) == b'p'
+                && *l.get_unchecked(6) == b'p'
+                && *l.get_unchecked(7) == b'l'
+                && *l.get_unchecked(8) == b'y'
+                && *l.get_unchecked(9) == b' '
+                && *l.get_unchecked(10) == b'f'
+                && *l.get_unchecked(11) == b'i'
+                && *l.get_unchecked(12) == b'x'
+                && *l.get_unchecked(13) == b'e'
+                && *l.get_unchecked(14) == b'd'
+            {
+                return Some(&line[0..14]);
+            }
+
+            // "end apply tag"
+            if line_length >= 13
+                && *l.get_unchecked(2) == b'd'
+                && *l.get_unchecked(3) == b' '
+                && *l.get_unchecked(4) == b'a'
+                && *l.get_unchecked(5) == b'p'
+                && *l.get_unchecked(6) == b'p'
+                && *l.get_unchecked(7) == b'l'
+                && *l.get_unchecked(8) == b'y'
+                && *l.get_unchecked(9) == b' '
+                && *l.get_unchecked(10) == b't'
+                && *l.get_unchecked(11) == b'a'
+                && *l.get_unchecked(12) == b'g'
+            {
+                return Some(&line[0..12]);
+            }
+
+            // "end tag"
+            if line_length >= 7
+                && *l.get_unchecked(2) == b'd'
+                && *l.get_unchecked(3) == b' '
+                && *l.get_unchecked(4) == b't'
+                && *l.get_unchecked(5) == b'a'
+                && *l.get_unchecked(6) == b'g'
+            {
+                return Some(&line[0..6]);
+            }
+        }
+    }
+
+    if line_length >= 6 {
+        if *l.get_unchecked(0) == b'p' {
+            if *l.get_unchecked(1) == b'a'
+                && *l.get_unchecked(2) == b'y'
+                && *l.get_unchecked(3) == b'e'
+                && *l.get_unchecked(4) == b'e'
+                && *l.get_unchecked(5) == b' '
+            {
+                return Some(&line[0..5]);
+            }
+
+            // "python"
+            if line_length >= 7
+                && *l.get_unchecked(1) == b'y'
+                && *l.get_unchecked(2) == b't'
+                && *l.get_unchecked(3) == b'h'
+                && *l.get_unchecked(4) == b'o'
+                && *l.get_unchecked(5) == b'n'
+                && *l.get_unchecked(6) == b' '
+            {
+                return Some(&line[0..6]);
+            }
+        }
+    }
+
+    // "tag "
+    if line_length >= 4 && *l.get_unchecked(0) == b't' {
+        if *l.get_unchecked(1) == b'a' && *l.get_unchecked(2) == b'g' && *l.get_unchecked(3) == b' '
+        {
+            return Some(&line[0..3]);
+        }
+    }
+
+    // "include "
+    if line_length >= 8 && *l.get_unchecked(0) == b'i' {
+        if *l.get_unchecked(1) == b'n'
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'l'
+            && *l.get_unchecked(4) == b'u'
+            && *l.get_unchecked(5) == b'd'
+            && *l.get_unchecked(6) == b'e'
+            && *l.get_unchecked(7) == b' '
+        {
+            return Some(&line[0..7]);
+        }
+    }
+
+    // "bucket / A "
+    if line_length >= 10 && *l.get_unchecked(0) == b'b' {
+        if *l.get_unchecked(1) == b'u'
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'k'
+            && *l.get_unchecked(4) == b'e'
+            && *l.get_unchecked(5) == b't'
+            && *l.get_unchecked(6) == b' '
+            && *l.get_unchecked(7) == b'/'
+            && *l.get_unchecked(8) == b' '
+            && *l.get_unchecked(9) == b'A'
+            && *l.get_unchecked(10) == b' '
+        {
+            return Some(&line[0..10]);
+        }
+    }
+
+    // "value "
+    if line_length >= 6 && *l.get_unchecked(0) == b'v' {
+        if *l.get_unchecked(1) == b'a'
+            && *l.get_unchecked(2) == b'l'
+            && *l.get_unchecked(3) == b'u'
+            && *l.get_unchecked(4) == b'e'
+            && *l.get_unchecked(5) == b' '
+        {
+            return Some(&line[0..5]);
+        }
+    }
+
+    // "--command-line-flags"
+    if line_length >= 20 && *l.get_unchecked(0) == b'-' {
+        if *l.get_unchecked(1) == b'-'
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'o'
+            && *l.get_unchecked(4) == b'm'
+            && *l.get_unchecked(5) == b'm'
+            && *l.get_unchecked(6) == b'a'
+            && *l.get_unchecked(7) == b'n'
+            && *l.get_unchecked(8) == b'd'
+            && *l.get_unchecked(9) == b'-'
+            && *l.get_unchecked(10) == b'l'
+            && *l.get_unchecked(11) == b'i'
+            && *l.get_unchecked(12) == b'n'
+            && *l.get_unchecked(13) == b'e'
+            && *l.get_unchecked(14) == b'-'
+            && *l.get_unchecked(15) == b'f'
+            && *l.get_unchecked(16) == b'l'
+            && *l.get_unchecked(17) == b'a'
+            && *l.get_unchecked(18) == b'g'
+            && *l.get_unchecked(19) == b's'
+        {
+            return Some(&line[0..20]);
+        }
+    }
+
+    None
 }
 
 /// Entry value parser
@@ -1596,11 +1949,11 @@ impl EntryValueParser {
         let third_part_value = &value[self.third_part_value_start..self.third_part_value_end];
 
         let (first_part_value_before_decimals, first_part_value_after_decimals) =
-            split_value_in_before_decimals_after_decimals(&first_part_value);
+            split_value_in_before_decimals_after_decimals(first_part_value);
         let (second_part_value_before_decimals, second_part_value_after_decimals) =
-            split_value_in_before_decimals_after_decimals(&second_part_value);
+            split_value_in_before_decimals_after_decimals(second_part_value);
         let (third_part_value_before_decimals, third_part_value_after_decimals) =
-            split_value_in_before_decimals_after_decimals(&third_part_value);
+            split_value_in_before_decimals_after_decimals(third_part_value);
 
         /*
         let (before_decimals, after_decimals) =
@@ -1636,7 +1989,7 @@ impl EntryValueParser {
     }
 }
 
-fn split_value_in_before_decimals_after_decimals<'a>(value: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8]) {
     if let Some(pos) = value.iter().rposition(|&c| c == b'.' || c == b',') {
         let after = &value[pos + 1..];
         if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
@@ -1649,7 +2002,7 @@ fn split_value_in_before_decimals_after_decimals<'a>(value: &'a [u8]) -> (&'a [u
     }
 
     let mut idx = 0;
-    for c in value.iter() {
+    for c in value {
         if c.is_ascii_digit() || *c == b',' || *c == b'.' || *c == b'-' || *c == b'+' {
             idx += 1;
         } else {
@@ -1658,7 +2011,7 @@ fn split_value_in_before_decimals_after_decimals<'a>(value: &'a [u8]) -> (&'a [u
     }
 
     let (before, after) = value.split_at(idx);
-    if before.is_empty() {
+    if before.is_empty() && !after.is_empty() {
         if after[after.len() - 1].is_ascii_digit() {
             // case $-1
             (after, before)
@@ -1676,20 +2029,6 @@ fn split_value_in_before_decimals_after_decimals<'a>(value: &'a [u8]) -> (&'a [u
     } else {
         (before, after)
     }
-}
-
-/// Returns the first word in a line, skipping leading whitespace.
-fn first_word(line: &[u8]) -> &[u8] {
-    // TODO: maybe this function is too much for the context in which it is used
-    let start = line
-        .iter()
-        .position(|b| !b.is_ascii_whitespace())
-        .unwrap_or(0);
-    let end = line[start..]
-        .iter()
-        .position(|b| b.is_ascii_whitespace())
-        .map_or(line.len(), |i| start + i);
-    &line[start..end]
 }
 
 #[cfg(test)]

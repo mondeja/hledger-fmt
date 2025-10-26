@@ -11,9 +11,7 @@ pub fn init_tracing() {
         .compact()
         .with_test_writer()
         .with_target(false)
-        .with_span_events(
-            tracing_subscriber::fmt::format::FmtSpan::ENTER
-        )
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::ENTER)
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("failed to set tracing subscriber");

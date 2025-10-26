@@ -15,8 +15,10 @@ pub fn run(cmd: clap::Command) -> i32 {
     } else {
         Vec::new()
     };
-    let files_arg: Vec<FilePath> =
-        files_arg.iter().map(|s| FilePath::from(s.as_str())).collect();
+    let files_arg: Vec<FilePath> = files_arg
+        .iter()
+        .map(|s| FilePath::from(s.as_str()))
+        .collect();
     let fix = args.get_flag("fix");
     let exit_zero_on_changes = args.get_flag("exit-zero-on-changes");
 

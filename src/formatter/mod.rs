@@ -58,7 +58,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                 buffer.push(*prefix as u8);
                 buffer.extend_from_slice(content.as_ref());
             }
-            JournalCstNode::EmptyLine { .. } => {
+            JournalCstNode::EmptyLine => {
                 buffer.push(b'\n');
             }
             JournalCstNode::MultilineComment { content, .. } => {
@@ -93,10 +93,12 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                 buffer.push(comment.prefix as u8);
                                 buffer.extend_from_slice(comment.content.as_ref());
                             }
+                            buffer.push(b'\n');
                         }
                         DirectiveNode::Subdirective(content) => {
                             spaces::extend(buffer, 2);
                             buffer.extend_from_slice(content.as_ref());
+                            buffer.push(b'\n');
                         }
                         DirectiveNode::SingleLineComment(SingleLineComment {
                             content,
@@ -158,19 +160,16 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                 let name_len = name.chars_count() as u8;
                                 let before_decimals_len =
                                     value_first_part_before_decimals.chars_count() as u8;
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-                                    + max_entry_name_len
+                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_name_len
                                     - name_len
                                     + max_entry_value_first_part_before_decimals_len
                                     - before_decimals_len;
                                 spaces::extend(&mut entry_line_buffer, n_spaces as usize);
                             }
-                            entry_line_buffer.extend_from_slice(
-                                value_first_part_before_decimals.as_ref(),
-                            );
-                            entry_line_buffer.extend_from_slice(
-                                value_first_part_after_decimals.as_ref(),
-                            );
+                            entry_line_buffer
+                                .extend_from_slice(value_first_part_before_decimals.as_ref());
+                            entry_line_buffer
+                                .extend_from_slice(value_first_part_after_decimals.as_ref());
 
                             if !value_first_separator.is_empty() {
                                 let after_decimals_len =
@@ -182,8 +181,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                             }
                             entry_line_buffer.extend_from_slice(value_first_separator.as_ref());
                             if !value_second_part_before_decimals.is_empty() {
-                                let value_first_separator_len =
-                                    value_first_separator.len() as u8;
+                                let value_first_separator_len = value_first_separator.len() as u8;
                                 let value_second_part_before_decimals_len =
                                     value_second_part_before_decimals.chars_count() as u8;
                                 let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
@@ -193,12 +191,10 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                     - value_second_part_before_decimals_len;
                                 spaces::extend(&mut entry_line_buffer, n_spaces as usize);
                             }
-                            entry_line_buffer.extend_from_slice(
-                                value_second_part_before_decimals.as_ref(),
-                            );
-                            entry_line_buffer.extend_from_slice(
-                                value_second_part_after_decimals.as_ref(),
-                            );
+                            entry_line_buffer
+                                .extend_from_slice(value_second_part_before_decimals.as_ref());
+                            entry_line_buffer
+                                .extend_from_slice(value_second_part_after_decimals.as_ref());
 
                             if !value_second_separator.is_empty() {
                                 let value_second_part_after_decimals_len =
@@ -210,8 +206,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                             }
                             entry_line_buffer.extend_from_slice(value_second_separator.as_ref());
                             if !value_third_part_before_decimals.is_empty() {
-                                let value_second_separator_len =
-                                    value_second_separator.len() as u8;
+                                let value_second_separator_len = value_second_separator.len() as u8;
                                 let value_third_part_before_decimals_len =
                                     value_third_part_before_decimals.chars_count() as u8;
                                 let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
@@ -221,14 +216,10 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                     - value_third_part_before_decimals_len;
                                 spaces::extend(&mut entry_line_buffer, n_spaces as usize);
                             }
-                            entry_line_buffer.extend_from_slice(
-                                value_third_part_before_decimals.as_ref(),
-                            );
-                            entry_line_buffer.extend_from_slice(
-                                value_third_part_after_decimals.as_ref(),
-                            );
-
-
+                            entry_line_buffer
+                                .extend_from_slice(value_third_part_before_decimals.as_ref());
+                            entry_line_buffer
+                                .extend_from_slice(value_third_part_after_decimals.as_ref());
 
                             if let Some(comment) = comment {
                                 let comment_separation = if !value_second_separator.is_empty() {
@@ -245,7 +236,8 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                         - value_first_part_after_decimals.chars_count() as u8
                                 };
 
-                                let entry_line_chars_count = String::from_utf8_lossy(&entry_line_buffer).chars().count();
+                                let entry_line_chars_count =
+                                    String::from_utf8_lossy(&entry_line_buffer).chars().count();
 
                                 buffer.append(&mut entry_line_buffer);
 
@@ -263,7 +255,6 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                             } else {
                                 buffer.append(&mut entry_line_buffer);
                             }
-
                             buffer.push(b'\n');
                         }
                         TransactionNode::SingleLineComment(SingleLineComment {
@@ -281,15 +272,12 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
             }
         }
 
-
-
         #[cfg(any(test, feature = "tracing"))]
         {
             let span = tracing::span!(tracing::Level::TRACE, "format_nodes(formatted)");
             let _enter = span.enter();
 
             tracing::trace!("buffer=\"{}\"", String::from_utf8_lossy(buffer));
-
         }
     }
 }

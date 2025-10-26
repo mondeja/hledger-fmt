@@ -1,4 +1,3 @@
-
 #[cfg_attr(any(test, feature = "tracing"), derive(PartialEq))]
 pub(crate) struct ByteStr<'a>(&'a [u8]);
 
@@ -36,7 +35,6 @@ impl<'a> ByteStr<'a> {
         }
     }
 }
-
 
 #[cfg(test)]
 impl<'a> From<&'a str> for ByteStr<'a> {
