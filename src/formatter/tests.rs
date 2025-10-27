@@ -13,8 +13,9 @@ fn with_ending_newline(s: &str) -> String {
 }
 
 fn assert_raw_format(content: &str, expected: &str) {
-    let parsed = parse_content(content).unwrap();
-    let formatted = format_content(&parsed);
+    let parsed = parse_content(content.as_bytes()).unwrap();
+    let buffer = format_content(&parsed);
+    let formatted = String::from_utf8_lossy(&buffer).to_string();
     assert_eq!(formatted, expected, "{}", {
         let expected_as_string = expected.to_string();
         let diff = TextDiff::from_lines(&expected_as_string, &formatted);
@@ -469,6 +470,7 @@ fn complex_transaction() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/13
 #[test]
 fn issue_13() {
     assert_format(
@@ -499,6 +501,7 @@ fn lots() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/25
 #[test]
 fn issue_25() {
     assert_format(
@@ -511,6 +514,7 @@ fn issue_25() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/27
 #[test]
 fn issue_27() {
     assert_format(

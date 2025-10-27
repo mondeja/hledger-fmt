@@ -1,12 +1,12 @@
 use crate::parser::{errors::*, *};
 
 fn assert_journal(content: &str, expected: Vec<JournalCstNode>) {
-    let journal = parse_content(content);
+    let journal = parse_content(content.as_bytes());
     assert_eq!(journal, Ok(expected));
 }
 
 fn assert_journal_err(content: &str, expected: SyntaxError) {
-    let journal = parse_content(content);
+    let journal = parse_content(content.as_bytes());
     assert_eq!(journal, Err(expected));
 }
 
@@ -15,10 +15,9 @@ fn single_line_comment_hash() {
     assert_journal(
         "# comment",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment".to_string(),
+            content: " comment".into(),
             prefix: CommentPrefix::Hash,
-            lineno: 1,
-            colno: 1,
+            indent: 0,
         })],
     );
 }
@@ -28,10 +27,9 @@ fn single_line_comment_semicolon() {
     assert_journal(
         "; comment",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment".to_string(),
+            content: " comment".into(),
             prefix: CommentPrefix::Semicolon,
-            lineno: 1,
-            colno: 1,
+            indent: 0,
         })],
     );
 }
@@ -41,20 +39,18 @@ fn single_line_comment_indented() {
     assert_journal(
         "  # comment",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment".to_string(),
+            content: " comment".into(),
             prefix: CommentPrefix::Hash,
-            lineno: 1,
-            colno: 3,
+            indent: 2,
         })],
     );
 
     assert_journal(
         "    ; comment # foo ; bar",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment # foo ; bar".to_string(),
+            content: " comment # foo ; bar".into(),
             prefix: CommentPrefix::Semicolon,
-            lineno: 1,
-            colno: 5,
+            indent: 4,
         })],
     );
 }
@@ -64,11 +60,10 @@ fn single_line_comment_tab_indented_hash() {
     assert_journal(
         "\t# comment",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment".to_string(),
+            content: " comment".into(),
             prefix: CommentPrefix::Hash,
-            lineno: 1,
             // a tab is the second column in the line
-            colno: 2,
+            indent: 1,
         })],
     );
 }
@@ -78,10 +73,9 @@ fn single_line_comment_tab_indented_semicolon() {
     assert_journal(
         "\t\t; comment # foo ; bar",
         vec![JournalCstNode::SingleLineComment(SingleLineComment {
-            content: " comment # foo ; bar".to_string(),
+            content: " comment # foo ; bar".into(),
             prefix: CommentPrefix::Semicolon,
-            lineno: 1,
-            colno: 3,
+            indent: 2,
         })],
     );
 }
@@ -91,9 +85,7 @@ fn multiline_comment() {
     assert_journal(
         "comment\ncontent\nend comment",
         vec![JournalCstNode::MultilineComment {
-            content: "content\n".to_string(),
-            lineno_start: 1,
-            lineno_end: 3,
+            content: "content\n".into(),
         }],
     );
 }
@@ -104,9 +96,7 @@ fn multiline_comment_not_ended() {
     assert_journal(
         "comment\ncontent",
         vec![JournalCstNode::MultilineComment {
-            content: "content\n".to_string(),
-            lineno_start: 1,
-            lineno_end: 2,
+            content: "content".into(),
         }],
     );
 }
@@ -143,13 +133,12 @@ fn directive_with_tabbed_comment() {
         "account bank\t; comment",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "account".to_string(),
-                content: "bank".to_string(),
+                name: "account".into(),
+                content: "bank".into(),
                 comment: Some(SingleLineComment {
                     prefix: CommentPrefix::Semicolon,
-                    content: " comment".to_string(),
-                    colno: 17,
-                    lineno: 1,
+                    content: " comment".into(),
+                    indent: 4,
                 }),
             })],
             max_name_content_len: 11,
@@ -164,23 +153,21 @@ fn directives_with_multiple_tabbed_comments() {
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![
                 DirectiveNode::Directive(Directive {
-                    name: "account".to_string(),
-                    content: "foo".to_string(),
+                    name: "account".into(),
+                    content: "foo".into(),
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
-                        content: " foo comment".to_string(),
-                        colno: 20,
-                        lineno: 1,
+                        content: " foo comment".into(),
+                        indent: 4,
                     }),
                 }),
                 DirectiveNode::Directive(Directive {
-                    name: "account".to_string(),
-                    content: "bar".to_string(),
+                    name: "account".into(),
+                    content: "bar".into(),
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
-                        content: " bar comment".to_string(),
-                        colno: 24,
-                        lineno: 2,
+                        content: " bar comment".into(),
+                        indent: 4,
                     }),
                 }),
             ],
@@ -195,8 +182,8 @@ fn account_directive() {
         "account Assets:Bank:Checking",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "account".to_string(),
-                content: "Assets:Bank:Checking".to_string(),
+                name: "account".into(),
+                content: "Assets:Bank:Checking".into(),
                 comment: None,
             })],
             max_name_content_len: 27, // "account" (7) + "Assets:Bank:Checking" (20),
@@ -210,8 +197,8 @@ fn account_directive_with_whitespace() {
         "account Assets Bank:Checking",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "account".to_string(),
-                content: "Assets Bank:Checking".to_string(),
+                name: "account".into(),
+                content: "Assets Bank:Checking".into(),
                 comment: None,
             })],
             max_name_content_len: 27,
@@ -225,13 +212,12 @@ fn account_directive_with_comment() {
         "account Assets:Bank:Checking  ; comment",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "account".to_string(),
-                content: "Assets:Bank:Checking".to_string(),
+                name: "account".into(),
+                content: "Assets:Bank:Checking".into(),
                 comment: Some(SingleLineComment {
                     prefix: CommentPrefix::Semicolon,
-                    content: " comment".to_string(),
-                    colno: 31,
-                    lineno: 1,
+                    content: " comment".into(),
+                    indent: 1, // TODO: idents for directive comments are not used in the formatter
                 }),
             })],
             max_name_content_len: 27,
@@ -245,8 +231,8 @@ fn commodity_directive() {
         "commodity $",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "commodity".to_string(),
-                content: "$".to_string(),
+                name: "commodity".into(),
+                content: "$".into(),
                 comment: None,
             })],
             max_name_content_len: 10,
@@ -260,8 +246,8 @@ fn decimal_mark_directive() {
         "decimal-mark ,",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "decimal-mark".to_string(),
-                content: ",".to_string(),
+                name: "decimal-mark".into(),
+                content: ",".into(),
                 comment: None,
             })],
             max_name_content_len: 13,
@@ -275,8 +261,8 @@ fn payee_directive() {
         "payee Foo Bar",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "payee".to_string(),
-                content: "Foo Bar".to_string(),
+                name: "payee".into(),
+                content: "Foo Bar".into(),
                 comment: None,
             })],
             max_name_content_len: 12,
@@ -290,8 +276,8 @@ fn tag_directive() {
         "tag foo bar",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "tag".to_string(),
-                content: "foo bar".to_string(),
+                name: "tag".into(),
+                content: "foo bar".into(),
                 comment: None,
             })],
             max_name_content_len: 10,
@@ -305,8 +291,8 @@ fn include_directive() {
         "include /path/to/file",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "include".to_string(),
-                content: "/path/to/file".to_string(),
+                name: "include".into(),
+                content: "/path/to/file".into(),
                 comment: None,
             })],
             max_name_content_len: 20,
@@ -320,8 +306,8 @@ fn p_directive() {
         "P foobarbaz",
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![DirectiveNode::Directive(Directive {
-                name: "P".to_string(),
-                content: "foobarbaz".to_string(),
+                name: "P".into(),
+                content: "foobarbaz".into(),
                 comment: None,
             })],
             max_name_content_len: 10,
@@ -336,18 +322,18 @@ fn directives_group() {
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![
                 DirectiveNode::Directive(Directive {
-                    name: "account".to_string(),
-                    content: "Assets:Bank:Checking".to_string(),
+                    name: "account".into(),
+                    content: "Assets:Bank:Checking".into(),
                     comment: None,
                 }),
                 DirectiveNode::Directive(Directive {
-                    name: "commodity".to_string(),
-                    content: "$".to_string(),
+                    name: "commodity".into(),
+                    content: "$".into(),
                     comment: None,
                 }),
                 DirectiveNode::Directive(Directive {
-                    name: "decimal-mark".to_string(),
-                    content: ",".to_string(),
+                    name: "decimal-mark".into(),
+                    content: ",".into(),
                     comment: None,
                 }),
             ],
@@ -363,31 +349,28 @@ fn directives_group_with_comments() {
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![
                 DirectiveNode::Directive(Directive {
-                    name: "account".to_string(),
-                    content: "foo:bar".to_string(),
+                    name: "account".into(),
+                    content: "foo:bar".into(),
                     comment: None,
                 }),
                 DirectiveNode::SingleLineComment(SingleLineComment {
-                    content: " comment".to_string(),
+                    content: " comment".into(),
                     prefix: CommentPrefix::Semicolon,
-                    lineno: 2,
-                    colno: 1,
+                    indent: 0,
                 }),
                 DirectiveNode::Directive(Directive {
-                    name: "commodity".to_string(),
-                    content: "$100.00".to_string(),
+                    name: "commodity".into(),
+                    content: "$100.00".into(),
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
-                        content: " comment".to_string(),
-                        colno: 20,
-                        lineno: 3,
+                        content: " comment".into(),
+                        indent: 1, // TODO: idents for directive comments are not used in the formatter
                     }),
                 }),
                 DirectiveNode::SingleLineComment(SingleLineComment {
-                    content: " other comment".to_string(),
+                    content: " other comment".into(),
                     prefix: CommentPrefix::Hash,
-                    lineno: 4,
-                    colno: 3,
+                    indent: 2,
                 }),
             ],
             max_name_content_len: 16,
@@ -402,13 +385,186 @@ fn subdirective() {
         vec![JournalCstNode::DirectivesGroup {
             nodes: vec![
                 DirectiveNode::Directive(Directive {
-                    name: "account".to_string(),
-                    content: "Assets:Bank:Checking".to_string(),
+                    name: "account".into(),
+                    content: "Assets:Bank:Checking".into(),
                     comment: None,
                 }),
-                DirectiveNode::Subdirective("subdirective foo bar".to_string()),
+                DirectiveNode::Subdirective("subdirective foo bar".into()),
             ],
             max_name_content_len: 27,
         }],
     );
+}
+
+#[test]
+fn all_directives() {
+    assert_journal(
+        r#"account Assets:Bank:Checking
+commodity $
+decimal-mark ,
+payee Foo Bar
+tag foo bar
+include /path/to/file
+P foobarbaz
+apply account Expenses:Food
+D 2024-01-01
+Y 2024
+apply fixed
+apply tag Important
+assert Assets:Bank:Checking >= $0
+capture Transactions2024
+check Assets:Bank:Checking
+define MyDefinition
+bucket / A Expenses:Food
+end apply fixed
+end apply tag
+end apply year
+end tag
+eval foobar
+expr foobar
+python print('Hello, World!')
+value $100.00
+--command-line-flags foobar
+"#,
+        vec![JournalCstNode::DirectivesGroup {
+            nodes: vec![
+                DirectiveNode::Directive(Directive {
+                    name: "account".into(),
+                    content: "Assets:Bank:Checking".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "commodity".into(),
+                    content: "$".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "decimal-mark".into(),
+                    content: ",".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "payee".into(),
+                    content: "Foo Bar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "tag".into(),
+                    content: "foo bar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "include".into(),
+                    content: "/path/to/file".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "P".into(),
+                    content: "foobarbaz".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply account".into(),
+                    content: "Expenses:Food".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "D".into(),
+                    content: "2024-01-01".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "Y".into(),
+                    content: "2024".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply fixed".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply tag".into(),
+                    content: "Important".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "assert".into(),
+                    content: "Assets:Bank:Checking >= $0".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "capture".into(),
+                    content: "Transactions2024".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "check".into(),
+                    content: "Assets:Bank:Checking".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "define".into(),
+                    content: "MyDefinition".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "bucket / A".into(),
+                    content: "Expenses:Food".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply fixed".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply tag".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply year".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end tag".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "eval".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "expr".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "python".into(),
+                    content: "print('Hello, World!')".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "value".into(),
+                    content: "$100.00".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "--command-line-flags".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+            ],
+            max_name_content_len: 32,
+        }],
+    )
+}
+
+#[test]
+fn parse_empty() {
+    assert_journal("", vec![]);
 }

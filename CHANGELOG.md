@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Unreleased - [0.3.4]
+
+### New features
+
+- Add `format_journal_bytes` function to format hledger journal content
+  from a byte slice and return the formatted content as a byte vector.
+- Add tracing feature to allow building with tracing support for better
+  debugging.
+- Add `--trace-file` CLI option to write tracing logs to a file.
+
+### Enhancements
+
+- Major performance improvements.
+
 ## 2025-10-21 - [0.3.3]
 
 - Fix alignments formatting multiple currency formats.

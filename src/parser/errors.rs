@@ -10,11 +10,21 @@ pub struct SyntaxError {
 
 /// Generate an error context similar to what hledger does.
 #[cfg(feature = "cli")]
-pub fn build_error_context(error: &SyntaxError, content: &str, file_path: &str) -> String {
-    let lines = content.lines().collect::<Vec<&str>>();
+pub fn build_error_context(
+    error: &SyntaxError,
+    content: &[u8],
+    file_path_or_stdin: &crate::file_path::FilePathOrStdin,
+) -> String {
+    use std::io::{self, BufRead, Cursor};
+    let cursor = Cursor::new(content);
+    let reader = io::BufReader::new(cursor);
+    let lines = reader
+        .lines()
+        .map(|line| line.unwrap_or_default())
+        .collect::<Vec<String>>();
     let mut context = format!(
         "hledger-fmt error: {}:{}:{}:\n",
-        file_path, error.lineno, error.colno_start
+        file_path_or_stdin, error.lineno, error.colno_start
     );
 
     let lineno_len = format!("{}", error.lineno).len();

@@ -190,6 +190,15 @@ jobs:
         run: cargo build --all-features
       - name: Run unit tests
         run: cargo test --all-features
+        env:
+          RUST_BACKTRACE: full
+      - name: Run with tracing
+        run: cargo run --features tracing -- --trace-file trace.log --exit-zero-on-changes
+      - name: Upload trace log
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-log-${{ matrix.runs-on }}
+          path: trace.log
 
   test-release:
     needs:

@@ -45,28 +45,39 @@ pub fn build() -> Command {
             .action(ArgAction::SetTrue),
     );
 
-    cmd.arg(
+    let cmd = cmd.arg(
         Arg::new("exit-zero-on-changes")
             .long("exit-zero-on-changes")
             .help("Exit with code 0, even if files have been formatted.")
             .action(ArgAction::SetTrue),
-    )
-    .disable_help_flag(true)
-    .arg(
-        Arg::new("help")
-            .short('h')
-            .long("help")
-            .help("Print help.")
-            .action(ArgAction::Help),
-    )
-    .disable_version_flag(true)
-    .version(env!("CARGO_PKG_VERSION"))
-    .arg(
-        Arg::new("version")
-            .short('V')
-            .long("version")
-            .help("Print version.")
-            .action(ArgAction::Version),
-    )
-    .after_help("To disable colors in the output, set the environment variable NO_COLOR.")
+    );
+
+    #[cfg(feature = "tracing")]
+    let cmd = cmd.arg(
+        Arg::new("trace-file")
+            .long("trace-file")
+            .help("Path to a file where tracing logs will be written.")
+            .action(ArgAction::Set)
+            .value_parser(value_parser!(String))
+            .value_name("TRACE_FILE"),
+    );
+
+    cmd.disable_help_flag(true)
+        .arg(
+            Arg::new("help")
+                .short('h')
+                .long("help")
+                .help("Print help.")
+                .action(ArgAction::Help),
+        )
+        .disable_version_flag(true)
+        .version(env!("CARGO_PKG_VERSION"))
+        .arg(
+            Arg::new("version")
+                .short('V')
+                .long("version")
+                .help("Print version.")
+                .action(ArgAction::Version),
+        )
+        .after_help("To disable colors in the output, set the environment variable NO_COLOR.")
 }
