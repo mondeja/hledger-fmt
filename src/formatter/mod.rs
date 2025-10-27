@@ -2,8 +2,7 @@
 mod tests;
 
 use crate::parser::{
-    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionEntry,
-    TransactionNode,
+    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionNode,
 };
 
 const TRANSACTION_ENTRY_VALUE_SPACING: usize = 2;
@@ -140,95 +139,36 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                 for entry in entries {
                     match entry {
                         TransactionNode::TransactionEntry(inner) => {
-                            let TransactionEntry {
-                                name,
-                                value_first_part_before_decimals,
-                                value_first_part_after_decimals,
-                                value_first_separator,
-                                value_second_part_before_decimals,
-                                value_second_part_after_decimals,
-                                value_second_separator,
-                                value_third_part_before_decimals,
-                                value_third_part_after_decimals,
-                                comment,
-                            } = inner.as_ref();
+                            let e = inner.as_ref();
 
-                            let mut entry_line_buffer = Vec::with_capacity(name.len() + 32);
+                            if let Some(ref comment) = e.comment {
+                                let mut entry_line_buffer = Vec::with_capacity(e.name.len() + 32);
+                                extend_entry(
+                                    &mut entry_line_buffer,
+                                    e,
+                                    *first_entry_indent,
+                                    *max_entry_name_len,
+                                    *max_entry_value_first_part_before_decimals_len,
+                                    *max_entry_value_first_part_after_decimals_len,
+                                    *max_entry_value_first_separator_len,
+                                    *max_entry_value_second_part_before_decimals_len,
+                                    *max_entry_value_second_part_after_decimals_len,
+                                    *max_entry_value_second_separator_len,
+                                    *max_entry_value_third_part_before_decimals_len,
+                                );
 
-                            spaces::extend(&mut entry_line_buffer, *first_entry_indent);
-                            entry_line_buffer.extend_from_slice(name);
-                            if !value_first_part_before_decimals.is_empty() {
-                                let name_len = name.chars_count();
-                                let before_decimals_len =
-                                    value_first_part_before_decimals.chars_count();
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_name_len
-                                    - name_len
-                                    + max_entry_value_first_part_before_decimals_len
-                                    - before_decimals_len;
-                                spaces::extend(&mut entry_line_buffer, n_spaces);
-                            }
-                            entry_line_buffer.extend_from_slice(value_first_part_before_decimals);
-                            entry_line_buffer.extend_from_slice(value_first_part_after_decimals);
-
-                            if !value_first_separator.is_empty() {
-                                let after_decimals_len =
-                                    value_first_part_after_decimals.chars_count();
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-                                    + max_entry_value_first_part_after_decimals_len
-                                    - after_decimals_len;
-                                spaces::extend(&mut entry_line_buffer, n_spaces);
-                            }
-                            entry_line_buffer.extend_from_slice(value_first_separator);
-                            if !value_second_part_before_decimals.is_empty() {
-                                let value_first_separator_len = value_first_separator.len();
-                                let value_second_part_before_decimals_len =
-                                    value_second_part_before_decimals.chars_count();
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-                                    + max_entry_value_first_separator_len
-                                    - value_first_separator_len
-                                    + max_entry_value_second_part_before_decimals_len
-                                    - value_second_part_before_decimals_len;
-                                spaces::extend(&mut entry_line_buffer, n_spaces);
-                            }
-                            entry_line_buffer.extend_from_slice(value_second_part_before_decimals);
-                            entry_line_buffer.extend_from_slice(value_second_part_after_decimals);
-
-                            if !value_second_separator.is_empty() {
-                                let value_second_part_after_decimals_len =
-                                    value_second_part_after_decimals.chars_count();
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-                                    + max_entry_value_second_part_after_decimals_len
-                                    - value_second_part_after_decimals_len;
-                                spaces::extend(&mut entry_line_buffer, n_spaces);
-                            }
-                            entry_line_buffer.extend_from_slice(value_second_separator);
-                            if !value_third_part_before_decimals.is_empty() {
-                                let value_second_separator_len = value_second_separator.len();
-                                let value_third_part_before_decimals_len =
-                                    value_third_part_before_decimals.chars_count();
-                                let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-                                    + max_entry_value_second_separator_len
-                                    - value_second_separator_len
-                                    + max_entry_value_third_part_before_decimals_len
-                                    - value_third_part_before_decimals_len;
-                                spaces::extend(&mut entry_line_buffer, n_spaces);
-                            }
-                            entry_line_buffer.extend_from_slice(value_third_part_before_decimals);
-                            entry_line_buffer.extend_from_slice(value_third_part_after_decimals);
-
-                            if let Some(comment) = comment {
-                                let comment_separation = if !value_second_separator.is_empty() {
+                                let comment_separation = if !e.value_second_separator.is_empty() {
                                     TRANSACTION_ENTRY_VALUE_SPACING
                                         + max_entry_value_third_part_after_decimals_len
-                                        - value_third_part_after_decimals.chars_count()
-                                } else if !value_first_separator.is_empty() {
+                                        - e.value_third_part_after_decimals.chars_count()
+                                } else if !e.value_first_separator.is_empty() {
                                     TRANSACTION_ENTRY_VALUE_SPACING
                                         + max_entry_value_second_part_after_decimals_len
-                                        - value_second_part_after_decimals.chars_count()
+                                        - e.value_second_part_after_decimals.chars_count()
                                 } else {
                                     TRANSACTION_ENTRY_VALUE_SPACING
                                         + max_entry_value_first_part_after_decimals_len
-                                        - value_first_part_after_decimals.chars_count()
+                                        - e.value_first_part_after_decimals.chars_count()
                                 };
 
                                 let entry_line_chars_count =
@@ -248,7 +188,19 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                 buffer.push(comment.prefix as u8);
                                 buffer.extend_from_slice(&comment.content);
                             } else {
-                                buffer.append(&mut entry_line_buffer);
+                                extend_entry(
+                                    buffer,
+                                    e,
+                                    *first_entry_indent,
+                                    *max_entry_name_len,
+                                    *max_entry_value_first_part_before_decimals_len,
+                                    *max_entry_value_first_part_after_decimals_len,
+                                    *max_entry_value_first_separator_len,
+                                    *max_entry_value_second_part_before_decimals_len,
+                                    *max_entry_value_second_part_after_decimals_len,
+                                    *max_entry_value_second_separator_len,
+                                    *max_entry_value_third_part_before_decimals_len,
+                                );
                             }
                             buffer.push(b'\n');
                         }
@@ -275,6 +227,77 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
 
         tracing::trace!("buffer=\"{}\"", String::from_utf8_lossy(buffer));
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn extend_entry(
+    buffer: &mut Vec<u8>,
+    entry: &crate::parser::TransactionEntry,
+    first_entry_indent: usize,
+    max_entry_name_len: usize,
+    max_entry_value_first_part_before_decimals_len: usize,
+    max_entry_value_first_part_after_decimals_len: usize,
+    max_entry_value_first_separator_len: usize,
+    max_entry_value_second_part_before_decimals_len: usize,
+    max_entry_value_second_part_after_decimals_len: usize,
+    max_entry_value_second_separator_len: usize,
+    max_entry_value_third_part_before_decimals_len: usize,
+) {
+    spaces::extend(buffer, first_entry_indent);
+    buffer.extend_from_slice(&entry.name);
+    if !entry.value_first_part_before_decimals.is_empty() {
+        let name_len = entry.name.chars_count();
+        let before_decimals_len = entry.value_first_part_before_decimals.chars_count();
+        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_name_len - name_len
+            + max_entry_value_first_part_before_decimals_len
+            - before_decimals_len;
+        spaces::extend(buffer, n_spaces);
+    }
+    buffer.extend_from_slice(&entry.value_first_part_before_decimals);
+    buffer.extend_from_slice(&entry.value_first_part_after_decimals);
+
+    if !entry.value_first_separator.is_empty() {
+        let after_decimals_len = entry.value_first_part_after_decimals.chars_count();
+        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
+            + max_entry_value_first_part_after_decimals_len
+            - after_decimals_len;
+        spaces::extend(buffer, n_spaces);
+    }
+    buffer.extend_from_slice(&entry.value_first_separator);
+    if !entry.value_second_part_before_decimals.is_empty() {
+        let value_first_separator_len = entry.value_first_separator.len();
+        let value_second_part_before_decimals_len =
+            entry.value_second_part_before_decimals.chars_count();
+        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_value_first_separator_len
+            - value_first_separator_len
+            + max_entry_value_second_part_before_decimals_len
+            - value_second_part_before_decimals_len;
+        spaces::extend(buffer, n_spaces);
+    }
+    buffer.extend_from_slice(&entry.value_second_part_before_decimals);
+    buffer.extend_from_slice(&entry.value_second_part_after_decimals);
+
+    if !entry.value_second_separator.is_empty() {
+        let value_second_part_after_decimals_len =
+            entry.value_second_part_after_decimals.chars_count();
+        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
+            + max_entry_value_second_part_after_decimals_len
+            - value_second_part_after_decimals_len;
+        spaces::extend(buffer, n_spaces);
+    }
+    buffer.extend_from_slice(&entry.value_second_separator);
+    if !entry.value_third_part_before_decimals.is_empty() {
+        let value_second_separator_len = entry.value_second_separator.len();
+        let value_third_part_before_decimals_len =
+            entry.value_third_part_before_decimals.chars_count();
+        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_value_second_separator_len
+            - value_second_separator_len
+            + max_entry_value_third_part_before_decimals_len
+            - value_third_part_before_decimals_len;
+        spaces::extend(buffer, n_spaces);
+    }
+    buffer.extend_from_slice(&entry.value_third_part_before_decimals);
+    buffer.extend_from_slice(&entry.value_third_part_after_decimals);
 }
 
 mod spaces {
