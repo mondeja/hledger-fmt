@@ -13,7 +13,7 @@ pub struct SyntaxError {
 pub fn build_error_context(
     error: &SyntaxError,
     content: &[u8],
-    file_path: &crate::file_path::FilePath,
+    file_path_or_stdin: &crate::file_path::FilePathOrStdin,
 ) -> String {
     use std::io::{self, BufRead, Cursor};
     let cursor = Cursor::new(content);
@@ -24,7 +24,7 @@ pub fn build_error_context(
         .collect::<Vec<String>>();
     let mut context = format!(
         "hledger-fmt error: {}:{}:{}:\n",
-        file_path, error.lineno, error.colno_start
+        file_path_or_stdin, error.lineno, error.colno_start
     );
 
     let lineno_len = format!("{}", error.lineno).len();

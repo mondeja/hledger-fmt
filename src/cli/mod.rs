@@ -3,7 +3,7 @@ pub mod builder;
 #[cfg(test)]
 mod tests;
 
-use crate::file_path::FilePath;
+use crate::file_path::FilePathOrStdin;
 use std::io::Read;
 
 #[doc(hidden)]
@@ -25,9 +25,9 @@ pub fn run(cmd: clap::Command) -> i32 {
     } else {
         Vec::new()
     };
-    let files_arg: Vec<FilePath> = files_arg
+    let files_arg: Vec<FilePathOrStdin> = files_arg
         .iter()
-        .map(|s| FilePath::from(s.as_str()))
+        .map(|s| FilePathOrStdin::from(s.as_str()))
         .collect();
     let fix = args.get_flag("fix");
     let exit_zero_on_changes = args.get_flag("exit-zero-on-changes");
@@ -38,7 +38,7 @@ pub fn run(cmd: clap::Command) -> i32 {
     let mut exitcode = 0;
 
     // if no files, search in current directory and its subdirectories
-    let mut files: Vec<(FilePath, Vec<u8>)> = Vec::new();
+    let mut files: Vec<(FilePathOrStdin, Vec<u8>)> = Vec::new();
     let stdin = if std::env::args().any(|arg| arg == "-") {
         read_stdin()
     } else {
@@ -47,8 +47,11 @@ pub fn run(cmd: clap::Command) -> i32 {
 
     if stdin.is_empty() {
         if files_arg.is_empty() {
-            if gather_files_from_directory_and_subdirectories(&FilePath::from(b'.'), &mut files)
-                .is_err()
+            if gather_files_from_directory_and_subdirectories(
+                &FilePathOrStdin::from('.'),
+                &mut files,
+            )
+            .is_err()
             {
                 exitcode = 1;
             }
@@ -63,25 +66,29 @@ pub fn run(cmd: clap::Command) -> i32 {
             }
         } else {
             for file_path in &files_arg {
-                let pathbuf = std::path::PathBuf::from(file_path);
-                if pathbuf.is_dir() {
+                let path = file_path.as_ref();
+                if path.is_dir() {
                     if gather_files_from_directory_and_subdirectories(file_path, &mut files)
                         .is_err()
                     {
                         exitcode = 1;
                     }
                     break;
-                } else if pathbuf.is_file() {
+                } else if path.is_file() {
                     if let Ok(content) = read_file(file_path) {
-                        files.push((file_path.clone(), content));
+                        // TODO: stop cloning here
+                        files.push((FilePathOrStdin::from(file_path), content));
                     } else {
                         exitcode = 1;
                     }
-                } else if !pathbuf.exists() {
-                    eprintln!("Path '{file_path}' does not exist.");
+                } else if !path.exists() {
+                    eprintln!("Path {:?} does not exist.", path.display());
                     exitcode = 1;
-                } else if pathbuf.is_symlink() {
-                    eprintln!("Path '{file_path}' is a symlink. Symbolic links are not supported.");
+                } else if path.is_symlink() {
+                    eprintln!(
+                        "Path {:?} is a symlink. Symbolic links are not supported.",
+                        path.display()
+                    );
                     exitcode = 1;
                 }
             }
@@ -91,8 +98,11 @@ pub fn run(cmd: clap::Command) -> i32 {
             }
 
             if files.is_empty() {
+                let files_arg_as_strings: Vec<std::borrow::Cow<'_, str>> =
+                    files_arg.iter().map(|f| f.to_string_lossy()).collect();
+
                 eprintln!(
-                    "No hledger journal files found looking for next files and/or directories: {files_arg:#?}.\n\
+                    "No hledger journal files found looking for next files and/or directories: {files_arg_as_strings:#?}.\n\
                      Ensure that they have extensions '.hledger', '.journal' or '.j'.",
                 );
                 exitcode = 1;
@@ -100,7 +110,7 @@ pub fn run(cmd: clap::Command) -> i32 {
             }
         }
     } else if files.is_empty() {
-        files.push((FilePath::new(), stdin));
+        files.push((FilePathOrStdin::Stdin, stdin));
     } else {
         eprintln!("Cannot read from STDIN and pass files at the same time.");
         exitcode = 1;
@@ -122,11 +132,11 @@ pub fn run(cmd: clap::Command) -> i32 {
 
         #[cfg(any(test, feature = "tracing"))]
         {
-            if !<FilePath as AsRef<[u8]>>::as_ref(&file).is_empty() {
+            if file.is_stdin() {
                 let _span = tracing::span!(
                     tracing::Level::TRACE,
                     "process_file",
-                    file = format!("{}", crate::tracing::Utf8Slice(file.as_ref())),
+                    file = format!("{:?}", file.to_string_lossy())
                 )
                 .entered();
             }
@@ -259,9 +269,9 @@ pub fn run(cmd: clap::Command) -> i32 {
 }
 
 /// Search for hledger files in the passed directory and its subdirectories
-fn gather_files_from_directory_and_subdirectories(
-    root: &FilePath,
-    files: &mut Vec<(FilePath, Vec<u8>)>,
+fn gather_files_from_directory_and_subdirectories<'a>(
+    root: &'a FilePathOrStdin,
+    files: &'a mut Vec<(FilePathOrStdin, Vec<u8>)>,
 ) -> Result<(), ()> {
     let mut error = false;
 
@@ -277,7 +287,7 @@ fn gather_files_from_directory_and_subdirectories(
                         let path = entry.path();
                         if path.is_dir() {
                             if gather_files_from_directory_and_subdirectories(
-                                &FilePath::from(path),
+                                &FilePathOrStdin::from(path),
                                 files,
                             )
                             .is_err()
@@ -288,7 +298,7 @@ fn gather_files_from_directory_and_subdirectories(
                             let ext = path.extension();
                             if let Some(ext) = ext {
                                 if [journal, hledger, j].contains(&ext) {
-                                    let file_path: FilePath = path.into();
+                                    let file_path = FilePathOrStdin::from(path);
                                     let maybe_file_content = read_file(&file_path);
                                     if let Ok(content) = maybe_file_content {
                                         files.push((file_path, content));
@@ -325,7 +335,7 @@ fn gather_files_from_directory_and_subdirectories(
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
-fn read_file(file_path: &FilePath) -> Result<Vec<u8>, ()> {
+fn read_file(file_path: &FilePathOrStdin) -> Result<Vec<u8>, ()> {
     std::fs::read(file_path).map_err(|e| {
         eprintln!("Error reading file {file_path}: {e}");
     })

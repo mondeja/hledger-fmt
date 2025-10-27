@@ -348,7 +348,6 @@ dependencies = [
  "criterion",
  "ctor",
  "similar",
- "smallvec",
  "tempfile",
  "tracing",
  "tracing-appender",

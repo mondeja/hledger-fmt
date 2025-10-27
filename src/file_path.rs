@@ -1,99 +1,72 @@
-use smallvec::SmallVec;
+pub(crate) enum FilePathOrStdin {
+    FilePath(std::path::PathBuf),
+    Stdin,
+}
 
-#[derive(Clone)]
-pub(crate) struct FilePath(SmallVec<[u8; 128]>);
-
-impl FilePath {
-    pub fn new() -> Self {
-        FilePath(SmallVec::new())
+impl FilePathOrStdin {
+    #[cfg(any(test, feature = "tracing"))]
+    pub fn is_stdin(&self) -> bool {
+        matches!(self, FilePathOrStdin::Stdin)
     }
 
     pub fn to_string_lossy(&self) -> std::borrow::Cow<'_, str> {
-        self.as_os_str().to_string_lossy()
-    }
-
-    fn as_os_str(&self) -> &std::ffi::OsStr {
-        #[cfg(unix)]
-        {
-            use std::os::unix::ffi::OsStrExt;
-            std::ffi::OsStr::from_bytes(&self.0)
-        }
-
-        #[cfg(windows)]
-        {
-            std::ffi::OsStr::new(std::str::from_utf8_lossy(&self.0).as_ref())
+        match self {
+            FilePathOrStdin::FilePath(p) => p.to_string_lossy(),
+            FilePathOrStdin::Stdin => std::borrow::Cow::Borrowed("<stdin>"),
         }
     }
 }
 
-impl std::fmt::Display for FilePath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_os_str().to_string_lossy())
-    }
-}
-
-impl std::fmt::Debug for FilePath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.as_os_str().to_string_lossy())
-    }
-}
-
-impl From<&str> for FilePath {
+impl From<&str> for FilePathOrStdin {
     fn from(s: &str) -> Self {
-        FilePath(SmallVec::from_slice(s.as_bytes()))
+        if s == "-" {
+            FilePathOrStdin::Stdin
+        } else {
+            FilePathOrStdin::FilePath(std::path::PathBuf::from(s))
+        }
     }
 }
 
-impl From<&[u8]> for FilePath {
-    fn from(bytes: &[u8]) -> Self {
-        FilePath(SmallVec::from_slice(bytes))
+impl From<char> for FilePathOrStdin {
+    fn from(c: char) -> Self {
+        if c == '-' {
+            FilePathOrStdin::Stdin
+        } else {
+            FilePathOrStdin::FilePath(std::path::PathBuf::from(c.to_string()))
+        }
     }
 }
 
-impl From<u8> for FilePath {
-    fn from(s: u8) -> Self {
-        FilePath(SmallVec::from_slice(&[s]))
-    }
-}
-
-impl AsRef<[u8]> for FilePath {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl AsRef<std::ffi::OsStr> for FilePath {
-    fn as_ref(&self) -> &std::ffi::OsStr {
-        self.as_os_str()
-    }
-}
-
-impl AsRef<std::path::Path> for FilePath {
+impl AsRef<std::path::Path> for FilePathOrStdin {
     fn as_ref(&self) -> &std::path::Path {
-        std::path::Path::new(self.as_os_str())
-    }
-}
-
-impl From<std::path::PathBuf> for FilePath {
-    fn from(path_buf: std::path::PathBuf) -> Self {
-        #[cfg(unix)]
-        {
-            use std::os::unix::ffi::OsStrExt;
-            FilePath(SmallVec::from_slice(path_buf.as_os_str().as_bytes()))
-        }
-
-        #[cfg(windows)]
-        {
-            use std::os::windows::ffi::OsStrExt;
-            let wide: Vec<u16> = path_buf.as_os_str().encode_wide().collect();
-            let bytes: Vec<u8> = wide.iter().flat_map(|w| w.to_le_bytes()).collect();
-            FilePath(SmallVec::from_slice(&bytes))
+        match self {
+            FilePathOrStdin::FilePath(path_buf) => path_buf.as_ref(),
+            FilePathOrStdin::Stdin => unreachable!(),
         }
     }
 }
 
-impl From<FilePath> for std::path::PathBuf {
-    fn from(file_path: FilePath) -> Self {
-        std::path::PathBuf::from(file_path.as_os_str())
+impl std::fmt::Display for FilePathOrStdin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FilePathOrStdin::FilePath(path_buf) => write!(f, "{}", path_buf.display()),
+            FilePathOrStdin::Stdin => write!(f, "[STDIN]"),
+        }
+    }
+}
+
+impl From<std::path::PathBuf> for FilePathOrStdin {
+    fn from(p: std::path::PathBuf) -> Self {
+        FilePathOrStdin::FilePath(p)
+    }
+}
+
+// clone but not explicit
+impl From<&FilePathOrStdin> for FilePathOrStdin {
+    fn from(p: &FilePathOrStdin) -> Self {
+        match p {
+            FilePathOrStdin::FilePath(pb) => FilePathOrStdin::FilePath(pb.clone()),
+            FilePathOrStdin::Stdin => FilePathOrStdin::Stdin,
+        }
     }
 }

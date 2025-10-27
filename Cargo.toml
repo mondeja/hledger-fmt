@@ -30,7 +30,6 @@ clap = { workspace = true, optional = true }
 similar = { version = "2", optional = true }
 anstream = { version = "0.6", optional = true, default-features = false }
 anstyle = { version = "1", optional = true, default-features = false }
-smallvec = "1"
 tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
 tracing-attributes = { workspace = true, optional = true }

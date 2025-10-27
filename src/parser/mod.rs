@@ -27,7 +27,7 @@ pub enum JournalCstNode<'a> {
         /// Directives in the group
         nodes: Vec<DirectiveNode<'a>>,
         /// Maximum length of the directive name + content
-        max_name_content_len: u16,
+        max_name_content_len: usize,
     },
 
     /// A transaction.
@@ -48,18 +48,18 @@ pub enum JournalCstNode<'a> {
         /// Transaction entries
         entries: Vec<TransactionNode<'a>>,
         /// Indent of the first transaction entry
-        first_entry_indent: u8,
+        first_entry_indent: usize,
         /// Maximum length of the entry names
-        max_entry_name_len: u8,
+        max_entry_name_len: usize,
 
-        max_entry_value_first_part_before_decimals_len: u8,
-        max_entry_value_first_part_after_decimals_len: u8,
-        max_entry_value_first_separator_len: u8,
-        max_entry_value_second_part_before_decimals_len: u8,
-        max_entry_value_second_part_after_decimals_len: u8,
-        max_entry_value_second_separator_len: u8,
-        max_entry_value_third_part_before_decimals_len: u8,
-        max_entry_value_third_part_after_decimals_len: u8,
+        max_entry_value_first_part_before_decimals_len: usize,
+        max_entry_value_first_part_after_decimals_len: usize,
+        max_entry_value_first_separator_len: usize,
+        max_entry_value_second_part_before_decimals_len: usize,
+        max_entry_value_second_part_after_decimals_len: usize,
+        max_entry_value_second_separator_len: usize,
+        max_entry_value_third_part_before_decimals_len: usize,
+        max_entry_value_third_part_after_decimals_len: usize,
     },
 }
 
@@ -82,7 +82,7 @@ pub struct SingleLineComment<'a> {
     /// The comment prefix ('#' or ';')
     pub prefix: CommentPrefix,
     /// The column number where the comment starts
-    pub indent: u8,
+    pub indent: usize,
 }
 
 /// A directive
@@ -254,7 +254,7 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     let comment = SingleLineComment {
                         content,
                         prefix,
-                        indent: 0u8,
+                        indent: 0,
                     };
 
                     if data.directives_group_nodes.is_empty()
@@ -504,7 +504,7 @@ fn parse_inline_comment(
     Some(SingleLineComment {
         content: ByteStr::from(content_bytes),
         prefix,
-        indent: colno_padding as u8,
+        indent: colno_padding,
     })
 }
 
@@ -570,7 +570,7 @@ fn parse_single_line_comment_or_subdirective<'a>(
         let comment = SingleLineComment {
             content,
             prefix,
-            indent: (content_start - 1) as u8,
+            indent: (content_start - 1),
         };
         if data.directives_group_nodes.is_empty() {
             journal.push(JournalCstNode::SingleLineComment(comment));
@@ -641,7 +641,7 @@ fn save_directives_group_nodes<'a>(
 ) {
     journal.push(JournalCstNode::DirectivesGroup {
         nodes: std::mem::take(&mut data.directives_group_nodes),
-        max_name_content_len: data.directives_group_max_name_content_len as u16,
+        max_name_content_len: data.directives_group_max_name_content_len,
     });
     data.directives_group_max_name_content_len = 0;
 }
@@ -932,28 +932,22 @@ fn save_transaction<'a>(
         title,
         title_comment: data.transaction_title_comment.take(),
         entries: std::mem::take(&mut data.transaction_entries),
-        first_entry_indent: data.first_entry_indent as u8,
-        max_entry_name_len: data.max_entry_name_len as u8,
+        first_entry_indent: data.first_entry_indent,
+        max_entry_name_len: data.max_entry_name_len,
         max_entry_value_first_part_before_decimals_len: data
-            .max_entry_value_first_part_before_decimals_len
-            as u8,
+            .max_entry_value_first_part_before_decimals_len,
         max_entry_value_first_part_after_decimals_len: data
-            .max_entry_value_first_part_after_decimals_len
-            as u8,
-        max_entry_value_first_separator_len: data.max_entry_value_first_separator_len as u8,
+            .max_entry_value_first_part_after_decimals_len,
+        max_entry_value_first_separator_len: data.max_entry_value_first_separator_len,
         max_entry_value_second_part_before_decimals_len: data
-            .max_entry_value_second_part_before_decimals_len
-            as u8,
+            .max_entry_value_second_part_before_decimals_len,
         max_entry_value_second_part_after_decimals_len: data
-            .max_entry_value_second_part_after_decimals_len
-            as u8,
-        max_entry_value_second_separator_len: data.max_entry_value_second_separator_len as u8,
+            .max_entry_value_second_part_after_decimals_len,
+        max_entry_value_second_separator_len: data.max_entry_value_second_separator_len,
         max_entry_value_third_part_before_decimals_len: data
-            .max_entry_value_third_part_before_decimals_len
-            as u8,
+            .max_entry_value_third_part_before_decimals_len,
         max_entry_value_third_part_after_decimals_len: data
-            .max_entry_value_third_part_after_decimals_len
-            as u8,
+            .max_entry_value_third_part_after_decimals_len,
     });
     data.transaction_title_byte_start = 0;
     data.transaction_title_byte_end = 0;
