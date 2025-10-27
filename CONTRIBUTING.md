@@ -3,7 +3,7 @@
 ## Running tests
 
 ```sh
-RUST_LOG=trace cargo test
+cargo test
 ```
 
 ## Running benchmarks

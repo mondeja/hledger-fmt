@@ -4,11 +4,6 @@ pub(crate) enum FilePathOrStdin {
 }
 
 impl FilePathOrStdin {
-    #[cfg(any(test, feature = "tracing"))]
-    pub fn is_stdin(&self) -> bool {
-        matches!(self, FilePathOrStdin::Stdin)
-    }
-
     pub fn to_string_lossy(&self) -> std::borrow::Cow<'_, str> {
         match self {
             FilePathOrStdin::FilePath(p) => p.to_string_lossy(),
