@@ -36,3 +36,13 @@ impl From<std::path::PathBuf> for FilePathOrStdin {
         FilePathOrStdin::FilePath(p)
     }
 }
+
+#[cfg(any(test, feature = "tracing"))]
+impl std::fmt::Debug for FilePathOrStdin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FilePathOrStdin::FilePath(path_buf) => write!(f, "{:?}", path_buf.display()),
+            FilePathOrStdin::Stdin => write!(f, "[STDIN]"),
+        }
+    }
+}
