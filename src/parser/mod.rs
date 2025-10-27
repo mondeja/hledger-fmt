@@ -1,6 +1,9 @@
+use crate::{Box, Vec};
+
 pub mod errors;
 #[cfg(test)]
 mod tests;
+use crate::format;
 
 use crate::byte_str::ByteStr;
 use errors::SyntaxError;
@@ -639,7 +642,7 @@ fn save_directives_group_nodes<'a>(
     journal: &mut Vec<JournalCstNode<'a>>,
 ) {
     journal.push(JournalCstNode::DirectivesGroup {
-        nodes: std::mem::take(&mut data.directives_group_nodes),
+        nodes: core::mem::take(&mut data.directives_group_nodes),
         max_name_content_len: data.directives_group_max_name_content_len,
     });
     data.directives_group_max_name_content_len = 0;
@@ -931,7 +934,7 @@ fn save_transaction<'a>(
     journal.push(JournalCstNode::Transaction {
         title,
         title_comment: data.transaction_title_comment.take(),
-        entries: std::mem::take(&mut data.transaction_entries),
+        entries: core::mem::take(&mut data.transaction_entries),
         first_entry_indent: data.first_entry_indent,
         max_entry_name_len: data.max_entry_name_len,
         max_entry_value_first_part_before_decimals_len: data

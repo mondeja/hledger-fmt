@@ -1,3 +1,14 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+pub(crate) use alloc::{boxed::Box, format, string::String, vec::Vec};
+
+#[cfg(feature = "std")]
+pub(crate) use std::{boxed::Box, format, string::String, vec::Vec};
+
 mod byte_str;
 #[doc(hidden)]
 #[cfg(feature = "cli")]

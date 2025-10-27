@@ -171,11 +171,8 @@ pub fn run(cmd: clap::Command) -> i32 {
             continue;
         }
 
-        #[cfg(feature = "diff")]
-        {
-            if exitcode == 0 && !exit_zero_on_changes {
-                exitcode = 2;
-            }
+        if exitcode == 0 && !exit_zero_on_changes {
+            exitcode = 2;
         }
 
         if fix {
