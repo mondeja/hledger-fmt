@@ -193,7 +193,7 @@ jobs:
         env:
           RUST_BACKTRACE: full
       - name: Run with tracing
-        run: cargo run --features tracing -- - --trace-file trace.log
+        run: cargo run --features tracing -- --trace-file trace.log
       - name: Upload trace log
         uses: actions/upload-artifact@v4
         with:
