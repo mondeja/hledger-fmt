@@ -162,7 +162,7 @@ fn main() {
   supports colors.
 - **`diff`** (enabled by default): Show a diff of the changes made to the files.
   Adds the `--no-diff` option to disable it.
-- **`cli`** (enabled by default): Build the CLI tool. Implies the `std` feature.
+- **`cli`** (enabled by default): Build the CLI binary tool.
 - **`std`**: Enable building with the standard library. Disable it to build with
   `no_std` + `alloc` support.
 - **`env`**: Enable reading configuration from environment variables at run time.
