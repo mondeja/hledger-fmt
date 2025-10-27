@@ -247,7 +247,7 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
             let line_length = line.len();
             let last_byte = unsafe { *line.get_unchecked(line_length - 1) };
             let all_whitespace = last_byte.is_ascii_whitespace()
-                && line[1..line_length - 1]
+                && unsafe { line.get_unchecked(1..line_length - 1) }
                     .iter()
                     .all(|&b| b.is_ascii_whitespace());
 
