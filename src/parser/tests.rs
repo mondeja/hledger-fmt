@@ -395,3 +395,171 @@ fn subdirective() {
         }],
     );
 }
+
+#[test]
+fn all_directives() {
+    assert_journal(
+        r#"account Assets:Bank:Checking
+commodity $
+decimal-mark ,
+payee Foo Bar
+tag foo bar
+include /path/to/file
+P foobarbaz
+apply account Expenses:Food
+D 2024-01-01
+Y 2024
+apply fixed
+apply tag Important
+assert Assets:Bank:Checking >= $0
+capture Transactions2024
+check Assets:Bank:Checking
+define MyDefinition
+bucket / A Expenses:Food
+end apply fixed
+end apply tag
+end apply year
+end tag
+eval foobar
+expr foobar
+python print('Hello, World!')
+value $100.00
+--command-line-flags foobar
+"#,
+        vec![JournalCstNode::DirectivesGroup {
+            nodes: vec![
+                DirectiveNode::Directive(Directive {
+                    name: "account".into(),
+                    content: "Assets:Bank:Checking".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "commodity".into(),
+                    content: "$".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "decimal-mark".into(),
+                    content: ",".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "payee".into(),
+                    content: "Foo Bar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "tag".into(),
+                    content: "foo bar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "include".into(),
+                    content: "/path/to/file".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "P".into(),
+                    content: "foobarbaz".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply account".into(),
+                    content: "Expenses:Food".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "D".into(),
+                    content: "2024-01-01".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "Y".into(),
+                    content: "2024".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply fixed".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "apply tag".into(),
+                    content: "Important".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "assert".into(),
+                    content: "Assets:Bank:Checking >= $0".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "capture".into(),
+                    content: "Transactions2024".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "check".into(),
+                    content: "Assets:Bank:Checking".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "define".into(),
+                    content: "MyDefinition".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "bucket / A".into(),
+                    content: "Expenses:Food".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply fixed".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply tag".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end apply year".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "end tag".into(),
+                    content: "".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "eval".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "expr".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "python".into(),
+                    content: "print('Hello, World!')".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "value".into(),
+                    content: "$100.00".into(),
+                    comment: None,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "--command-line-flags".into(),
+                    content: "foobar".into(),
+                    comment: None,
+                }),
+            ],
+            max_name_content_len: 32,
+        }],
+    )
+}

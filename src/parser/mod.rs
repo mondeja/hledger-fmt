@@ -393,7 +393,11 @@ fn process_empty_line<'a>(
 fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData<'a>) {
     let name_length = name.len();
     let line_length = line.len();
-    let start = name_length + 1;
+    let start = if name_length < line_length && line[name_length] == b' ' {
+        name_length + 1
+    } else {
+        name_length
+    };
     let mut end = start;
 
     let mut prev_was_whitespace = false;
@@ -972,32 +976,32 @@ fn save_transaction<'a>(
 /// - line is not empty
 unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     /*
-        "account "  (x)
-        "commodity "  (x)
-        "decimal-mark "  (x)
+        "account "
+        "commodity "
+        "decimal-mark "
         "payee " (x)
-        "tag "  (x)
-        "include "  (x)
-        "P "  (x)
-        "apply account "  (x)
-        "D "  (x)
-        "Y "  (x)
+        "tag "
+        "include "
+        "P "
+        "apply account"
+        "D "
+        "Y "
                                  // other Ledger directives
-        "apply fixed "  (x)
-        "apply tag "  (x)
-        "assert "  (x)
-        "capture "  (x)
-        "check "  (x)
-        "define "  (x)
-        "bucket / A "  (x)
+        "apply fixed"
+        "apply tag"
+        "assert "
+        "capture "
+        "check "
+        "define "
+        "bucket / A "
         "end apply fixed"
         "end apply tag"
         "end apply year"
         "end tag"
-        "eval"
-        "expr"
-        "python"  // 'python' CODE not supported  (x)
-        "value "  (x)
+        "eval "
+        "expr "
+        "python "
+        "value "
         "--command-line-flags"  // longest directive, 20 chars
     */
     let l = line;
@@ -1022,8 +1026,8 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(4) == b'y'
             && *l.get_unchecked(5) == b' '
         {
-            // "apply account "
-            if line_length >= 14
+            // "apply account"
+            if line_length >= 13
                 && *l.get_unchecked(6) == b'a'
                 && *l.get_unchecked(7) == b'c'
                 && *l.get_unchecked(8) == b'c'
@@ -1031,29 +1035,26 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                 && *l.get_unchecked(10) == b'u'
                 && *l.get_unchecked(11) == b'n'
                 && *l.get_unchecked(12) == b't'
-                && *l.get_unchecked(13) == b' '
             {
                 return Some(&line[0..13]);
             }
 
-            // "apply fixed "
-            if line_length >= 12
+            // "apply fixed"
+            if line_length >= 11
                 && *l.get_unchecked(6) == b'f'
                 && *l.get_unchecked(7) == b'i'
                 && *l.get_unchecked(8) == b'x'
                 && *l.get_unchecked(9) == b'e'
                 && *l.get_unchecked(10) == b'd'
-                && *l.get_unchecked(11) == b' '
             {
                 return Some(&line[0..11]);
             }
 
-            // "apply tag "
-            if line_length >= 10
+            // "apply tag"
+            if line_length >= 9
                 && *l.get_unchecked(6) == b't'
                 && *l.get_unchecked(7) == b'a'
                 && *l.get_unchecked(8) == b'g'
-                && *l.get_unchecked(9) == b' '
             {
                 return Some(&line[0..9]);
             }
@@ -1152,7 +1153,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
 
         if *l.get_unchecked(0) == b'e' && *l.get_unchecked(1) == b'n' {
             // "end apply year"
-            if line_length >= 15
+            if line_length >= 14
                 && *l.get_unchecked(2) == b'd'
                 && *l.get_unchecked(3) == b' '
                 && *l.get_unchecked(4) == b'a'
@@ -1185,7 +1186,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                 && *l.get_unchecked(13) == b'e'
                 && *l.get_unchecked(14) == b'd'
             {
-                return Some(&line[0..14]);
+                return Some(&line[0..15]);
             }
 
             // "end apply tag"
@@ -1202,7 +1203,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                 && *l.get_unchecked(11) == b'a'
                 && *l.get_unchecked(12) == b'g'
             {
-                return Some(&line[0..12]);
+                return Some(&line[0..13]);
             }
 
             // "end tag"
@@ -1213,7 +1214,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                 && *l.get_unchecked(5) == b'a'
                 && *l.get_unchecked(6) == b'g'
             {
-                return Some(&line[0..6]);
+                return Some(&line[0..7]);
             }
         }
     }
@@ -1228,7 +1229,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             return Some(&line[0..5]);
         }
 
-        // "python"
+        // "python "
         if line_length >= 7
             && *l.get_unchecked(1) == b'y'
             && *l.get_unchecked(2) == b't'
@@ -1318,6 +1319,33 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         && *l.get_unchecked(19) == b's'
     {
         return Some(&line[0..20]);
+    }
+
+    if line_length >= 5 && *l.get_unchecked(0) == b'e' {
+        // "expr " / "eval "
+        if (*l.get_unchecked(1) == b'x'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b'r'
+            && *l.get_unchecked(4) == b' ')
+            || (*l.get_unchecked(1) == b'v'
+                && *l.get_unchecked(2) == b'a'
+                && *l.get_unchecked(3) == b'l'
+                && *l.get_unchecked(4) == b' ')
+        {
+            return Some(&line[0..4]);
+        }
+    }
+
+    // "value "
+    if line_length >= 6
+        && *l.get_unchecked(0) == b'v'
+        && *l.get_unchecked(1) == b'a'
+        && *l.get_unchecked(2) == b'l'
+        && *l.get_unchecked(3) == b'u'
+        && *l.get_unchecked(4) == b'e'
+        && *l.get_unchecked(5) == b' '
+    {
+        return Some(&line[0..5]);
     }
 
     None

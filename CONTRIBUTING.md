@@ -3,7 +3,7 @@
 ## Running tests
 
 ```sh
-cargo test
+cargo build && cargo test
 ```
 
 ## Running benchmarks
