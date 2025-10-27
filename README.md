@@ -171,8 +171,6 @@ fn main() {
 
 ### Configuration
 
-#### Environment variables
-
 By default, hledger-fmt comes with sensible opinionated defaults. You can customize
 them at compile or run time by using the next environment variables:
 
@@ -187,16 +185,9 @@ them at compile or run time by using the next environment variables:
 By default, environment variables are read at compile time only. Enabling the `env`
 feature adds support for reading these variables at runtime.
 
-#### Library
-
-You can customize the formatter behavior by using the `FormatterBuilder`:
-
-```rust
-
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org
 [cargo]: https://doc.rust-lang.org/cargo/
 [releases page]: https://github.com/mondeja/hledger-fmt/releases
 [pre-commit]: https://pre-commit.com
 [Custom Local Formatters]: https://marketplace.visualstudio.com/items?itemName=jkillian.custom-local-formatters
-```
