@@ -51,7 +51,7 @@ pub fn format_journal_bytes_with_options(
 
 #[cfg(feature = "bench")]
 pub fn format_parsed_journal(parsed: &parser::JournalFile) -> Result<Vec<u8>, SyntaxError> {
-    let format_opts = formatter::FormatContentOptions::new();
+    let format_opts = formatter::FormatJournalOptions::new();
     let formatted = formatter::format_content_with_options(parsed, &format_opts);
     Ok(formatted)
 }
