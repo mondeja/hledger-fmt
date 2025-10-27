@@ -200,21 +200,32 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
     while byteno < bytes_length {
         lineno += 1;
 
-        let newline_pos = bytes[byteno..].iter().position(|&b| b == b'\n');
-        let (line_end_including_newline_chars, line_end) = match newline_pos {
-            Some(pos) => {
-                let end = byteno + pos;
-                // byteno + pos + 1, // including \n byte index
-                // if next position is \r\n, skip also \r
-                let end_or_1 = end.max(1);
-                if bytes[end_or_1 - 1..].first() == Some(&b'\r') {
-                    (end + 1, end_or_1 - 1)
-                } else {
-                    (end + 1, end)
+        let newline_pos = memchr::memchr(b'\n', &bytes[byteno..]);
+
+        let line_end_including_newline_chars = match newline_pos {
+            Some(pos) => byteno + pos + 1, // includes '\n'
+            None => bytes_length,          // last line
+        };
+
+        let line_end = if line_end_including_newline_chars == byteno {
+            byteno
+        } else {
+            let last_idx = line_end_including_newline_chars - 1;
+            unsafe {
+                match bytes.get_unchecked(last_idx) {
+                    b'\n' => {
+                        // CRLF or LF
+                        if last_idx > byteno && *bytes.get_unchecked(last_idx - 1) == b'\r' {
+                            last_idx - 1
+                        } else {
+                            last_idx
+                        }
+                    }
+                    _ => line_end_including_newline_chars,
                 }
             }
-            None => (bytes_length, bytes_length),
         };
+
         let line = &bytes[byteno..line_end];
 
         #[cfg(any(test, feature = "tracing"))]

@@ -347,6 +347,7 @@ dependencies = [
  "clap_mangen",
  "criterion",
  "ctor",
+ "memchr",
  "similar",
  "tempfile",
  "tracing",
