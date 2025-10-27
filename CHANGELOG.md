@@ -1,14 +1,20 @@
 # CHANGELOG
 
-## Unreleased - [0.3.4]
+## 2025-10-27 - [0.3.4]
 
 ### New features
 
 - Add `format_journal_bytes` function to format hledger journal content
   from a byte slice and return the formatted content as a byte vector.
+- Add functions `format_journal_with_options` and
+  `format_journal_bytes_with_options` to format hledger journal content with
+  custom formatting options.
+- Expose `FormatJournalOptions` struct to allow users to customize
+  formatting options when using `hledger-fmt` as a library.
 - Add tracing feature to allow building with tracing support for better
   debugging.
 - Add `--trace-file` CLI option to write tracing logs to a file.
+- Allow to configure transaction entries column spacing of formatted results.
 
 ### Enhancements
 
@@ -180,6 +186,7 @@
 
 First beta release
 
+[0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/mondeja/hledger-fmt/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/mondeja/hledger-fmt/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mondeja/hledger-fmt/compare/v0.3.0...v0.3.1

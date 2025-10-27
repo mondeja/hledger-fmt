@@ -157,8 +157,7 @@ pub fn run(cmd: clap::Command) -> i32 {
             continue;
         }
         let parsed = parsed_or_err.unwrap();
-        let format_opts =
-            crate::formatter::FormatContentOptions::new().with_estimated_length(content.len());
+        let format_opts = crate::FormatJournalOptions::new().with_estimated_length(content.len());
         let buffer = crate::formatter::format_content_with_options(&parsed, &format_opts);
         if buffer == content {
             #[cfg(feature = "diff")]

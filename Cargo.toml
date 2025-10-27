@@ -46,6 +46,7 @@ auto-color = ["anstream?/auto", "anstream?/wincon"]
 diff = ["dep:similar"]
 manpages = ["dep:clap_mangen"]
 cli = ["dep:clap"]
+env = []
 bench = []
 tracing = [
   "dep:tracing",

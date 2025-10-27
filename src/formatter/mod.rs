@@ -5,39 +5,73 @@ use crate::parser::{
     Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionNode,
 };
 
-const TRANSACTION_ENTRY_VALUE_SPACING: usize = 2;
-
-#[derive(Default)]
-pub(crate) struct FormatContentOptions {
+pub struct FormatJournalOptions {
     estimated_length: usize,
+    entry_spacing: usize,
 }
 
-impl FormatContentOptions {
+impl Default for FormatJournalOptions {
+    fn default() -> Self {
+        Self {
+            estimated_length: 1024,
+            entry_spacing: {
+                let compile_time_value = option_env!("HLEDGER_FMT_ENTRY_SPACING")
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(2);
+
+                #[cfg(feature = "env")]
+                {
+                    std::env::var("HLEDGER_FMT_ENTRY_SPACING")
+                        .ok()
+                        .and_then(|s| s.parse().ok())
+                        .unwrap_or(compile_time_value)
+                }
+
+                #[cfg(not(feature = "env"))]
+                {
+                    compile_time_value
+                }
+            },
+        }
+    }
+}
+
+impl FormatJournalOptions {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn with_estimated_length(mut self, estimated_length: usize) -> Self {
+    pub(crate) fn with_estimated_length(mut self, estimated_length: usize) -> Self {
         self.estimated_length = estimated_length;
         self
+    }
+
+    pub fn with_entry_spacing(mut self, entry_spacing: usize) -> Self {
+        self.entry_spacing = entry_spacing;
+        self
+    }
+
+    #[must_use]
+    pub fn entry_spacing(&self) -> usize {
+        self.entry_spacing
     }
 }
 
 #[cfg(test)]
 fn format_content(nodes: &JournalFile) -> Vec<u8> {
-    format_content_with_options(nodes, &FormatContentOptions::default())
+    format_content_with_options(nodes, &FormatJournalOptions::default())
 }
 
 pub(crate) fn format_content_with_options(
     nodes: &JournalFile,
-    opts: &FormatContentOptions,
+    opts: &FormatJournalOptions,
 ) -> Vec<u8> {
     let mut buffer = Vec::with_capacity(opts.estimated_length);
-    format_nodes(nodes, &mut buffer);
+    format_nodes(nodes, &mut buffer, opts.entry_spacing);
     buffer
 }
 
-fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
+fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize) {
     #[cfg(any(test, feature = "tracing"))]
     {
         let span = tracing::span!(tracing::Level::TRACE, "format_nodes");
@@ -155,19 +189,17 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                     *max_entry_value_second_part_after_decimals_len,
                                     *max_entry_value_second_separator_len,
                                     *max_entry_value_third_part_before_decimals_len,
+                                    entry_spacing,
                                 );
 
                                 let comment_separation = if !e.value_second_separator.is_empty() {
-                                    TRANSACTION_ENTRY_VALUE_SPACING
-                                        + max_entry_value_third_part_after_decimals_len
+                                    entry_spacing + max_entry_value_third_part_after_decimals_len
                                         - e.value_third_part_after_decimals.chars_count()
                                 } else if !e.value_first_separator.is_empty() {
-                                    TRANSACTION_ENTRY_VALUE_SPACING
-                                        + max_entry_value_second_part_after_decimals_len
+                                    entry_spacing + max_entry_value_second_part_after_decimals_len
                                         - e.value_second_part_after_decimals.chars_count()
                                 } else {
-                                    TRANSACTION_ENTRY_VALUE_SPACING
-                                        + max_entry_value_first_part_after_decimals_len
+                                    entry_spacing + max_entry_value_first_part_after_decimals_len
                                         - e.value_first_part_after_decimals.chars_count()
                                 };
 
@@ -200,6 +232,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                                     *max_entry_value_second_part_after_decimals_len,
                                     *max_entry_value_second_separator_len,
                                     *max_entry_value_third_part_before_decimals_len,
+                                    entry_spacing,
                                 );
                             }
                             buffer.push(b'\n');
@@ -242,13 +275,14 @@ fn extend_entry(
     max_entry_value_second_part_after_decimals_len: usize,
     max_entry_value_second_separator_len: usize,
     max_entry_value_third_part_before_decimals_len: usize,
+    entry_spacing: usize,
 ) {
     spaces::extend(buffer, first_entry_indent);
     buffer.extend_from_slice(&entry.name);
     if !entry.value_first_part_before_decimals.is_empty() {
         let name_len = entry.name.chars_count();
         let before_decimals_len = entry.value_first_part_before_decimals.chars_count();
-        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_name_len - name_len
+        let n_spaces = entry_spacing + max_entry_name_len - name_len
             + max_entry_value_first_part_before_decimals_len
             - before_decimals_len;
         spaces::extend(buffer, n_spaces);
@@ -258,9 +292,8 @@ fn extend_entry(
 
     if !entry.value_first_separator.is_empty() {
         let after_decimals_len = entry.value_first_part_after_decimals.chars_count();
-        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-            + max_entry_value_first_part_after_decimals_len
-            - after_decimals_len;
+        let n_spaces =
+            entry_spacing + max_entry_value_first_part_after_decimals_len - after_decimals_len;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_first_separator);
@@ -268,7 +301,7 @@ fn extend_entry(
         let value_first_separator_len = entry.value_first_separator.len();
         let value_second_part_before_decimals_len =
             entry.value_second_part_before_decimals.chars_count();
-        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_value_first_separator_len
+        let n_spaces = entry_spacing + max_entry_value_first_separator_len
             - value_first_separator_len
             + max_entry_value_second_part_before_decimals_len
             - value_second_part_before_decimals_len;
@@ -280,8 +313,7 @@ fn extend_entry(
     if !entry.value_second_separator.is_empty() {
         let value_second_part_after_decimals_len =
             entry.value_second_part_after_decimals.chars_count();
-        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING
-            + max_entry_value_second_part_after_decimals_len
+        let n_spaces = entry_spacing + max_entry_value_second_part_after_decimals_len
             - value_second_part_after_decimals_len;
         spaces::extend(buffer, n_spaces);
     }
@@ -290,7 +322,7 @@ fn extend_entry(
         let value_second_separator_len = entry.value_second_separator.len();
         let value_third_part_before_decimals_len =
             entry.value_third_part_before_decimals.chars_count();
-        let n_spaces = TRANSACTION_ENTRY_VALUE_SPACING + max_entry_value_second_separator_len
+        let n_spaces = entry_spacing + max_entry_value_second_separator_len
             - value_second_separator_len
             + max_entry_value_third_part_before_decimals_len
             - value_third_part_before_decimals_len;
