@@ -474,12 +474,12 @@ fn save_directive<'a>(
         )
     )
 )]
-fn parse_inline_comment(
-    line: &[u8],
+fn parse_inline_comment<'a>(
+    line: &'a [u8],
     line_length: usize,
     colno_padding: usize,
     from_comment_prefix: Option<CommentPrefix>,
-) -> Option<SingleLineComment> {
+) -> Option<SingleLineComment<'a>> {
     let (content_bytes, prefix) = if let Some(comment_prefix) = from_comment_prefix {
         (&line[colno_padding..line_length], comment_prefix)
     } else {

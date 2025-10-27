@@ -2,7 +2,7 @@ fn create_env_filter() -> tracing_subscriber::EnvFilter {
     tracing_subscriber::EnvFilter::new("trace")
 }
 
-#[cfg(not(test))]
+#[allow(dead_code)]
 pub(crate) fn init_file_tracing(path: &std::path::Path) {
     let filter = create_env_filter();
     let builder = tracing_subscriber::fmt()
