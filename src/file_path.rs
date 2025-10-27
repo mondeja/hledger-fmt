@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub(crate) enum FilePathOrStdin {
     FilePath(std::path::PathBuf),
     Stdin,
@@ -8,26 +9,6 @@ impl FilePathOrStdin {
         match self {
             FilePathOrStdin::FilePath(p) => p.to_string_lossy(),
             FilePathOrStdin::Stdin => std::borrow::Cow::Borrowed("<stdin>"),
-        }
-    }
-}
-
-impl From<&str> for FilePathOrStdin {
-    fn from(s: &str) -> Self {
-        if s == "-" {
-            FilePathOrStdin::Stdin
-        } else {
-            FilePathOrStdin::FilePath(std::path::PathBuf::from(s))
-        }
-    }
-}
-
-impl From<char> for FilePathOrStdin {
-    fn from(c: char) -> Self {
-        if c == '-' {
-            FilePathOrStdin::Stdin
-        } else {
-            FilePathOrStdin::FilePath(std::path::PathBuf::from(c.to_string()))
         }
     }
 }
@@ -53,15 +34,5 @@ impl std::fmt::Display for FilePathOrStdin {
 impl From<std::path::PathBuf> for FilePathOrStdin {
     fn from(p: std::path::PathBuf) -> Self {
         FilePathOrStdin::FilePath(p)
-    }
-}
-
-// clone but not explicit
-impl From<&FilePathOrStdin> for FilePathOrStdin {
-    fn from(p: &FilePathOrStdin) -> Self {
-        match p {
-            FilePathOrStdin::FilePath(pb) => FilePathOrStdin::FilePath(pb.clone()),
-            FilePathOrStdin::Stdin => FilePathOrStdin::Stdin,
-        }
     }
 }

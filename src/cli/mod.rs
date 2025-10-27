@@ -27,7 +27,7 @@ pub fn run(cmd: clap::Command) -> i32 {
     };
     let files_arg: Vec<FilePathOrStdin> = files_arg
         .iter()
-        .map(|s| FilePathOrStdin::from(s.as_str()))
+        .map(|s| FilePathOrStdin::FilePath(std::path::PathBuf::from(s.as_str())))
         .collect();
     let fix = args.get_flag("fix");
     let exit_zero_on_changes = args.get_flag("exit-zero-on-changes");
@@ -48,7 +48,7 @@ pub fn run(cmd: clap::Command) -> i32 {
     if stdin.is_empty() {
         if files_arg.is_empty() {
             if gather_files_from_directory_and_subdirectories(
-                &FilePathOrStdin::from('.'),
+                &FilePathOrStdin::FilePath(std::path::PathBuf::from(".")),
                 &mut files,
             )
             .is_err()
@@ -77,7 +77,7 @@ pub fn run(cmd: clap::Command) -> i32 {
                 } else if path.is_file() {
                     if let Ok(content) = read_file(file_path) {
                         // TODO: stop cloning here
-                        files.push((FilePathOrStdin::from(file_path), content));
+                        files.push((file_path.clone(), content));
                     } else {
                         exitcode = 1;
                     }
