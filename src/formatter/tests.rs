@@ -470,6 +470,7 @@ fn complex_transaction() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/13
 #[test]
 fn issue_13() {
     assert_format(
@@ -500,6 +501,7 @@ fn lots() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/25
 #[test]
 fn issue_25() {
     assert_format(
@@ -512,6 +514,7 @@ fn issue_25() {
     );
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/27
 #[test]
 fn issue_27() {
     assert_format(

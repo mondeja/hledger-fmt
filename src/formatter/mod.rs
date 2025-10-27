@@ -46,7 +46,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
         tracing::trace!("nodes={:#?}", nodes);
     }
 
-    for node in nodes.iter() {
+    for node in nodes {
         match node {
             JournalCstNode::SingleLineComment(SingleLineComment {
                 content,
@@ -57,6 +57,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                 spaces::extend(buffer, *indent as usize);
                 buffer.push(*prefix as u8);
                 buffer.extend_from_slice(content.as_ref());
+                buffer.push(b'\n');
             }
             JournalCstNode::EmptyLine => {
                 buffer.push(b'\n');
@@ -271,14 +272,14 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>) {
                 }
             }
         }
+    }
 
-        #[cfg(any(test, feature = "tracing"))]
-        {
-            let span = tracing::span!(tracing::Level::TRACE, "format_nodes(formatted)");
-            let _enter = span.enter();
+    #[cfg(any(test, feature = "tracing"))]
+    {
+        let span = tracing::span!(tracing::Level::TRACE, "format_nodes(formatted)");
+        let _enter = span.enter();
 
-            tracing::trace!("buffer=\"{}\"", String::from_utf8_lossy(buffer));
-        }
+        tracing::trace!("buffer=\"{}\"", String::from_utf8_lossy(buffer));
     }
 }
 

@@ -163,6 +163,8 @@ fn main() {
 - **`diff`** (enabled by default): Show a diff of the changes made to the files.
   Adds the `--no-diff` option to disable it.
 - **`cli`** (enabled by default): Build the CLI tool.
+- **`tracing`**: Enable tracing support. Adds the CLI argument `--trace-file` to
+  write tracing logs to a file.
 
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org

@@ -1,6 +1,6 @@
 [package]
 name = "hledger-fmt"
-version = "0.3.3"
+version = "0.3.4"
 rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
@@ -34,7 +34,7 @@ smallvec = "1"
 tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
 tracing-attributes = { workspace = true, optional = true }
-ctor = { workspace = true, optional = true }
+tracing-appender = { workspace = true, optional = true }
 
 [build-dependencies]
 clap = { workspace = true, optional = true }
@@ -48,11 +48,16 @@ diff = ["dep:similar"]
 manpages = ["dep:clap_mangen"]
 cli = ["dep:clap"]
 bench = []
-tracing = ["dep:tracing", "dep:tracing-subscriber", "dep:tracing-attributes", "dep:ctor"]
+tracing = [
+  "dep:tracing",
+  "dep:tracing-subscriber",
+  "dep:tracing-attributes",
+  "dep:tracing-appender",
+]
 
 [profile.release]
 strip = true
-opt-level = "z"  # optimize for size
+opt-level = "z" # optimize for size
 lto = true
 codegen-units = 1
 panic = "abort"
@@ -65,15 +70,18 @@ clap = { version = "4", default-features = false, features = ["std", "help"] }
 tracing = { version = "0.1", features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tracing-attributes = "0.1"
-ctor = "0.6"
+tracing-appender = "0.2"
 
 [dev-dependencies]
+ctor = "0.6"
 assert_cmd = "2"
-ctor = { workspace = true }
 tempfile = "3"
-criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
+criterion = { version = "0.7", default-features = false, features = [
+  "cargo_bench_support"
+] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }{ archive-suffix }"
@@ -84,4 +92,8 @@ harness = false
 
 [[bench]]
 name = "format"
+harness = false
+
+[[bench]]
+name = "parse_and_format"
 harness = false

@@ -130,7 +130,7 @@ pub enum TransactionNode<'a> {
 
 #[derive(PartialEq)]
 /// Current state of the parser
-#[cfg_attr(test, derive(Debug))]
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug))]
 enum ParserState {
     /// Start state
     Start,
@@ -207,7 +207,7 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                 // byteno + pos + 1, // including \n byte index
                 // if next position is \r\n, skip also \r
                 let end_or_1 = end.max(1);
-                if bytes[end_or_1 - 1..].get(0) == Some(&b'\r') {
+                if bytes[end_or_1 - 1..].first() == Some(&b'\r') {
                     (end + 1, end_or_1 - 1)
                 } else {
                     (end + 1, end)
@@ -232,7 +232,7 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
         match state {
             ParserState::Start => {
                 if line.is_empty() {
-                    process_empty_line(&mut journal, &mut data, &bytes);
+                    process_empty_line(&mut journal, &mut data, bytes);
                 } else if line[0] == b'#' || line[0] == b';' {
                     #[cfg(any(test, feature = "tracing"))]
                     {
@@ -273,11 +273,10 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     }
                 } else if line == b"comment" {
                     state = ParserState::MultilineComment;
-                    data.multiline_comment_byte_start = byteno;
                 } else if line.iter().all(|&b| b.is_ascii_whitespace()) {
-                    process_empty_line(&mut journal, &mut data, &bytes);
+                    process_empty_line(&mut journal, &mut data, bytes);
                 } else if let Some(name) = unsafe { maybe_start_with_directive(line) } {
-                    parse_directive(name, &line, &mut data);
+                    parse_directive(name, line, &mut data);
                 } else if line[0].is_ascii_whitespace() {
                     if data.transaction_title_byte_start == 0
                         && data.transaction_title_byte_end == 0
@@ -285,7 +284,7 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                         // probably single line comment that starts with a space,
                         // but could be also a subdirective
                         parse_single_line_comment_or_subdirective(
-                            &line,
+                            line,
                             lineno,
                             &mut data,
                             &mut journal,
@@ -293,7 +292,7 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     } else {
                         // maybe inside transaction entry, but could be also a single
                         // line comment inside a transaction group
-                        parse_transaction_entry(&line, &mut data);
+                        parse_transaction_entry(line, &mut data);
                     }
                 } else {
                     // starts transaction
@@ -302,19 +301,22 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
                     if data.transaction_title_byte_start != 0
                         && data.transaction_title_byte_end != 0
                     {
-                        process_empty_line(&mut journal, &mut data, &bytes);
+                        process_empty_line(&mut journal, &mut data, bytes);
                     }
 
                     data.transaction_title_byte_start = byteno;
-                    parse_transaction_title(&line, &mut data);
+                    parse_transaction_title(line, &mut data);
                 }
             }
             ParserState::MultilineComment => {
                 if line == b"end comment" {
-                    save_multiline_comment(&mut data, &mut journal, &bytes);
+                    save_multiline_comment(&mut data, &mut journal, bytes);
                     state = ParserState::Start;
                 } else {
-                    data.multiline_comment_byte_end = byteno;
+                    if data.multiline_comment_byte_start == 0 {
+                        data.multiline_comment_byte_start = byteno;
+                    }
+                    data.multiline_comment_byte_end = line_end_including_newline_chars;
                 }
             }
         }
@@ -322,15 +324,19 @@ pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
         byteno = line_end_including_newline_chars;
     }
 
+    if data.multiline_comment_byte_start != 0 && data.multiline_comment_byte_end == 0 {
+        data.multiline_comment_byte_end = byteno;
+    }
+
     // Hledger v1.40 traits not ended multiline comments as a multiline comment
     if state == ParserState::MultilineComment {
-        save_multiline_comment(&mut data, &mut journal, &bytes);
+        save_multiline_comment(&mut data, &mut journal, bytes);
     }
 
     if !data.directives_group_nodes.is_empty() {
         save_directives_group_nodes(&mut data, &mut journal);
     } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
-        save_transaction(&mut data, &mut journal, &bytes);
+        save_transaction(&mut data, &mut journal, bytes);
     }
 
     Ok(journal)
@@ -363,7 +369,7 @@ fn process_empty_line<'a>(
     if !data.directives_group_nodes.is_empty() {
         save_directives_group_nodes(data, journal);
     } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
-        save_transaction(data, journal, &bytes);
+        save_transaction(data, journal, bytes);
     }
     journal.push(JournalCstNode::EmptyLine);
 }
@@ -403,7 +409,7 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
         if c.is_ascii_whitespace() {
             if prev_was_whitespace {
                 // double whitespace, end of content
-                end = end - 1;
+                end -= 1;
                 break;
             }
             prev_was_whitespace = true;
@@ -491,16 +497,9 @@ fn parse_inline_comment(
             }
             end += 1;
         }
-        if comment_prefix.is_none() {
-            return None;
-        }
+        comment_prefix?;
         (&line[start..end], comment_prefix.unwrap())
     };
-
-    println!(
-        "content_bytes: {:?}",
-        String::from_utf8_lossy(content_bytes)
-    );
 
     Some(SingleLineComment {
         content: ByteStr::from(content_bytes),
@@ -532,34 +531,29 @@ fn parse_single_line_comment_or_subdirective<'a>(
 ) -> Result<(), SyntaxError> {
     let mut is_subdirective = false;
     let mut comment_prefix = None;
-    let mut content_start = 0;
-    let mut end = content_start;
+    let mut end = 0;
     let line_length = line.len();
 
     while end < line_length {
         let c = line[end];
         if c == b'#' {
             comment_prefix = Some(CommentPrefix::Hash);
-            content_start = end + 1;
-            end = line_length;
+            end += 1;
             break;
         } else if c == b';' {
             comment_prefix = Some(CommentPrefix::Semicolon);
-            content_start = end + 1;
-            end = line_length;
+            end += 1;
             break;
         } else if !c.is_ascii_whitespace() {
             // if we're inside a directives group, is a subdirective
             if !data.directives_group_nodes.is_empty() {
                 is_subdirective = true;
-                content_start = end + 1;
-                end = line_length;
                 break;
             }
 
             return Err(SyntaxError {
                 message: format!("Unexpected character {:?}", c as char),
-                lineno: lineno,
+                lineno,
                 colno_start: end + 1,
                 colno_end: end + 2,
                 expected: "'#', ';' or newline",
@@ -567,6 +561,9 @@ fn parse_single_line_comment_or_subdirective<'a>(
         }
         end += 1;
     }
+
+    let content_start = end;
+    let end = line_length;
 
     let content = ByteStr::from(&line[content_start..end]);
     if let Some(prefix) = comment_prefix {
@@ -614,9 +611,8 @@ fn save_multiline_comment<'a>(
     journal: &mut Vec<JournalCstNode<'a>>,
     bytes: &'a [u8],
 ) {
-    let content = ByteStr::from(
-        &bytes[data.multiline_comment_byte_start - 1..data.multiline_comment_byte_end],
-    );
+    let content =
+        ByteStr::from(&bytes[data.multiline_comment_byte_start..data.multiline_comment_byte_end]);
     journal.push(JournalCstNode::MultilineComment { content });
     data.multiline_comment_byte_start = 0;
     data.multiline_comment_byte_end = 0;
@@ -670,7 +666,7 @@ fn save_directives_group_nodes<'a>(
     )
 )]
 fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
-    let mut at_indent = line[0] != b'\t';
+    let at_indent = line[0] != b'\t';
     let mut indent = if at_indent { 0 } else { 4 };
     let mut entry_name_start = 0;
     let mut entry_name_end = 0;
@@ -679,10 +675,10 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     let line_length = line.len();
     let start = 0;
     let mut end = start;
-    while end < line_length {
-        let c = line[end];
-        end += 1;
-        if at_indent {
+    if at_indent {
+        while end < line_length {
+            let c = line[end];
+            end += 1;
             if c == b'\t' {
                 indent += 4;
             } else if c.is_ascii_whitespace() {
@@ -713,40 +709,41 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                 }
                 break;
             } else {
-                at_indent = false;
                 entry_name_start = end - 1;
                 entry_name_end = entry_name_start;
-            }
-        } else {
-            if c == b'\t' {
                 break;
-            } else if c.is_ascii_whitespace() {
-                if prev_was_whitespace {
-                    entry_name_end -= 1;
-                    break;
-                }
-                prev_was_whitespace = true;
-            } else {
-                prev_was_whitespace = false;
-
-                if c == b';' && entry_name_end == 0 {
-                    // inside comment in transactions group
-                    let maybe_comment = parse_inline_comment(
-                        line,
-                        line_length,
-                        end,
-                        Some(CommentPrefix::Semicolon),
-                    );
-                    if let Some(comment) = maybe_comment {
-                        data.transaction_entries
-                            .push(TransactionNode::SingleLineComment(comment));
-                        return; // is comment only
-                    }
-                    break;
-                }
             }
-            entry_name_end = end;
         }
+    } else {
+        end += 1; // skip first tab
+    }
+
+    while end < line_length {
+        let c = line[end];
+        end += 1;
+        if c == b'\t' {
+            break;
+        } else if c.is_ascii_whitespace() {
+            if prev_was_whitespace {
+                entry_name_end = entry_name_end.saturating_sub(1);
+                break;
+            }
+            prev_was_whitespace = true;
+        } else {
+            prev_was_whitespace = false;
+            if c == b';' && entry_name_end == 0 {
+                // inside comment in transactions group
+                let maybe_comment =
+                    parse_inline_comment(line, line_length, end, Some(CommentPrefix::Semicolon));
+                if let Some(comment) = maybe_comment {
+                    data.transaction_entries
+                        .push(TransactionNode::SingleLineComment(comment));
+                    return; // is comment only
+                }
+                break;
+            }
+        }
+        entry_name_end = end;
     }
 
     let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
@@ -810,7 +807,7 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     //     + indent + 1;
     let entry_value = &line[entry_value_start..entry_value_end];
     let mut parser = EntryValueParser::new();
-    let p = parser.parse(&entry_value);
+    let p = parser.parse(entry_value);
 
     data.max_entry_value_first_part_before_decimals_len = data
         .max_entry_value_first_part_before_decimals_len
@@ -1154,7 +1151,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                     && *l.get_unchecked(11) == b'k'
                     && *l.get_unchecked(12) == b' '
                 {
-                    return Some(&line[0..13]);
+                    return Some(&line[0..12]);
                 }
             }
         }
@@ -1227,106 +1224,106 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         }
     }
 
-    if line_length >= 6 {
-        if *l.get_unchecked(0) == b'p' {
-            if *l.get_unchecked(1) == b'a'
-                && *l.get_unchecked(2) == b'y'
-                && *l.get_unchecked(3) == b'e'
-                && *l.get_unchecked(4) == b'e'
-                && *l.get_unchecked(5) == b' '
-            {
-                return Some(&line[0..5]);
-            }
-
-            // "python"
-            if line_length >= 7
-                && *l.get_unchecked(1) == b'y'
-                && *l.get_unchecked(2) == b't'
-                && *l.get_unchecked(3) == b'h'
-                && *l.get_unchecked(4) == b'o'
-                && *l.get_unchecked(5) == b'n'
-                && *l.get_unchecked(6) == b' '
-            {
-                return Some(&line[0..6]);
-            }
-        }
-    }
-
-    // "tag "
-    if line_length >= 4 && *l.get_unchecked(0) == b't' {
-        if *l.get_unchecked(1) == b'a' && *l.get_unchecked(2) == b'g' && *l.get_unchecked(3) == b' '
-        {
-            return Some(&line[0..3]);
-        }
-    }
-
-    // "include "
-    if line_length >= 8 && *l.get_unchecked(0) == b'i' {
-        if *l.get_unchecked(1) == b'n'
-            && *l.get_unchecked(2) == b'c'
-            && *l.get_unchecked(3) == b'l'
-            && *l.get_unchecked(4) == b'u'
-            && *l.get_unchecked(5) == b'd'
-            && *l.get_unchecked(6) == b'e'
-            && *l.get_unchecked(7) == b' '
-        {
-            return Some(&line[0..7]);
-        }
-    }
-
-    // "bucket / A "
-    if line_length >= 10 && *l.get_unchecked(0) == b'b' {
-        if *l.get_unchecked(1) == b'u'
-            && *l.get_unchecked(2) == b'c'
-            && *l.get_unchecked(3) == b'k'
-            && *l.get_unchecked(4) == b'e'
-            && *l.get_unchecked(5) == b't'
-            && *l.get_unchecked(6) == b' '
-            && *l.get_unchecked(7) == b'/'
-            && *l.get_unchecked(8) == b' '
-            && *l.get_unchecked(9) == b'A'
-            && *l.get_unchecked(10) == b' '
-        {
-            return Some(&line[0..10]);
-        }
-    }
-
-    // "value "
-    if line_length >= 6 && *l.get_unchecked(0) == b'v' {
+    if line_length >= 6 && *l.get_unchecked(0) == b'p' {
         if *l.get_unchecked(1) == b'a'
-            && *l.get_unchecked(2) == b'l'
-            && *l.get_unchecked(3) == b'u'
+            && *l.get_unchecked(2) == b'y'
+            && *l.get_unchecked(3) == b'e'
             && *l.get_unchecked(4) == b'e'
             && *l.get_unchecked(5) == b' '
         {
             return Some(&line[0..5]);
         }
+
+        // "python"
+        if line_length >= 7
+            && *l.get_unchecked(1) == b'y'
+            && *l.get_unchecked(2) == b't'
+            && *l.get_unchecked(3) == b'h'
+            && *l.get_unchecked(4) == b'o'
+            && *l.get_unchecked(5) == b'n'
+            && *l.get_unchecked(6) == b' '
+        {
+            return Some(&line[0..6]);
+        }
+    }
+
+    // "tag "
+    if line_length >= 4
+        && *l.get_unchecked(0) == b't'
+        && *l.get_unchecked(1) == b'a'
+        && *l.get_unchecked(2) == b'g'
+        && *l.get_unchecked(3) == b' '
+    {
+        return Some(&line[0..3]);
+    }
+
+    // "include "
+    if line_length >= 8
+        && *l.get_unchecked(0) == b'i'
+        && *l.get_unchecked(1) == b'n'
+        && *l.get_unchecked(2) == b'c'
+        && *l.get_unchecked(3) == b'l'
+        && *l.get_unchecked(4) == b'u'
+        && *l.get_unchecked(5) == b'd'
+        && *l.get_unchecked(6) == b'e'
+        && *l.get_unchecked(7) == b' '
+    {
+        return Some(&line[0..7]);
+    }
+
+    // "bucket / A "
+    if line_length >= 10
+        && *l.get_unchecked(0) == b'b'
+        && *l.get_unchecked(1) == b'u'
+        && *l.get_unchecked(2) == b'c'
+        && *l.get_unchecked(3) == b'k'
+        && *l.get_unchecked(4) == b'e'
+        && *l.get_unchecked(5) == b't'
+        && *l.get_unchecked(6) == b' '
+        && *l.get_unchecked(7) == b'/'
+        && *l.get_unchecked(8) == b' '
+        && *l.get_unchecked(9) == b'A'
+        && *l.get_unchecked(10) == b' '
+    {
+        return Some(&line[0..10]);
+    }
+
+    // "value "
+    if line_length >= 6
+        && *l.get_unchecked(0) == b'v'
+        && *l.get_unchecked(1) == b'a'
+        && *l.get_unchecked(2) == b'l'
+        && *l.get_unchecked(3) == b'u'
+        && *l.get_unchecked(4) == b'e'
+        && *l.get_unchecked(5) == b' '
+    {
+        return Some(&line[0..5]);
     }
 
     // "--command-line-flags"
-    if line_length >= 20 && *l.get_unchecked(0) == b'-' {
-        if *l.get_unchecked(1) == b'-'
-            && *l.get_unchecked(2) == b'c'
-            && *l.get_unchecked(3) == b'o'
-            && *l.get_unchecked(4) == b'm'
-            && *l.get_unchecked(5) == b'm'
-            && *l.get_unchecked(6) == b'a'
-            && *l.get_unchecked(7) == b'n'
-            && *l.get_unchecked(8) == b'd'
-            && *l.get_unchecked(9) == b'-'
-            && *l.get_unchecked(10) == b'l'
-            && *l.get_unchecked(11) == b'i'
-            && *l.get_unchecked(12) == b'n'
-            && *l.get_unchecked(13) == b'e'
-            && *l.get_unchecked(14) == b'-'
-            && *l.get_unchecked(15) == b'f'
-            && *l.get_unchecked(16) == b'l'
-            && *l.get_unchecked(17) == b'a'
-            && *l.get_unchecked(18) == b'g'
-            && *l.get_unchecked(19) == b's'
-        {
-            return Some(&line[0..20]);
-        }
+    if line_length >= 20
+        && *l.get_unchecked(0) == b'-'
+        && *l.get_unchecked(1) == b'-'
+        && *l.get_unchecked(2) == b'c'
+        && *l.get_unchecked(3) == b'o'
+        && *l.get_unchecked(4) == b'm'
+        && *l.get_unchecked(5) == b'm'
+        && *l.get_unchecked(6) == b'a'
+        && *l.get_unchecked(7) == b'n'
+        && *l.get_unchecked(8) == b'd'
+        && *l.get_unchecked(9) == b'-'
+        && *l.get_unchecked(10) == b'l'
+        && *l.get_unchecked(11) == b'i'
+        && *l.get_unchecked(12) == b'n'
+        && *l.get_unchecked(13) == b'e'
+        && *l.get_unchecked(14) == b'-'
+        && *l.get_unchecked(15) == b'f'
+        && *l.get_unchecked(16) == b'l'
+        && *l.get_unchecked(17) == b'a'
+        && *l.get_unchecked(18) == b'g'
+        && *l.get_unchecked(19) == b's'
+    {
+        return Some(&line[0..20]);
     }
 
     None
@@ -1708,241 +1705,15 @@ impl EntryValueParser {
                 }
             }
         }
-
-        /*
-        for c in chars {
-            //println!("state: {:?}, c: {:?}", state, c);
-            match state {
-                FirstPartCommodityBefore => {
-                    if c.is_whitespace() {
-                        current_spaces_in_a_row += 1;
-                        if current_commodity_is_quoted {
-                            first_part_value.push(c);
-                        } else if current_spaces_in_a_row > 1 {
-                            // no commodity
-                            state = FirstSeparator;
-                            current_spaces_in_a_row = 0;
-                            current_commodity_is_quoted = false;
-                        } else {
-                            // first space
-                            first_part_value.push(c);
-                        }
-                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
-                        first_part_value.push(c);
-                        state = FirstPartNumber;
-                        current_spaces_in_a_row = 0;
-                        current_commodity_is_quoted = false;
-                    } else if c == '"' {
-                        first_part_value.push(c);
-                        if current_commodity_is_quoted {
-                            state = FirstPartNumber;
-                        }
-                        current_commodity_is_quoted = true;
-                    } else {
-                        first_part_value.push(c);
-                    }
-                }
-                FirstPartNumber => {
-                    if c.is_ascii_digit() || c == '.' || c == ',' {
-                        first_part_value.push(c);
-                    } else if c == ' ' {
-                        if !first_part_value.is_empty() {
-                            first_part_value.push(c);
-                            state = FirstPartCommodityAfter;
-                        }
-                    } else if c == '@' || c == '=' || c == '*' {
-                        self.first_separator.push(c);
-                        state = FirstSeparator;
-                    } else if c == '"' {
-                        first_part_value.push(c);
-                        state = FirstPartCommodityAfter;
-                    } else {
-                        if c == '"' {
-                            current_commodity_is_quoted = true;
-                        }
-                        first_part_value.push(c);
-                        state = FirstPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
-                    }
-                }
-                FirstPartCommodityAfter => {
-                    if current_commodity_is_quoted {
-                        if c == '"' {
-                            first_part_value.push(c);
-                            state = FirstSeparator;
-                            current_commodity_is_quoted = false;
-                        } else {
-                            first_part_value.push(c);
-                        }
-                    } else if c.is_whitespace() {
-                        state = FirstSeparator;
-                        current_commodity_is_quoted = false;
-                    } else if c == '@' || c == '*' || c == '=' {
-                        self.first_separator.push(c);
-                        state = FirstSeparator;
-                        current_commodity_is_quoted = false;
-                    } else if c == '"' {
-                        first_part_value.push(c);
-                        current_commodity_is_quoted = true;
-                    } else {
-                        // really numbers are forbidden by hledger, but don't care
-                        first_part_value.push(c);
-                    }
-                }
-                FirstSeparator => {
-                    if c == '@' || c == '*' || c == '=' {
-                        self.first_separator.push(c);
-                    } else if !c.is_whitespace() {
-                        second_part_value.push(c);
-                        state = SecondPartCommodityBefore;
-                        current_spaces_in_a_row = 0;
-                    }
-                }
-                SecondPartCommodityBefore => {
-                    if c.is_whitespace() {
-                        current_spaces_in_a_row += 1;
-                        if current_commodity_is_quoted {
-                            second_part_value.push(c);
-                        } else if current_spaces_in_a_row > 1 {
-                            // no commodity
-                            state = SecondSeparator;
-                            current_spaces_in_a_row = 0;
-                            current_commodity_is_quoted = false;
-                        } else {
-                            // first space
-                            second_part_value.push(c);
-                        }
-                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
-                        second_part_value.push(c);
-                        state = SecondPartNumber;
-                        current_spaces_in_a_row = 0;
-                        current_commodity_is_quoted = false;
-                    } else if c == '"' {
-                        second_part_value.push(c);
-                        if current_commodity_is_quoted {
-                            state = SecondPartNumber;
-                        }
-                        current_commodity_is_quoted = true;
-                    } else {
-                        second_part_value.push(c);
-                    }
-                }
-                SecondPartNumber => {
-                    if c.is_ascii_digit() || c == '.' || c == ',' {
-                        second_part_value.push(c);
-                    } else if c == ' ' {
-                        second_part_value.push(c);
-                        if !second_part_value.is_empty() {
-                            state = SecondPartCommodityAfter;
-                        }
-                    } else if c == '=' || c == '*' || c == '@' {
-                        self.second_separator.push(c);
-                        state = SecondSeparator;
-                        current_spaces_in_a_row = 0;
-                    } else {
-                        second_part_value.push(c);
-                        state = SecondPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
-                    }
-                }
-                SecondPartCommodityAfter => {
-                    if current_commodity_is_quoted {
-                        if c == '"' {
-                            second_part_value.push(c);
-                            state = SecondSeparator;
-                            current_commodity_is_quoted = false;
-                        } else {
-                            second_part_value.push(c);
-                        }
-                    } else if c.is_whitespace() {
-                        state = SecondSeparator;
-                        current_commodity_is_quoted = false;
-                    } else if c == '@' || c == '*' || c == '=' {
-                        self.first_separator.push(c);
-                        state = SecondSeparator;
-                        current_commodity_is_quoted = false;
-                    } else if c == '"' {
-                        second_part_value.push(c);
-                        current_commodity_is_quoted = true;
-                    } else {
-                        // really numbers are forbidden by hledger, but don't care
-                        second_part_value.push(c);
-                    }
-                }
-                SecondSeparator => {
-                    if c == '=' || c == '*' || c == '@' {
-                        self.second_separator.push(c);
-                    } else if !c.is_whitespace() {
-                        third_part_value.push(c);
-                        state = ThirdPartCommodityBefore;
-                    }
-                }
-                ThirdPartCommodityBefore => {
-                    if c.is_whitespace() {
-                        if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                third_part_value.push(c);
-                            }
-                            current_spaces_in_a_row += 1;
-                        } else {
-                            // no commodity
-                            //current_spaces_in_a_row = 0;
-                            // end
-                            break;
-                        }
-                    } else if c.is_ascii_digit() || c == '.' || c == ',' {
-                        third_part_value.push(c);
-                        state = ThirdPartNumber;
-                    } else if c == '"' {
-                        third_part_value.push(c);
-                        if current_commodity_is_quoted {
-                            state = ThirdPartNumber;
-                        }
-                        current_commodity_is_quoted = true;
-                    } else {
-                        third_part_value.push(c);
-                    }
-                }
-                ThirdPartNumber => {
-                    if c.is_ascii_digit() || c == '.' || c == ',' {
-                        third_part_value.push(c);
-                    } else if c == ' ' {
-                        if !third_part_value.is_empty() {
-                            state = ThirdPartCommodityAfter;
-                        }
-                    } else {
-                        third_part_value.push(c);
-                        state = ThirdPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
-                    }
-                }
-                ThirdPartCommodityAfter => {
-                    if current_commodity_is_quoted {
-                        third_part_value.push(c);
-                        if c == '"' {
-                            // end
-                            break;
-                        }
-                    } else if c.is_whitespace() {
-                        // end
-                        break;
-                    } else {
-                        // really numbers are forbidden by hledger, but don't care
-                        third_part_value.push(c);
-                    }
-                }
-            }
-        }*/
-
-        /*if first_part_value.ends_with(' ') {
-            first_part_value.pop();
+        if self.first_part_value_end > 0 && value[self.first_part_value_end - 1] == b' ' {
+            self.first_part_value_end -= 1;
         }
-        if second_part_value.ends_with(' ') {
-            second_part_value.pop();
+        if self.second_part_value_end > 0 && value[self.second_part_value_end - 1] == b' ' {
+            self.second_part_value_end -= 1;
         }
-        if third_part_value.ends_with(' ') {
-            third_part_value.pop();
-        }*/
+        if self.third_part_value_end > 0 && value[self.third_part_value_end - 1] == b' ' {
+            self.third_part_value_end -= 1;
+        }
 
         let first_part_value = &value[self.first_part_value_start..self.first_part_value_end];
         let second_part_value = &value[self.second_part_value_start..self.second_part_value_end];
@@ -1954,23 +1725,6 @@ impl EntryValueParser {
             split_value_in_before_decimals_after_decimals(second_part_value);
         let (third_part_value_before_decimals, third_part_value_after_decimals) =
             split_value_in_before_decimals_after_decimals(third_part_value);
-
-        /*
-        let (before_decimals, after_decimals) =
-            split_value_in_before_decimals_after_decimals(&first_part_value);
-        self.first_part_before_decimals = before_decimals;
-        self.first_part_after_decimals = after_decimals;
-
-        let (before_decimals, after_decimals) =
-            split_value_in_before_decimals_after_decimals(&second_part_value);
-        self.second_part_before_decimals = before_decimals;
-        self.second_part_after_decimals = after_decimals;
-
-        let (before_decimals, after_decimals) =
-            split_value_in_before_decimals_after_decimals(&third_part_value);
-        self.third_part_before_decimals = before_decimals;
-        self.third_part_after_decimals = after_decimals;
-        */
 
         EntryValueParserReturn {
             first_part_before_decimals: ByteStr::from(first_part_value_before_decimals),

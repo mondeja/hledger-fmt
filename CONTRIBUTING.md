@@ -15,5 +15,9 @@ cargo bench --features bench
 ## Debugging with tracing
 
 ```sh
-echo ' ; comment' | RUST_LOG=trace cargo run --features tracing -- -
+echo ' ; comment' | cargo run --features tracing -- -
+```
+
+```sh
+echo ' ; comment' | cargo run --features tracing -- - --trace-file trace.log
 ```

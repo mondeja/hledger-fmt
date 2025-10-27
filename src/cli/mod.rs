@@ -10,6 +10,16 @@ use std::io::Read;
 /// Run the hledger-fmt CLI and return the exit code.
 pub fn run(cmd: clap::Command) -> i32 {
     let args = cmd.get_matches();
+
+    // initialize tracing if the feature is enabled and the flag is passed
+    #[cfg(feature = "tracing")]
+    {
+        if let Some(trace_file_path) = args.get_one::<String>("trace-file") {
+            let path = std::path::Path::new(trace_file_path);
+            crate::tracing::init_file_tracing(path);
+        }
+    }
+
     let files_arg: Vec<String> = if let Some(files) = args.get_many("files") {
         files.cloned().collect()
     } else {
@@ -109,6 +119,18 @@ pub fn run(cmd: clap::Command) -> i32 {
         // 3.2.1 `--fix` passed?
         // 3.2.1.1 YES -> Write new
         // 3.2.1.2 NO  ->  Print diff
+
+        #[cfg(any(test, feature = "tracing"))]
+        {
+            if !<FilePath as AsRef<[u8]>>::as_ref(&file).is_empty() {
+                let _span = tracing::span!(
+                    tracing::Level::TRACE,
+                    "process_file",
+                    file = format!("{}", crate::tracing::Utf8Slice(file.as_ref())),
+                )
+                .entered();
+            }
+        }
 
         let parsed_or_err = crate::parser::parse_content(&content);
         if let Err(e) = parsed_or_err {
@@ -302,12 +324,14 @@ fn gather_files_from_directory_and_subdirectories(
     }
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
 fn read_file(file_path: &FilePath) -> Result<Vec<u8>, ()> {
     std::fs::read(file_path).map_err(|e| {
         eprintln!("Error reading file {file_path}: {e}");
     })
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
 fn read_stdin() -> Vec<u8> {
     let mut buffer = Vec::new();
     _ = std::io::stdin().read_to_end(&mut buffer).map_err(|e| {

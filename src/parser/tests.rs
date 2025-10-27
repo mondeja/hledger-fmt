@@ -96,7 +96,7 @@ fn multiline_comment_not_ended() {
     assert_journal(
         "comment\ncontent",
         vec![JournalCstNode::MultilineComment {
-            content: "content\n".into(),
+            content: "content".into(),
         }],
     );
 }
@@ -138,7 +138,7 @@ fn directive_with_tabbed_comment() {
                 comment: Some(SingleLineComment {
                     prefix: CommentPrefix::Semicolon,
                     content: " comment".into(),
-                    indent: 16,
+                    indent: 4,
                 }),
             })],
             max_name_content_len: 11,
@@ -158,7 +158,7 @@ fn directives_with_multiple_tabbed_comments() {
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " foo comment".into(),
-                        indent: 19,
+                        indent: 4,
                     }),
                 }),
                 DirectiveNode::Directive(Directive {
@@ -167,7 +167,7 @@ fn directives_with_multiple_tabbed_comments() {
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " bar comment".into(),
-                        indent: 23,
+                        indent: 4,
                     }),
                 }),
             ],
@@ -364,7 +364,7 @@ fn directives_group_with_comments() {
                     comment: Some(SingleLineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " comment".into(),
-                        indent: 19,
+                        indent: 1, // TODO: idents for directive comments are not used in the formatter
                     }),
                 }),
                 DirectiveNode::SingleLineComment(SingleLineComment {

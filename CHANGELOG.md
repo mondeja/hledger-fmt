@@ -8,6 +8,7 @@
   from a byte slice and return the formatted content as a byte vector.
 - Add tracing feature to allow building with tracing support for better
   debugging.
+- Add `--trace-file` CLI option to write tracing logs to a file.
 
 ### Enhancements
 

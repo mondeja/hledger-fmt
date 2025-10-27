@@ -1,5 +1,5 @@
 #[cfg_attr(any(test, feature = "tracing"), derive(PartialEq))]
-pub(crate) struct ByteStr<'a>(&'a [u8]);
+pub struct ByteStr<'a>(&'a [u8]);
 
 impl<'a> std::ops::Deref for ByteStr<'a> {
     type Target = [u8];
@@ -27,7 +27,7 @@ impl<'a> ByteStr<'a> {
     /// Returns the number of characters, handling UTF-8 correctly
     pub fn chars_count(&self) -> usize {
         if self.0.iter().any(|&b| b >= 0x80) {
-            std::str::from_utf8(&self.0)
+            std::str::from_utf8(self.0)
                 .map(|s| s.chars().count())
                 .unwrap_or(self.0.len())
         } else {

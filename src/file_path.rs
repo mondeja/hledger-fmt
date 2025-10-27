@@ -92,8 +92,8 @@ impl From<std::path::PathBuf> for FilePath {
     }
 }
 
-impl Into<std::path::PathBuf> for FilePath {
-    fn into(self) -> std::path::PathBuf {
-        std::path::PathBuf::from(self.as_os_str())
+impl From<FilePath> for std::path::PathBuf {
+    fn from(file_path: FilePath) -> Self {
+        std::path::PathBuf::from(file_path.as_os_str())
     }
 }
