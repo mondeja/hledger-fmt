@@ -3,7 +3,7 @@ pub struct ByteStr<'a> {
     bytes: &'a [u8],
 }
 
-impl<'a> std::ops::Deref for ByteStr<'a> {
+impl<'a> core::ops::Deref for ByteStr<'a> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {

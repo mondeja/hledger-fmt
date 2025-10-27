@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests;
+use crate::Vec;
 
 use crate::parser::{
     Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionNode,
@@ -333,6 +334,8 @@ fn extend_entry(
 }
 
 mod spaces {
+    use crate::Vec;
+
     /// Generate a compile-time array of spaces of size N,
     /// to avoid allocating strings at runtime using " ".repeat(N).
     const fn make_spaces<const N: usize>() -> [u8; N] {

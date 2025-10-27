@@ -1,3 +1,5 @@
+use crate::String;
+
 /// Syntax error occurring while parsing a journal file content.
 #[derive(Debug, PartialEq)]
 pub struct SyntaxError {

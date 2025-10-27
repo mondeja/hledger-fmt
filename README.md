@@ -105,7 +105,7 @@ following to your _Cargo.toml_:
 
 ```toml
 [dependencies]
-hledger-fmt = { version = "0.3", default-features = false }
+hledger-fmt = { version = "0.3", default-features = false, features = ["std"] }
 ```
 
 ## Usage
@@ -162,7 +162,9 @@ fn main() {
   supports colors.
 - **`diff`** (enabled by default): Show a diff of the changes made to the files.
   Adds the `--no-diff` option to disable it.
-- **`cli`** (enabled by default): Build the CLI tool.
+- **`cli`** (enabled by default): Build the CLI tool. Implies the `std` feature.
+- **`std`**: Enable building with the standard library. Disable it to build with
+  `no_std` + `alloc` support.
 - **`env`**: Enable reading configuration from environment variables at run time.
 - **`tracing`**: Enable tracing support. Adds the CLI argument `--trace-file` to
   write tracing logs to a file.

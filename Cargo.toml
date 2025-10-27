@@ -40,12 +40,13 @@ clap = { workspace = true, optional = true }
 clap_mangen = { version = "^0.2", optional = true }
 
 [features]
-default = ["color", "auto-color", "diff", "cli"]
+default = ["color", "auto-color", "diff", "cli", "std"]
+std = []
 color = ["dep:anstream", "dep:anstyle", "clap/color"]
 auto-color = ["anstream?/auto", "anstream?/wincon"]
 diff = ["dep:similar"]
 manpages = ["dep:clap_mangen"]
-cli = ["dep:clap"]
+cli = ["dep:clap", "std"]
 env = []
 bench = []
 tracing = [

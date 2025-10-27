@@ -15,10 +15,16 @@
   debugging.
 - Add `--trace-file` CLI option to write tracing logs to a file.
 - Allow to configure transaction entries column spacing of formatted results.
+- Add `std` feature to allow building with `alloc` support.
 
 ### Enhancements
 
 - Major performance improvements.
+
+#### Bug fixes
+
+- Fix incompatibility of `--exit-zero-on-changes` option when `diff` feature
+  is disabled.
 
 ## 2025-10-21 - [0.3.3]
 

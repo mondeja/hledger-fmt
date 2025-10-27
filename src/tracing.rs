@@ -25,7 +25,7 @@ pub(crate) fn init_file_tracing(path: &std::path::Path) {
         }),
     );
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-    std::mem::forget(guard);
+    core::mem::forget(guard);
     let subscriber = builder.with_writer(non_blocking).finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("failed to set tracing subscriber");
