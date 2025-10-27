@@ -132,7 +132,7 @@ pub fn run(cmd: clap::Command) -> i32 {
 
         #[cfg(any(test, feature = "tracing"))]
         {
-            if matches!(file, FilePathOrStdin::Stdin) {
+            if !matches!(file, FilePathOrStdin::Stdin) {
                 let _span = tracing::span!(
                     tracing::Level::TRACE,
                     "process_file",
