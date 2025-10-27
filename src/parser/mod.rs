@@ -177,7 +177,7 @@ impl<'a> ParserTempData<'a> {
     }
 }
 
-pub fn parse_content(bytes: &[u8]) -> Result<JournalFile, errors::SyntaxError> {
+pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::SyntaxError> {
     #[cfg(any(test, feature = "tracing"))]
     {
         // TODO: if not using here, the `bytes` argument is propagared to all children

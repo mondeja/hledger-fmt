@@ -12,7 +12,7 @@ pub fn run(cmd: clap::Command) -> i32 {
     let args = cmd.get_matches();
 
     // initialize tracing if the feature is enabled and the flag is passed
-    #[cfg(feature = "tracing")]
+    #[cfg(all(feature = "tracing", not(test)))]
     {
         if let Some(trace_file_path) = args.get_one::<String>("trace-file") {
             let path = std::path::Path::new(trace_file_path);

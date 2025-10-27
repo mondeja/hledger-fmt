@@ -32,6 +32,7 @@ pub(crate) fn init_file_tracing(path: &std::path::Path) {
 }
 
 #[cfg(test)]
+#[ctor::ctor]
 fn init_stdout_tracing() {
     let filter = create_env_filter();
     let builder = tracing_subscriber::fmt()
@@ -47,12 +48,6 @@ fn init_stdout_tracing() {
     let subscriber = builder.finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("failed to set tracing subscriber");
-}
-
-#[cfg(test)]
-#[ctor::ctor]
-unsafe fn init() {
-    init_stdout_tracing();
 }
 
 pub(crate) struct Utf8Slice<'a>(pub(crate) &'a [u8]);
