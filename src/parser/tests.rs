@@ -563,3 +563,8 @@ value $100.00
         }],
     )
 }
+
+#[test]
+fn parse_empty() {
+    assert_journal("", vec![]);
+}

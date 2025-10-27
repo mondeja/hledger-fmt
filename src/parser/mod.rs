@@ -128,16 +128,6 @@ pub enum TransactionNode<'a> {
     SingleLineComment(SingleLineComment<'a>),
 }
 
-#[derive(PartialEq)]
-/// Current state of the parser
-#[cfg_attr(any(test, feature = "tracing"), derive(Debug))]
-enum ParserState {
-    /// Start state
-    Start,
-    /// Inside a multiline comment
-    MultilineComment,
-}
-
 #[derive(Default)]
 /// Temporary data used by the parser
 struct ParserTempData<'a> {
@@ -190,43 +180,39 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
         .entered();
     }
 
-    let mut state = ParserState::Start;
+    let mut inside_multiline_comment = false;
     let mut data = ParserTempData::new();
     let mut journal = Vec::new();
 
-    let mut lineno = 0;
+    let mut lineno = 1;
     let mut byteno = 0;
     let bytes_length = bytes.len();
     while byteno < bytes_length {
-        lineno += 1;
-
         let newline_pos = memchr::memchr(b'\n', &bytes[byteno..]);
 
-        let line_end_including_newline_chars = match newline_pos {
-            Some(pos) => byteno + pos + 1, // includes '\n'
-            None => bytes_length,          // last line
-        };
-
-        let line_end = if line_end_including_newline_chars == byteno {
-            byteno
-        } else {
-            let last_idx = line_end_including_newline_chars - 1;
-            unsafe {
-                match bytes.get_unchecked(last_idx) {
-                    b'\n' => {
-                        // CRLF or LF
-                        if last_idx > byteno && *bytes.get_unchecked(last_idx - 1) == b'\r' {
-                            last_idx - 1
-                        } else {
-                            last_idx
-                        }
-                    }
-                    _ => line_end_including_newline_chars,
-                }
+        let (line_end_including_newline, line_end) = match newline_pos {
+            Some(pos) => {
+                let end_with_newline = byteno + pos + 1;
+                let end_without_newline =
+                    if pos > 0 && *unsafe { bytes.get_unchecked(byteno + pos - 1) } == b'\r' {
+                        byteno + pos - 1 // CRLF
+                    } else {
+                        byteno + pos // LF
+                    };
+                (end_with_newline, end_without_newline)
             }
+            None => (bytes_length, bytes_length), // última línea sin newline
         };
 
-        let line = &bytes[byteno..line_end];
+        if line_end == byteno {
+            // línea vacía
+            process_empty_line(&mut journal, &mut data, bytes);
+            byteno = line_end_including_newline;
+            lineno += 1;
+            continue;
+        }
+
+        let line = unsafe { bytes.get_unchecked(byteno..line_end) };
 
         #[cfg(any(test, feature = "tracing"))]
         {
@@ -235,116 +221,114 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
                 "parse_content(line)",
                 line = format!("{}", crate::tracing::Utf8Slice(line)),
                 lineno,
-                state = ?state,
+                inside_multiline_comment,
             )
             .entered();
         }
 
-        match state {
-            ParserState::Start => {
-                if line.is_empty() {
-                    process_empty_line(&mut journal, &mut data, bytes);
-                } else if line[0] == b'#' || line[0] == b';' {
-                    #[cfg(any(test, feature = "tracing"))]
-                    {
-                        let _span = tracing::span!(
-                            tracing::Level::TRACE,
-                            "parse_content(single line comment)",
-                            "line[0]" = format!("{}", line[0] as char),
-                        )
-                        .entered();
-                    }
-                    // single line comment
-                    let prefix = if line[0] == b'#' {
-                        CommentPrefix::Hash
-                    } else {
-                        CommentPrefix::Semicolon
-                    };
-
-                    let content = ByteStr::from(&line[1..]);
-                    let comment = SingleLineComment {
-                        content,
-                        prefix,
-                        indent: 0,
-                    };
-
-                    if data.directives_group_nodes.is_empty()
-                        && data.transaction_title_byte_start == 0
-                        && data.transaction_title_byte_end == 0
-                    {
-                        journal.push(JournalCstNode::SingleLineComment(comment));
-                    } else if data.transaction_title_byte_start != 0
-                        || data.transaction_title_byte_end != 0
-                    {
-                        data.transaction_entries
-                            .push(TransactionNode::SingleLineComment(comment));
-                    } else {
-                        data.directives_group_nodes
-                            .push(DirectiveNode::SingleLineComment(comment));
-                    }
-                } else if line == b"comment" {
-                    state = ParserState::MultilineComment;
-                } else if line.iter().all(|&b| b.is_ascii_whitespace()) {
-                    process_empty_line(&mut journal, &mut data, bytes);
-                } else if let Some(name) = unsafe { maybe_start_with_directive(line) } {
-                    parse_directive(name, line, &mut data);
-                } else if line[0].is_ascii_whitespace() {
-                    if data.transaction_title_byte_start == 0
-                        && data.transaction_title_byte_end == 0
-                    {
-                        // probably single line comment that starts with a space,
-                        // but could be also a subdirective
-                        parse_single_line_comment_or_subdirective(
-                            line,
-                            lineno,
-                            &mut data,
-                            &mut journal,
-                        )?;
-                    } else {
-                        // maybe inside transaction entry, but could be also a single
-                        // line comment inside a transaction group
-                        parse_transaction_entry(line, &mut data);
-                    }
-                } else {
-                    // starts transaction
-
-                    // if we are in a current transaction, save it adding a newline
-                    if data.transaction_title_byte_start != 0
-                        && data.transaction_title_byte_end != 0
-                    {
-                        process_empty_line(&mut journal, &mut data, bytes);
-                    }
-
-                    data.transaction_title_byte_start = byteno;
-                    parse_transaction_title(line, &mut data);
+        if inside_multiline_comment {
+            if line == b"end comment" {
+                save_multiline_comment(&mut data, &mut journal, bytes);
+                inside_multiline_comment = false;
+            } else {
+                if data.multiline_comment_byte_start == 0 {
+                    data.multiline_comment_byte_start = byteno;
                 }
+                data.multiline_comment_byte_end = line_end_including_newline;
             }
-            ParserState::MultilineComment => {
-                if line == b"end comment" {
-                    save_multiline_comment(&mut data, &mut journal, bytes);
-                    state = ParserState::Start;
-                } else {
-                    if data.multiline_comment_byte_start == 0 {
-                        data.multiline_comment_byte_start = byteno;
-                    }
-                    data.multiline_comment_byte_end = line_end_including_newline_chars;
-                }
-            }
+
+            byteno = line_end_including_newline;
+            lineno += 1;
+            continue;
         }
 
-        byteno = line_end_including_newline_chars;
-    }
+        let first_byte = unsafe { *line.get_unchecked(0) };
+        if first_byte.is_ascii_whitespace() {
+            let line_length = line.len();
+            let last_byte = unsafe { *line.get_unchecked(line_length - 1) };
+            let all_whitespace = last_byte.is_ascii_whitespace()
+                && line[1..line_length - 1]
+                    .iter()
+                    .all(|&b| b.is_ascii_whitespace());
 
-    if data.multiline_comment_byte_start != 0 && data.multiline_comment_byte_end == 0 {
-        data.multiline_comment_byte_end = byteno;
+            if all_whitespace {
+                // empty line (only spaces or tabs)
+                process_empty_line(&mut journal, &mut data, bytes);
+            } else if data.transaction_title_byte_start == 0 && data.transaction_title_byte_end == 0
+            {
+                // probably single line comment that starts with a space,
+                // but could be also a subdirective
+                parse_single_line_comment_or_subdirective(line, lineno, &mut data, &mut journal)?;
+            } else {
+                // maybe inside transaction entry, but could be also a single
+                // line comment inside a transaction group
+                parse_transaction_entry(line, &mut data);
+            }
+        } else if first_byte == b'#' || first_byte == b';' {
+            #[cfg(any(test, feature = "tracing"))]
+            {
+                let _span = tracing::span!(
+                    tracing::Level::TRACE,
+                    "parse_content(single line comment)",
+                    "line[0]" = format!("{}", first_byte as char),
+                )
+                .entered();
+            }
+            // single line comment
+            let prefix = if first_byte == b'#' {
+                CommentPrefix::Hash
+            } else {
+                CommentPrefix::Semicolon
+            };
+
+            let content = ByteStr::from(&line[1..]);
+            let comment = SingleLineComment {
+                content,
+                prefix,
+                indent: 0,
+            };
+
+            if data.directives_group_nodes.is_empty()
+                && data.transaction_title_byte_start == 0
+                && data.transaction_title_byte_end == 0
+            {
+                journal.push(JournalCstNode::SingleLineComment(comment));
+            } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0
+            {
+                data.transaction_entries
+                    .push(TransactionNode::SingleLineComment(comment));
+            } else {
+                data.directives_group_nodes
+                    .push(DirectiveNode::SingleLineComment(comment));
+            }
+        } else if let Some(name) = unsafe { maybe_start_with_directive(line) } {
+            parse_directive(name, line, &mut data);
+        } else if line != b"comment" {
+            // starts transaction
+
+            // if we are in a current transaction, save it adding a newline
+            if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
+                process_empty_line(&mut journal, &mut data, bytes);
+            }
+
+            data.transaction_title_byte_start = byteno;
+            parse_transaction_title(line, &mut data);
+        } else {
+            inside_multiline_comment = true;
+        }
+
+        byteno = line_end_including_newline;
+        lineno += 1;
     }
 
     // Hledger v1.40 traits not ended multiline comments as a multiline comment
-    if state == ParserState::MultilineComment {
-        save_multiline_comment(&mut data, &mut journal, bytes);
-    }
+    if inside_multiline_comment {
+        if data.multiline_comment_byte_start != 0 && data.multiline_comment_byte_end == 0 {
+            data.multiline_comment_byte_end = byteno;
+        }
 
-    if !data.directives_group_nodes.is_empty() {
+        save_multiline_comment(&mut data, &mut journal, bytes);
+    } else if !data.directives_group_nodes.is_empty() {
         save_directives_group_nodes(&mut data, &mut journal);
     } else if data.transaction_title_byte_start != 0 || data.transaction_title_byte_end != 0 {
         save_transaction(&mut data, &mut journal, bytes);
@@ -681,11 +665,12 @@ fn save_directives_group_nodes<'a>(
     )
 )]
 fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
-    let at_indent = line[0] != b'\t';
+    let first_byte = unsafe { *line.get_unchecked(0) };
+    let at_indent = first_byte != b'\t';
     let mut indent = if at_indent { 0 } else { 4 };
     let mut entry_name_start = 0;
     let mut entry_name_end = 0;
-    let mut prev_was_whitespace = line[0].is_ascii_whitespace();
+    let mut prev_was_whitespace = first_byte.is_ascii_whitespace();
 
     let line_length = line.len();
     let start = 0;

@@ -1,32 +1,34 @@
 #[cfg_attr(any(test, feature = "tracing"), derive(PartialEq))]
-pub struct ByteStr<'a>(&'a [u8]);
+pub struct ByteStr<'a> {
+    bytes: &'a [u8],
+}
 
 impl<'a> std::ops::Deref for ByteStr<'a> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        self.0
+        self.bytes
     }
 }
 
 impl<'a> AsRef<[u8]> for ByteStr<'a> {
     #[inline(always)]
     fn as_ref(&self) -> &[u8] {
-        self.0
+        self.bytes
     }
 }
 
 impl<'a> From<&'a [u8]> for ByteStr<'a> {
     #[inline(always)]
     fn from(bytes: &'a [u8]) -> Self {
-        ByteStr(bytes)
+        ByteStr { bytes }
     }
 }
 
 impl<'a> ByteStr<'a> {
     /// Returns the number of characters, handling UTF-8 correctly
     pub fn chars_count(&self) -> usize {
-        utf8_chars_count(self.0)
+        utf8_chars_count(self.bytes)
     }
 }
 
@@ -34,16 +36,18 @@ impl<'a> ByteStr<'a> {
 impl<'a> From<&'a str> for ByteStr<'a> {
     #[inline(always)]
     fn from(s: &'a str) -> Self {
-        ByteStr(s.as_bytes())
+        ByteStr {
+            bytes: s.as_bytes(),
+        }
     }
 }
 
 #[cfg(any(test, feature = "tracing"))]
 impl<'a> std::fmt::Debug for ByteStr<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match std::str::from_utf8(self.0) {
+        match std::str::from_utf8(self.bytes) {
             Ok(s) => write!(f, "{:?}", s),
-            Err(_) => write!(f, "{:?}", self.0),
+            Err(_) => write!(f, "{:?}", self.bytes),
         }
     }
 }
