@@ -157,41 +157,32 @@ fn main() {
 
 ### Features
 
-- **`color`** (enabled by default): Build with terminal color support.
-- **`auto-color`** (enabled by default): Automatically detects if your terminal
-  supports colors.
-- **`diff`** (enabled by default): Show a diff of the changes made to the files.
+- **`color`** (enabled): Build with terminal color support.
+- **`auto-color`** (enabled): Detects if your terminal supports colors.
+- **`diff`** (enabled): Show a diff of the changes made to the files.
   Adds the `--no-diff` option to disable it.
-- **`cli`** (enabled by default): Build the CLI binary tool.
-- **`std`**: Enable building with the standard library. Disable it to build with
-  `no_std` + `alloc` support.
-- **`env`**: Enable reading configuration from environment variables at run time.
-- **`tracing`**: Enable tracing support. Adds the CLI argument `--trace-file` to
-  write tracing logs to a file.
+- **`cli`** (enabled): Build the CLI binary tool.
+- **`std`**: (enabled) Build with the standard library.
+  Disable it to build with `no_std` + `alloc` support.
+- **`env`**: Read configuration from environment variables at run time.
+- **`tracing`**: Build with tracing support.
+  Adds the CLI argument `--trace-file` to write tracing logs to a file.
 
 ### Configuration
-
-#### Environment variables
 
 By default, hledger-fmt comes with sensible opinionated defaults. You can customize
 them at compile or run time by using the next environment variables:
 
 <!-- markdownlint-disable line-length -->
 
-| Variable name               | Default value | Description                                     |
-| --------------------------- | ------------- | ----------------------------------------------- |
-| `HLEDGER_FMT_ENTRY_SPACING` | `2`           | Minimum number of spaces between entry columns. |
+| Variable name               | Default value |                   Description                   |
+| --------------------------- | :-----------: | :---------------------------------------------: |
+| `HLEDGER_FMT_ENTRY_SPACING` |      `2`      | Minimum number of spaces between entry columns. |
 
 <!-- markdownlint-enable line-length -->
 
 By default, environment variables are read at compile time only. Enabling the `env`
 feature adds support for reading these variables at runtime.
-
-#### Library
-
-You can customize the formatter behavior by using the `FormatterBuilder`:
-
-```rust
 
 [cargo-binstall]: https://github.com/cargo-bins/cargo-binstall
 [hledger]: https://hledger.org
@@ -199,4 +190,3 @@ You can customize the formatter behavior by using the `FormatterBuilder`:
 [releases page]: https://github.com/mondeja/hledger-fmt/releases
 [pre-commit]: https://pre-commit.com
 [Custom Local Formatters]: https://marketplace.visualstudio.com/items?itemName=jkillian.custom-local-formatters
-```
