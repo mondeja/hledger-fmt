@@ -8,6 +8,8 @@
   formatting).
 - Reduce memory footprint by 70.8% for transaction-related structures by
   using smaller integer types (u16 instead of usize) where appropriate.
+- Remove redundant length checks in `maybe_start_with_directive` function for
+  improved code efficiency.
 
 ## 2025-10-29 - [0.3.5]
 
