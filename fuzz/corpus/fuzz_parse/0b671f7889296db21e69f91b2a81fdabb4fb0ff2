@@ -1,0 +1,79 @@
+2015-10-16 bought food
+ à¤xpenses:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't need any directives to get started.
+# But they can add more error checking, or change how things are displayed.
+# They begin with a word, letter, or symbol.
+# They are most often placed at the top, before transactions.
+
+account assets             ; Declare valid account names and display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on comment line, indented.
+account expenses:rent      ; Expense and revenue categories are also accounts.
+                           ; Subaccounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include another journal file here.
+
+# Declare a recurring "periodic transaction", for budget/forecast reports
+~ monthly  set budget goals  ; <- Note, 2+ spaces before the description.
+    (expenses:rent)      $1000  ; <- Note, 2+ spaces before the account name.
+    (expenses:food)       $500
+
+# Declare an auto posting rule, to modify existing transactions in reports
+= revenues:consulting
+    liabilities:tax:2024:us          *0.25  ; Add a tax liability & expense
+    expenses:tax:2024:us            *-0.25  ; for 25% of the revenue % 15-10-16 bought food
+  expenses:food          $10
+  assoood
+  expensd
+  expenses:food    [5-e     .
+
+###############################################################################
+
+# 3. Transactions are what it's all about.
+# They are dated events, usually movements of money between 2 or more accounts.
+# They begin with a numeric date.
+# Here is their basic shape:
+#
+# DATE DESCRIPTION    ; The transaction's date and optional description.
+#   ACCOUNT1  AMOUNT  ; A posting of an amount to/from this account, indented.
+#   ACCOUNT2  AMOUNT  ; A second posting, balancing the first.
+#   ...               ; More if needed. Amounts must sum to zero.
+#                     ; Note, 2+ spaces between account names and amounts.
+
+2024-01-01 opening balances         ; At the start, declare pre-existing balances this way.
+    assets:savings          $10000   ; Account names can be anything. lower case is easy to type.
+    assets:checking          $1000  ; assets, liabilities, equity, revenues, expenses are common.
+    liabilities:credit card  $-500    ; liabilities, equity, revenues balances are usually negative.
+    equity:start    es.
+
+2024-01-15 buy some shares, in two lots                 ; Cost can be noted.
+    assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
+    assets:investments:2024-:cash

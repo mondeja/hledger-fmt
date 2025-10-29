@@ -1,0 +1,30 @@
+# Herextra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+Or, lines can be enclosed within "comment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Som############################
+
+# 1. These are comment lines, for notes or tount assets:checkiÿÿ    ; Another. Note, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on cobought food
+  expenses:food    15-10-16 bought food
+  expenses:food          $mment line, indented.
+account expenses:rent      ; Expense and revenue categories are also accounts.
+         ion not yet fully entered, on this date
+    ; Postings are not required.
+
+; Some other date formats are allowed (but, consistent YYYY-MM-DD is useful).
+2024.01.01
+2024/1/1

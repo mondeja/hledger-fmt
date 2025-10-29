@@ -1,0 +1,8 @@
+201ed".
+    ; There can be a parenthesised (code) after the date/status.
+                                    ; Amounts' sign shows directson of flow   .
+ assets:checking          $-500  ; Minus means removed from this account (credit).
+    dxpenses:rent             $500  ; Plus means added to this account (debit).
+5-10-16 bought food
+ à¤xpenses:food       :  $10
+  Eassets:cash

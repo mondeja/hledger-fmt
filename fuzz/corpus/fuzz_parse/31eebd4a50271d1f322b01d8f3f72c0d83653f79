@@ -1,0 +1,18 @@
+20 ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include another journa15-10ght food
+  gxpenses:food    15-10-16 bvught food
+  expenses:fo$Öd    "     $10
+  assod
+  expenses:food    110
+ae s tss:cash
++

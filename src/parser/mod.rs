@@ -252,10 +252,15 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
         if first_byte.is_ascii_whitespace() {
             let line_length = line.len();
             let last_byte = unsafe { *line.get_unchecked(line_length - 1) };
-            let all_whitespace = last_byte.is_ascii_whitespace()
-                && unsafe { line.get_unchecked(1..line_length - 1) }
-                    .iter()
-                    .all(|&b| b.is_ascii_whitespace());
+            let all_whitespace = if line_length < 2 {
+                // Single character line that is whitespace
+                true
+            } else {
+                last_byte.is_ascii_whitespace()
+                    && unsafe { line.get_unchecked(1..line_length - 1) }
+                        .iter()
+                        .all(|&b| b.is_ascii_whitespace())
+            };
 
             if all_whitespace {
                 // empty line (only spaces or tabs)
@@ -743,6 +748,8 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
         entry_name_end = end;
     }
 
+    // Ensure entry_name_end is not less than entry_name_start to avoid panic
+    let entry_name_end = entry_name_end.max(entry_name_start);
     let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
 
     if data.first_entry_indent == 0 {
@@ -1064,7 +1071,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         }
     }
 
-    if line_length >= 9 && *l.get_unchecked(0) == b'c' {
+    if line_length >= 10 && *l.get_unchecked(0) == b'c' {
         // "commodity "
         if *l.get_unchecked(1) == b'o'
             && *l.get_unchecked(2) == b'm'

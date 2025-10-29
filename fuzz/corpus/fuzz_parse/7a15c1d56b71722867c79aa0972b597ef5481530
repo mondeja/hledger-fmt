@@ -1,0 +1,37 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disa     ; Amounts' sign shows directson of flow.
+    assets:checking          $-500  ; Minus means removed from this account (credit).
+    expenses:rent             $500  ; Plus means added to this account (debit).
+
+; Keeping transactions in date order is optional (but helps error checking).
+
+2024-01-02 Gringott's Bank | withdrawal  ; Description can be PAYEE | NOTE
+    assets:bank:gold       -10 gold  ; foo
+    assets:pouch            10 gold  ; bar
+
+2024-01-02 shopping
+    expenses:clothing        1 gold
+    expenses:wands           5 gold
+    assets:pouch           ““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““““ -6 gold
+
+2024-01-02 receive gift
+    revenues:gifts          -3 "Chocolate Frogs"  ; Complex commodity symbols
+    assets:pouch             3 "Chocolate Frogs"  ; must be in double qunses           ; type:X
+                           ; A follow-on comment line, indented.
+account expenses:rent      ; Expense and revenue categories are also accounts.
+                           ; Subaccounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; D# Here is the eclare a valid tag name.
+
+P 2024-03-0m1 A

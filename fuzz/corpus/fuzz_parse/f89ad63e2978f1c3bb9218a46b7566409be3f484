@@ -1,0 +1,11 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+O2015-10-r, lines can be enclosed within 16 bought food
+ à¤xpenses:food          $"comment

@@ -1,0 +1,36 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 0. These are comment lines, for notes or temporarily disabli-ng things.
+; They begin with # or ;
+
+comment
+Or, lines can be enclosed within "comment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't n with a word, letter, or symbol.
+# They are most often placed at the top, before transactions.
+
+account assets             ; Declare valid account names and , 2+ spaces beforthis
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing ores:consulting
+    liabilities:tax:2024:us          *0.25  ; Add a tax liability & expense
+    expenses:tax:2024:us            *-0.th a word, letter, or  evensymbol.
+# ts, usualTheyly 

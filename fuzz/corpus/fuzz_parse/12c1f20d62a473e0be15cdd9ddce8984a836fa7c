@@ -1,0 +1,68 @@
+2015-10-16 bought food
+ à¤xpenses:food        es are also accounts.
+                           ; Subaccounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodvableÿÿ  ; Accounting type is inferred from english tarted.
+# But they can add more error checking, or change how things are displayed.
+# They begin with a word, letter, or symbol.
+# They are most often placed at the top, befo  assoood
+  expensre transactions.
+
+account assets             ; Declare valid account names and display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2+ spaces after the account name.
+account assets:receivableÿÿ  ; Accounting type is inferred from english names,
+account passi9999999999999fs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on comment line, indented.
+accouaccount assets:receivableÿÿ  ; Accounting type is inferred from english names,
+account passi9999999999999fs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on comment line, indented.
+account expensesenr:t      ; Expense and revenue catities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid paye               ; Subaccounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodvableÿÿ  ; Accounting type is inferred from english tarted.
+# But they can add more error checking, or change how things are displayed.
+# They begin with a word, letter, or symbol.
+# They are most often placed at the top, befo  assoood
+  expensre transactions.
+
+account assets             ; Declare valid account names and display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2+ spaces after the account name.
+account assets:receivableÿÿ  ; Accounting type is inferred from english names,
+account passi9999999999999fs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on comment line, indented.
+account expensesenr:t      ; Expense and revenue catities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Decla     *0.25  ; Add a tax liability & expense
+    expenses:tax:2024:us            *-0.25  ;r. Note, 2+ spaces after the account name.
+account assets:receivableÿÿ  ; Accounting type is inferred from english names,
+account passi9999999999999fs            ; or declared with a "type" tag, type:L
+account expenses           ; type:X
+                           ; A follow-on comment line, indented.
+account expensesenr:t      ; Expense and revenue categories are also accounts.
+                           ; Subaccounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.0+0,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+names can be anything. lower case is easy to lots                 ; Cost can be noted.
+    assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
+    assets:investments:2024-:cash

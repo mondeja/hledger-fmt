@@ -1,0 +1,74 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+Or, lines can be encdented.
+account expenses:rent      ; Expense and revenue categories are also accounts.
+                           ; Subabcounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include another journal file here.
+
+# Declare a recurrip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include anoth rejour                       ; Subabcounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark usinherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include another journal file here.
+
+# Declare a recurrip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include anoth rejour                       ; Subabcounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR  ; foo bar
+
+decimal-mark .          ; The decimal mark used in this file (if ambiguous).
+
+payee Whole Foods       ; Declare a valid payee name.
+
+tag trip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.jan have semicolon comments ournal   ; Include another journal file here.
+
+# Declare a recurrip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Inclat end of line  ; lude anoth rejournal filie herke t

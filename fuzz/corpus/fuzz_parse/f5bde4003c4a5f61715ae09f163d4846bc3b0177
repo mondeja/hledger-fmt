@@ -1,0 +1,23 @@
+2015-10-16 bought food
+ à¤xpenses:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lin16 bought food
+ à¤xpenses:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces befnts a bank account.
+acc###################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't need any direst often placed at the top, before transactions.
+
+account assets             ; Declare valid account names and display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2 account names and dicount name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or decl2

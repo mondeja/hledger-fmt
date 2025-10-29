@@ -1,0 +1,23 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+Or, lines can be enclosed within "comment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or ; A second posting, balancing the first.
+#   ...    2015-10-16 

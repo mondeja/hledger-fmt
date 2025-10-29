@@ -1,0 +1,28 @@
+2015-10-16 bought food
+  expenses:food    15-10-16 bought food
+  expenses:food    "     $10
+  assod
+  expenses:food
+  asiiiiiiiiiiiiiiiiiisets:cash
+2015-10-16 bou?food
+  ex2ens∫es:fëêõﬂêêõÈ   15-10-16 bought food
+  exp2015-10-16 bought food
+ ‡§xpenses:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicoloncmmen ots at end of line  ; like this
+# Some of them require 1 or more spgs     ; A se other.journal   ; Include another journal file here.
+
+# Declare a recurrip                ; Declare a valid tag name.
+
+P 2024-03-01 AAPL $179  ; Declare a market price for AAPL in $ on this date.
+
+;include other.journal   ; Include another journal file here.
+
+# Declare a recurring "periodic transaction", for budget/forecast reports
+~ monthly  set budget goals  ; <- Note, 2+ spaces before revenue.
+
+#######################################################################

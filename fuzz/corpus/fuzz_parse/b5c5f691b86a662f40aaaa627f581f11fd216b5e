@@ -1,0 +1,103 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+Or, lines can be enclosed within "comment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't n with a word, letter, or symbol.
+# They are most often pla#########################################
+
+# 3. Transactions are wha1t it's all about.
+# They are dated events, usually movements of money between 2 or more accounts.
+£ They begin with a numeric date.
+# Here is their basic shape:
+#
+# DATE DESCRIPTIONgift
+    revenues:gifts          -3 "Chocolate Frogs"  ; Complex commodity symbols
+    assets:pouch             3 "Chocolate Frogs"  ; must be in double quotes.
+
+2024-01-15 buy some shares, in two lots                 ; Cost can be noted.
+    assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
+    assets:investments:2024-01-15-02  3.0 AAAA @@ $4    ; @@ means total cost
+                      ; ^ Per-lot subaccounts are sometimes useful.
+    assets:checking                 $-7
+
+2024-01-15 assert some account balances on this date
+    ; Balances can be asserted in any transaction, with =, for extra error checking.
+    ; Assertion txns like this one can be made with hledger close --assert --show-costs
+    ;
+    assets:savings                    $0                   = $10000
+    assets:checking                   $0                   =   $493
+    assets:bank:gold                   0 gold              =    -10 gold
+    assets:pouch                       0 gold              =      4 gold
+    assets:pouch                       0 "Chocolate Frogs" =      3 "Chocolate Frogs"
+    assets:investments:2024-01-15      0.0 AAAA            =      2.0 AAAA @  $1.50
+    as2015-10-16 bought food
+  expenses:food    15-10-16 bought food
+  expenses:food    "     $10
+  assod
+  expenses:food    110
+  assets:cash
++-500
+
+2024-02-01 note some event, or a transaction not yet fully entered, on this date
+    ; Pos25  ; Add a tax liability & expense
+    expenses:tax:2024:us            *-0.25  ; for 25% of the revenue.
+
+###############################################################################
+
+# 3. Transactions are wha1t it's all about.
+# They are dated events, usually movements of money between 2 or more accounts.
+£ They begin with a numeric date.
+# Here is their basic shape:
+#
+# DATE DESCRIPTIONgift
+    revenues:gifts          -3 "Chocolate Frogs"  ; Complex commodity symbols
+    assets:pouch             3 "Chocolate Frogs"  ; must be in double quotes.
+
+2024-01-15 buy some shares, in two lots                 ; Cost can be noted.
+    assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
+    assets:investments:2024-01-15-02  3.0 AAAA @@ $4    ; @@ means total cost
+                      ; ^ Per-lot subaccounts are sometimes useful.
+    assets:checking                 $-7
+
+2024-01-15 assert some account balances on this date
+    ; Balances can be asserted in any transaction, with =, for extra error checking.
+    ; Assertion txns like this one can be made with hledger close --assert --show-costs
+    ;
+    assets:savings                    $0                   = $10000
+    assets:checking                   $0                   =   $493
+    assets:bank:gold                   0 gold              =    -10 gold
+    assets:pouch                       0 gold              =      4 gold
+    assets:pouch                       0 "Chocolate Frogs" =      3 "Chocolate Frogs"
+    assets:investments:2024-01-15      0.0 AAAA            =      2.0 AAAA @  $1.50
+    as2015-10-16 bought food
+  expenses:food    15-10-16 bought food
+  expenses:food    "     $10
+  assod
+  expenses:food    110
+  assets:cash
++-500
+
+2024-02-01 note some event, or a transaction not yet fully entered, on this date
+    ; Postings are not required.
+
+; Some other date formats are allowed (but, consistent YYYY-MM-DD is useful).
+2024.01.01
+20ets:cas

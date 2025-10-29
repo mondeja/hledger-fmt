@@ -1,0 +1,34 @@
+2015-10-16 bought food
+  expenses:foo¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢d    -5-10-16 bought food
+  expenses:food    "   bought food
+  expenses:foo¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢¢d    15-10-16 bought food
+  expenses:food    "     $10
+  assod
+  expenses:food    1  ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english nametes:food     e displayed.
+# They begin with a word, letter, or symbol.
+# They are most often placed at the top, before transactions.
+
+account assets             ; Declare valid account names a         ; Subabcounts inherit their parent's type.
+
+commodity $0.00         ; Declare valid commodities and their display styles.
+commodity 1.000,00 EUR   Declare an auto posting rule, to modify existing transactions in reports
+= revenues:consulting
+    liabilities:tax:2024:us       nd display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+acco Declare valid account names and display order.
+account assets:savings     ; A subaccount. This one represents a bank account.
+account assets:checking    ; Another. Note, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or declared with a "type; type:X
+                           ; A follow-on comment line, indented.
+account expenses:rent      ; Expense and revenue categories are also accounts.
+                           ; Subabcounts inherit their parent's type.
+
+commodity $0.010
+  as  $10
+  assod
+  expenses:food    110
+  assets:cash
++

@@ -1,0 +1,60 @@
+2015-10-16 bought food
+ à¤xpenses   $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+#Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't need any direst often placed at the top, before transactions.
+
+account assets             ; Declare valid account names and dispes,
+acc:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lin16 bought food
+ à¤xpenses:food          $10
+  Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+#Ea:ssetsmment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+###############################################################################
+
+# 2. Directives customise processing or output in some way.
+# You don't need any direst often placed at the top, before transactions.
+
+account assets             ; Declare valid account names and dispes,
+account passifs            ; or decl2

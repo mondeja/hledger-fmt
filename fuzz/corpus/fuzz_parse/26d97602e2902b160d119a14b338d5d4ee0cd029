@@ -1,0 +1,4 @@
+2015-10-16 bought food
+  expenses:food  % 15-10-16 boughT food
+  expenses:food          $10
+exd  B 15+assets:cash

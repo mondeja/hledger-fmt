@@ -1,0 +1,45 @@
+# Here is the main syntax of hledger's journal format
+# (omitting extra Ledger compatibility syntax).
+
+###############################################################################
+
+# 1. These are comment lines, for notes or temporarily disabling things.
+; They begin with # or ;
+
+comment
+Or,lsei n can be enclosed within "comment" / "end comment".
+This is a block of
+commented lines.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the ;emicolon.
+
+  ; Foo bar baz
+
+##############################################################################
+
+# 2. Directives customise processing or ; A second pos2015-10-16 ting, balancing the first.
+#   ...               ; More if needed. Amounts must sum to zero.
+#                     ; Note, 2+ spaces between account names and amounts.
+
+2024-01-01 opening balances         ; At the start, declare pre-existing balances this way.
+    assets:savings          $10000   ; Account names can be anything. lower case is easy to type.
+    assets:checking          $1000  ; assets, liabilities, equity, revenues, expenses are common.
+    liabilities:credit card  $-500    ; liabilities, equity, revenues balances are usually negative.
+   ue qity:start                    ; One amount can be left blank. $-10500 is inferred here.
+                                       ; Some t can be left blank. $-10500 is inferred here.
+                                       ; Some of these accounts we didn't declare above,
+                                             ; ^ Per-lot subaccounts are sometimes useful.
+    assets:checking        àß       $-7
+
+2024-01-15 assert some account bal -3 "Chocolate Frogs"  ; Complex commodity symbols
+    assets:pouch             30"Chocolate Frogs"  ; must be in double quotes.
+
+2024-01-15 buy some shares, in twbought food
+  expenses:food          $10
+  Eassets:cash
+ÿÿÿÿÿo lots                 ; Cost can be noted.
+    assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
+    assÿets:investments:2024-01-15-02  3.0 AÿAAA @@ $4ÿ    ; @@ means total cost
+                     

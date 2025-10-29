@@ -1,0 +1,25 @@
+2015-10-16 bought foÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿjournal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+#########################################################ÿÿÿÿÿÿÿ###, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or declared with a "type" tag, type:L
+account exps.
+end comment
+
+# Some journal entries can have semicolon comments at end of line  ; like this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+############################e this
+# Some of them require 2 or more spaces before the semicolon.
+
+  ; Foo bar baz
+
+############################################################, 2+ spaces after the account name.
+account assets:receivable  ; Accounting type is inferred from english names,
+account passifs            ; or declared with a "type" tag, type:L
+account expenses  assh
