@@ -185,7 +185,10 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
 
     let mut inside_multiline_comment = false;
     let mut data = ParserTempData::new();
-    let mut journal = Vec::new();
+    // Pre-allocate capacity based on estimated nodes per file
+    // Typical hledger files have ~1 node per 50-100 bytes
+    let estimated_nodes = (bytes.len() / 75).max(16);
+    let mut journal = Vec::with_capacity(estimated_nodes);
 
     let mut lineno = 1;
     let mut byteno = 0;
@@ -481,26 +484,17 @@ fn parse_inline_comment<'a>(
     let (content_bytes, prefix) = if let Some(comment_prefix) = from_comment_prefix {
         (&line[colno_padding..line_length], comment_prefix)
     } else {
-        let mut comment_prefix = None;
-        let mut start = colno_padding;
-        let mut end = start;
-        while end < line_length {
-            let c = line[end];
-            if c == b'#' {
-                comment_prefix = Some(CommentPrefix::Hash);
-                start = end + 1;
-                end = line_length;
-                break;
-            } else if c == b';' {
-                comment_prefix = Some(CommentPrefix::Semicolon);
-                start = end + 1;
-                end = line_length;
-                break;
-            }
-            end += 1;
-        }
-        comment_prefix?;
-        (&line[start..end], comment_prefix.unwrap())
+        // Use memchr2 to efficiently find comment markers
+        let search_slice = &line[colno_padding..line_length];
+        let pos = memchr::memchr2(b'#', b';', search_slice)?;
+        let c = search_slice[pos];
+        let comment_prefix = if c == b'#' {
+            CommentPrefix::Hash
+        } else {
+            CommentPrefix::Semicolon
+        };
+        let start = colno_padding + pos + 1;
+        (&line[start..line_length], comment_prefix)
     };
 
     Some(SingleLineComment {
@@ -786,7 +780,6 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                 inside_entry_value = true;
                 entry_value_start = end - 1;
                 entry_value_end = entry_value_start;
-                continue;
             }
         } else if c == b';' || c == b'#' {
             comment = parse_inline_comment(
@@ -1769,11 +1762,10 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
         let after = &value[pos + 1..];
         if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
             return (value, &[]);
-        } else {
-            let before = &value[..pos];
-            let after = &value[pos..];
-            return (before, after);
         }
+        let before = &value[..pos];
+        let after = &value[pos..];
+        return (before, after);
     }
 
     let mut idx = 0;
