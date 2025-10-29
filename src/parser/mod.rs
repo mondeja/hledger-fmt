@@ -1009,219 +1009,111 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     let l = line;
     let line_length = l.len();
 
-    if line_length >= 8 && *l.get_unchecked(0) == b'a' {
-        // "account "
-        if *l.get_unchecked(1) == b'c'
-            && *l.get_unchecked(2) == b'c'
-            && *l.get_unchecked(3) == b'o'
-            && *l.get_unchecked(4) == b'u'
-            && *l.get_unchecked(5) == b'n'
-            && *l.get_unchecked(6) == b't'
-            && *l.get_unchecked(7) == b' '
-        {
-            return Some(&line[0..7]); // only the word without space
-        }
-
-        if *l.get_unchecked(1) == b'p'
-            && *l.get_unchecked(2) == b'p'
-            && *l.get_unchecked(3) == b'l'
-            && *l.get_unchecked(4) == b'y'
-            && *l.get_unchecked(5) == b' '
-        {
-            // "apply account"
-            if line_length >= 13
-                && *l.get_unchecked(6) == b'a'
-                && *l.get_unchecked(7) == b'c'
-                && *l.get_unchecked(8) == b'c'
-                && *l.get_unchecked(9) == b'o'
-                && *l.get_unchecked(10) == b'u'
-                && *l.get_unchecked(11) == b'n'
-                && *l.get_unchecked(12) == b't'
-            {
-                return Some(&line[0..13]);
-            }
-
-            // "apply fixed"
-            if line_length >= 11
-                && *l.get_unchecked(6) == b'f'
-                && *l.get_unchecked(7) == b'i'
-                && *l.get_unchecked(8) == b'x'
-                && *l.get_unchecked(9) == b'e'
-                && *l.get_unchecked(10) == b'd'
-            {
-                return Some(&line[0..11]);
-            }
-
-            // "apply tag"
-            if line_length >= 9
-                && *l.get_unchecked(6) == b't'
-                && *l.get_unchecked(7) == b'a'
-                && *l.get_unchecked(8) == b'g'
-            {
-                return Some(&line[0..9]);
-            }
-        }
-
-        // "assert "
-        if *l.get_unchecked(1) == b's'
-            && *l.get_unchecked(2) == b's'
-            && *l.get_unchecked(3) == b'e'
-            && *l.get_unchecked(4) == b'r'
-            && *l.get_unchecked(5) == b't'
-            && *l.get_unchecked(6) == b' '
-        {
-            return Some(&line[0..6]);
-        }
+    if line_length < 2 {
+        return None;
     }
 
-    if line_length >= 10 && *l.get_unchecked(0) == b'c' {
-        // "commodity "
-        if *l.get_unchecked(1) == b'o'
-            && *l.get_unchecked(2) == b'm'
-            && *l.get_unchecked(3) == b'm'
-            && *l.get_unchecked(4) == b'o'
-            && *l.get_unchecked(5) == b'd'
-            && *l.get_unchecked(6) == b'i'
-            && *l.get_unchecked(7) == b't'
-            && *l.get_unchecked(8) == b'y'
-            && *l.get_unchecked(9) == b' '
-        {
-            return Some(&line[0..9]);
-        }
+    let first_char = *l.get_unchecked(0);
 
-        // "capture "
-        if *l.get_unchecked(1) == b'a'
-            && *l.get_unchecked(2) == b'p'
-            && *l.get_unchecked(3) == b't'
-            && *l.get_unchecked(4) == b'u'
-            && *l.get_unchecked(5) == b'r'
-            && *l.get_unchecked(6) == b'e'
-            && *l.get_unchecked(7) == b' '
-        {
-            return Some(&line[0..7]);
-        }
-
-        // "check "
-        if *l.get_unchecked(1) == b'h'
-            && *l.get_unchecked(2) == b'e'
-            && *l.get_unchecked(3) == b'c'
-            && *l.get_unchecked(4) == b'k'
-            && *l.get_unchecked(5) == b' '
-        {
-            return Some(&line[0..5]);
-        }
+    // "P ", "D ", "Y "
+    if (first_char == b'P' || first_char == b'D' || first_char == b'Y')
+        && *l.get_unchecked(1) == b' '
+    {
+        return Some(&line[0..1]);
     }
 
-    if line_length >= 2 {
-        // "P ", "D ", "Y "
-        if (*l.get_unchecked(0) == b'P'
-            || *l.get_unchecked(0) == b'D'
-            || *l.get_unchecked(0) == b'Y')
-            && *l.get_unchecked(1) == b' '
+    if line_length < 4 {
+        return None;
+    }
+
+    // "tag "
+    if first_char == b't'
+        && *l.get_unchecked(1) == b'a'
+        && *l.get_unchecked(2) == b'g'
+        && *l.get_unchecked(3) == b' '
+    {
+        return Some(&line[0..3]);
+    }
+
+    if line_length < 5 {
+        return None;
+    }
+
+    // Group by first letter: 'e' for "expr", "eval", "end..."
+    if first_char == b'e' {
+        // "expr " / "eval "
+        if (*l.get_unchecked(1) == b'x'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b'r'
+            && *l.get_unchecked(4) == b' ')
+            || (*l.get_unchecked(1) == b'v'
+                && *l.get_unchecked(2) == b'a'
+                && *l.get_unchecked(3) == b'l'
+                && *l.get_unchecked(4) == b' ')
         {
-            return Some(&line[0..1]);
+            return Some(&line[0..4]);
         }
 
-        if *l.get_unchecked(0) == b'd' && *l.get_unchecked(1) == b'e' {
-            // "define "
-            if line_length >= 7 {
-                if *l.get_unchecked(2) == b'f'
-                    && *l.get_unchecked(3) == b'i'
-                    && *l.get_unchecked(4) == b'n'
-                    && *l.get_unchecked(5) == b'e'
-                    && *l.get_unchecked(6) == b' '
-                {
-                    return Some(&line[0..6]);
-                }
-
-                // "decimal-mark "
-                if line_length >= 14
-                    && *l.get_unchecked(2) == b'c'
-                    && *l.get_unchecked(3) == b'i'
-                    && *l.get_unchecked(4) == b'm'
-                    && *l.get_unchecked(5) == b'a'
-                    && *l.get_unchecked(6) == b'l'
-                    && *l.get_unchecked(7) == b'-'
-                    && *l.get_unchecked(8) == b'm'
-                    && *l.get_unchecked(9) == b'a'
-                    && *l.get_unchecked(10) == b'r'
-                    && *l.get_unchecked(11) == b'k'
-                    && *l.get_unchecked(12) == b' '
-                {
-                    return Some(&line[0..12]);
-                }
-            }
-        }
-
-        if *l.get_unchecked(0) == b'e' && *l.get_unchecked(1) == b'n' {
-            // "end apply year"
-            if line_length >= 14
-                && *l.get_unchecked(2) == b'd'
-                && *l.get_unchecked(3) == b' '
-                && *l.get_unchecked(4) == b'a'
-                && *l.get_unchecked(5) == b'p'
-                && *l.get_unchecked(6) == b'p'
-                && *l.get_unchecked(7) == b'l'
-                && *l.get_unchecked(8) == b'y'
-                && *l.get_unchecked(9) == b' '
-                && *l.get_unchecked(10) == b'y'
-                && *l.get_unchecked(11) == b'e'
-                && *l.get_unchecked(12) == b'a'
-                && *l.get_unchecked(13) == b'r'
-            {
-                return Some(&line[0..14]);
-            }
-
-            // "end apply fixed"
-            if line_length >= 15
-                && *l.get_unchecked(2) == b'd'
-                && *l.get_unchecked(3) == b' '
-                && *l.get_unchecked(4) == b'a'
-                && *l.get_unchecked(5) == b'p'
-                && *l.get_unchecked(6) == b'p'
-                && *l.get_unchecked(7) == b'l'
-                && *l.get_unchecked(8) == b'y'
-                && *l.get_unchecked(9) == b' '
-                && *l.get_unchecked(10) == b'f'
-                && *l.get_unchecked(11) == b'i'
-                && *l.get_unchecked(12) == b'x'
-                && *l.get_unchecked(13) == b'e'
-                && *l.get_unchecked(14) == b'd'
-            {
-                return Some(&line[0..15]);
-            }
-
-            // "end apply tag"
-            if line_length >= 13
-                && *l.get_unchecked(2) == b'd'
-                && *l.get_unchecked(3) == b' '
-                && *l.get_unchecked(4) == b'a'
-                && *l.get_unchecked(5) == b'p'
-                && *l.get_unchecked(6) == b'p'
-                && *l.get_unchecked(7) == b'l'
-                && *l.get_unchecked(8) == b'y'
-                && *l.get_unchecked(9) == b' '
-                && *l.get_unchecked(10) == b't'
-                && *l.get_unchecked(11) == b'a'
-                && *l.get_unchecked(12) == b'g'
-            {
-                return Some(&line[0..13]);
-            }
-
+        if line_length >= 7
+            && *l.get_unchecked(1) == b'n'
+            && *l.get_unchecked(2) == b'd'
+            && *l.get_unchecked(3) == b' '
+        {
             // "end tag"
-            if line_length >= 7
-                && *l.get_unchecked(2) == b'd'
-                && *l.get_unchecked(3) == b' '
-                && *l.get_unchecked(4) == b't'
+            if *l.get_unchecked(4) == b't'
                 && *l.get_unchecked(5) == b'a'
                 && *l.get_unchecked(6) == b'g'
             {
                 return Some(&line[0..7]);
             }
+
+            if line_length >= 13
+                && *l.get_unchecked(4) == b'a'
+                && *l.get_unchecked(5) == b'p'
+                && *l.get_unchecked(6) == b'p'
+                && *l.get_unchecked(7) == b'l'
+                && *l.get_unchecked(8) == b'y'
+                && *l.get_unchecked(9) == b' '
+            {
+                // "end apply tag"
+                if *l.get_unchecked(10) == b't'
+                    && *l.get_unchecked(11) == b'a'
+                    && *l.get_unchecked(12) == b'g'
+                {
+                    return Some(&line[0..13]);
+                }
+
+                // "end apply year"
+                if line_length >= 14
+                    && *l.get_unchecked(10) == b'y'
+                    && *l.get_unchecked(11) == b'e'
+                    && *l.get_unchecked(12) == b'a'
+                    && *l.get_unchecked(13) == b'r'
+                {
+                    return Some(&line[0..14]);
+                }
+
+                // "end apply fixed"
+                if line_length >= 15
+                    && *l.get_unchecked(10) == b'f'
+                    && *l.get_unchecked(11) == b'i'
+                    && *l.get_unchecked(12) == b'x'
+                    && *l.get_unchecked(13) == b'e'
+                    && *l.get_unchecked(14) == b'd'
+                {
+                    return Some(&line[0..15]);
+                }
+            }
         }
     }
 
-    if line_length >= 6 && *l.get_unchecked(0) == b'p' {
+    if line_length < 6 {
+        return None;
+    }
+
+    // Group by first letter: 'p' for "payee", "python"
+    if first_char == b'p' {
+        // "payee "
         if *l.get_unchecked(1) == b'a'
             && *l.get_unchecked(2) == b'y'
             && *l.get_unchecked(3) == b'e'
@@ -1244,19 +1136,164 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         }
     }
 
-    // "tag "
-    if line_length >= 4
-        && *l.get_unchecked(0) == b't'
+    // "value "
+    if first_char == b'v'
         && *l.get_unchecked(1) == b'a'
-        && *l.get_unchecked(2) == b'g'
-        && *l.get_unchecked(3) == b' '
+        && *l.get_unchecked(2) == b'l'
+        && *l.get_unchecked(3) == b'u'
+        && *l.get_unchecked(4) == b'e'
+        && *l.get_unchecked(5) == b' '
     {
-        return Some(&line[0..3]);
+        return Some(&line[0..5]);
+    }
+
+    if line_length < 7 {
+        return None;
+    }
+
+    // Group by first letter: 'd' for "define", "decimal-mark"
+    if first_char == b'd' && *l.get_unchecked(1) == b'e' {
+        // "define "
+        if *l.get_unchecked(2) == b'f'
+            && *l.get_unchecked(3) == b'i'
+            && *l.get_unchecked(4) == b'n'
+            && *l.get_unchecked(5) == b'e'
+            && *l.get_unchecked(6) == b' '
+        {
+            return Some(&line[0..6]);
+        }
+
+        // "decimal-mark "
+        if line_length >= 13
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'i'
+            && *l.get_unchecked(4) == b'm'
+            && *l.get_unchecked(5) == b'a'
+            && *l.get_unchecked(6) == b'l'
+            && *l.get_unchecked(7) == b'-'
+            && *l.get_unchecked(8) == b'm'
+            && *l.get_unchecked(9) == b'a'
+            && *l.get_unchecked(10) == b'r'
+            && *l.get_unchecked(11) == b'k'
+            && *l.get_unchecked(12) == b' '
+        {
+            return Some(&line[0..12]);
+        }
+    }
+
+    if line_length < 8 {
+        return None;
+    }
+
+    // Group by first letter: 'a' for "account", "assert", "apply..."
+    if first_char == b'a' {
+        // "account "
+        if *l.get_unchecked(1) == b'c'
+            && *l.get_unchecked(2) == b'c'
+            && *l.get_unchecked(3) == b'o'
+            && *l.get_unchecked(4) == b'u'
+            && *l.get_unchecked(5) == b'n'
+            && *l.get_unchecked(6) == b't'
+            && *l.get_unchecked(7) == b' '
+        {
+            return Some(&line[0..7]);
+        }
+
+        // "assert "
+        if *l.get_unchecked(1) == b's'
+            && *l.get_unchecked(2) == b's'
+            && *l.get_unchecked(3) == b'e'
+            && *l.get_unchecked(4) == b'r'
+            && *l.get_unchecked(5) == b't'
+            && *l.get_unchecked(6) == b' '
+        {
+            return Some(&line[0..6]);
+        }
+
+        // "apply..."
+        if line_length >= 9
+            && *l.get_unchecked(1) == b'p'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b'l'
+            && *l.get_unchecked(4) == b'y'
+            && *l.get_unchecked(5) == b' '
+        {
+            // "apply tag"
+            if *l.get_unchecked(6) == b't'
+                && *l.get_unchecked(7) == b'a'
+                && *l.get_unchecked(8) == b'g'
+            {
+                return Some(&line[0..9]);
+            }
+
+            // "apply fixed"
+            if line_length >= 11
+                && *l.get_unchecked(6) == b'f'
+                && *l.get_unchecked(7) == b'i'
+                && *l.get_unchecked(8) == b'x'
+                && *l.get_unchecked(9) == b'e'
+                && *l.get_unchecked(10) == b'd'
+            {
+                return Some(&line[0..11]);
+            }
+
+            // "apply account"
+            if line_length >= 13
+                && *l.get_unchecked(6) == b'a'
+                && *l.get_unchecked(7) == b'c'
+                && *l.get_unchecked(8) == b'c'
+                && *l.get_unchecked(9) == b'o'
+                && *l.get_unchecked(10) == b'u'
+                && *l.get_unchecked(11) == b'n'
+                && *l.get_unchecked(12) == b't'
+            {
+                return Some(&line[0..13]);
+            }
+        }
+    }
+
+    // Group by first letter: 'c' for "capture", "commodity", "check"
+    if first_char == b'c' {
+        // "capture "
+        if *l.get_unchecked(1) == b'a'
+            && *l.get_unchecked(2) == b'p'
+            && *l.get_unchecked(3) == b't'
+            && *l.get_unchecked(4) == b'u'
+            && *l.get_unchecked(5) == b'r'
+            && *l.get_unchecked(6) == b'e'
+            && *l.get_unchecked(7) == b' '
+        {
+            return Some(&line[0..7]);
+        }
+
+        // "check "
+        if *l.get_unchecked(1) == b'h'
+            && *l.get_unchecked(2) == b'e'
+            && *l.get_unchecked(3) == b'c'
+            && *l.get_unchecked(4) == b'k'
+            && *l.get_unchecked(5) == b' '
+        {
+            return Some(&line[0..5]);
+        }
+
+        // "commodity "
+        if line_length >= 10
+            && *l.get_unchecked(1) == b'o'
+            && *l.get_unchecked(2) == b'm'
+            && *l.get_unchecked(3) == b'm'
+            && *l.get_unchecked(4) == b'o'
+            && *l.get_unchecked(5) == b'd'
+            && *l.get_unchecked(6) == b'i'
+            && *l.get_unchecked(7) == b't'
+            && *l.get_unchecked(8) == b'y'
+            && *l.get_unchecked(9) == b' '
+        {
+            return Some(&line[0..9]);
+        }
     }
 
     // "include "
-    if line_length >= 8
-        && *l.get_unchecked(0) == b'i'
+    if first_char == b'i'
         && *l.get_unchecked(1) == b'n'
         && *l.get_unchecked(2) == b'c'
         && *l.get_unchecked(3) == b'l'
@@ -1268,9 +1305,12 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         return Some(&line[0..7]);
     }
 
+    if line_length < 11 {
+        return None;
+    }
+
     // "bucket / A "
-    if line_length >= 10
-        && *l.get_unchecked(0) == b'b'
+    if first_char == b'b'
         && *l.get_unchecked(1) == b'u'
         && *l.get_unchecked(2) == b'c'
         && *l.get_unchecked(3) == b'k'
@@ -1285,21 +1325,12 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         return Some(&line[0..10]);
     }
 
-    // "value "
-    if line_length >= 6
-        && *l.get_unchecked(0) == b'v'
-        && *l.get_unchecked(1) == b'a'
-        && *l.get_unchecked(2) == b'l'
-        && *l.get_unchecked(3) == b'u'
-        && *l.get_unchecked(4) == b'e'
-        && *l.get_unchecked(5) == b' '
-    {
-        return Some(&line[0..5]);
+    if line_length < 20 {
+        return None;
     }
 
     // "--command-line-flags"
-    if line_length >= 20
-        && *l.get_unchecked(0) == b'-'
+    if first_char == b'-'
         && *l.get_unchecked(1) == b'-'
         && *l.get_unchecked(2) == b'c'
         && *l.get_unchecked(3) == b'o'
@@ -1321,21 +1352,6 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         && *l.get_unchecked(19) == b's'
     {
         return Some(&line[0..20]);
-    }
-
-    if line_length >= 5 && *l.get_unchecked(0) == b'e' {
-        // "expr " / "eval "
-        if (*l.get_unchecked(1) == b'x'
-            && *l.get_unchecked(2) == b'p'
-            && *l.get_unchecked(3) == b'r'
-            && *l.get_unchecked(4) == b' ')
-            || (*l.get_unchecked(1) == b'v'
-                && *l.get_unchecked(2) == b'a'
-                && *l.get_unchecked(3) == b'l'
-                && *l.get_unchecked(4) == b' ')
-        {
-            return Some(&line[0..4]);
-        }
     }
 
     None

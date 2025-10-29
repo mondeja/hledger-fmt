@@ -8,6 +8,9 @@
   formatting).
 - Reduce memory footprint by 70.8% for transaction-related structures by
   using smaller integer types (u16 instead of usize) where appropriate.
+- Optimize `maybe_start_with_directive` function by removing redundant length
+  checks and grouping directives by first letter (tree-based matching), resulting
+  in 2.6% faster complete workflow and 0.8% faster parsing.
 
 ## 2025-10-29 - [0.3.5]
 
