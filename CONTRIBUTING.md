@@ -30,10 +30,6 @@ specific commands.
 Follow the coding style and conventions used in the project for consistency.
 The pre-commit hooks will help enforce these standards.
 
-### Commit Messages
-
-Write clear and concise commit messages that describe the changes made.
-
 ### CHANGELOG.md
 
 Write very brief PR descriptions in _CHANGELOG.md_ following the structure of
