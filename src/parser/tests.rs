@@ -569,27 +569,8 @@ fn parse_empty() {
     assert_journal("", vec![]);
 }
 
-// Regression tests for bugs found via fuzzing
-// Each test demonstrates a panic/crash that occurred before the fix
-
 #[test]
 fn regression_entry_name_with_closing_paren() {
-    // DEMONSTRATES FIX: src/parser/mod.rs:751-753
-    // 
-    // Bug: slice index panic when entry_name_end < entry_name_start
-    // 
-    // BEFORE FIX (line 746):
-    //   let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
-    //
-    // Panic occurred: thread 'main' panicked at src/parser/mod.rs:746:41:
-    //   slice index starts at 1 but ends at 0
-    //
-    // AFTER FIX (lines 751-753):
-    //   let entry_name_end = entry_name_end.max(entry_name_start);
-    //   let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
-    //
-    // This test would PANIC without the fix and PASSES with the fix.
-    
     let content = r#"2015-10-16 bought food
  ) expenses:food        $10
   assets:cash
@@ -600,30 +581,6 @@ fn regression_entry_name_with_closing_paren() {
 
 #[test]
 fn regression_single_char_whitespace_line() {
-    // DEMONSTRATES FIX: src/parser/mod.rs:255-263
-    //
-    // Bug: out-of-bounds access with single-character whitespace lines
-    //
-    // BEFORE FIX (lines 255-258):
-    //   let all_whitespace = last_byte.is_ascii_whitespace()
-    //       && unsafe { line.get_unchecked(1..line_length - 1) }
-    //           .iter()
-    //           .all(|&b| b.is_ascii_whitespace());
-    //
-    // Panic occurred: accessing line[1..0] is invalid for single-char line
-    //
-    // AFTER FIX (lines 255-263):
-    //   let all_whitespace = if line_length < 2 {
-    //       true
-    //   } else {
-    //       last_byte.is_ascii_whitespace()
-    //           && unsafe { line.get_unchecked(1..line_length - 1) }
-    //               .iter()
-    //               .all(|&b| b.is_ascii_whitespace())
-    //   };
-    //
-    // This test would PANIC without the fix and PASSES with the fix.
-    
     let content = " \n";
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok(), "PANIC before fix: out-of-bounds access line[1..0]");
@@ -635,24 +592,6 @@ fn regression_single_char_whitespace_line() {
 
 #[test]
 fn regression_commodity_directive_bounds() {
-    // DEMONSTRATES FIX: src/parser/mod.rs:1074
-    //
-    // Bug: off-by-one error accessing index 9 with length check >= 9
-    //
-    // BEFORE FIX (line 1067):
-    //   if line_length >= 9 && *l.get_unchecked(0) == b'c' {
-    //       // ... checks indices 0-8 ...
-    //       && *l.get_unchecked(9) == b' '  // BUG: accessing index 9!
-    //
-    // Panic occurred: thread 'main' panicked at src/parser/mod.rs:1084:19:
-    //   unsafe precondition(s) violated: slice::get_unchecked requires that 
-    //   the index is within the slice
-    //
-    // AFTER FIX (line 1074):
-    //   if line_length >= 10 && *l.get_unchecked(0) == b'c' {
-    //
-    // This test would PANIC without the fix and PASSES with the fix.
-    
     let content = "commodity";  // exactly 9 characters, no space
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok(), "PANIC before fix: unsafe precondition violated at index 9");
@@ -663,18 +602,17 @@ fn regression_commodity_directive_bounds() {
 }
 
 #[test]
-fn regression_various_edge_cases() {
-    // Additional edge cases exercising the fixes above
-    
-    // Tests entry_name fix with complex spacing
+fn regression_entry_name_with_complex_spacing() {
     let content = r#"2015-10-16 test
    )   foo  $10
   assets:cash
 "#;
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok());
-    
-    // Tests tab-indented entries
+}
+
+#[test]
+fn regression_tab_indented_entries() {
     let content = "2015-10-16 test\n\tassets:cash  $10\n\texpenses:food\n";
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok());
