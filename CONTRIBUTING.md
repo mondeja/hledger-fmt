@@ -9,8 +9,27 @@ cargo build && cargo test
 ## Running benchmarks
 
 ```sh
-cargo bench --release --features bench
+cargo bench --features bench
 ```
+
+## Profiling
+
+See [PROFILING.md](PROFILING.md) for detailed profiling instructions.
+
+Quick start:
+
+```sh
+# Profile the combined parse+format operation
+./scripts/profile.sh combined
+
+# Profile just parsing
+./scripts/profile.sh parse
+
+# Profile just formatting
+./scripts/profile.sh format
+```
+
+This generates flamegraphs showing where CPU time is spent.
 
 ## Fuzzy testing
 

@@ -6,3 +6,10 @@
 /fuzz/artifacts
 /fuzz/corpus/fuzz_*
 /fuzz/Cargo.lock
+
+# Profiling outputs
+flamegraph*.svg
+perf.data
+perf.data.old
+callgrind.out.*
+massif.out.*
