@@ -2,10 +2,20 @@
 
 ## [Unreleased]
 
+### Bug fixes
+
+- Fix slice index panic in transaction entry parsing when entry names contain
+  special characters like closing parenthesis followed by spaces.
+- Fix out-of-bounds access when parsing single-character whitespace lines.
+- Fix off-by-one error in directive parsing that could cause unsafe memory
+  access for the "commodity" directive.
+
 ### Enhancements
 
 - Optimize hot paths with SIMD-friendly UTF-8 counting, memchr comment search,
   and pre-allocation.
+- Add fuzzy testing infrastructure with cargo-fuzz to discover and prevent
+  bounds checking vulnerabilities.
 
 ## 2025-10-27 - [0.3.4]
 

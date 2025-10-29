@@ -29,8 +29,7 @@ pub fn format_journal(content: &str) -> Result<String, SyntaxError> {
     // SAFETY: The formatter only outputs valid UTF-8 since it only writes:
     // 1. Slices from the valid UTF-8 input
     // 2. ASCII characters (spaces, newlines, comment prefixes)
-    let formatted = String::from_utf8(buffer)
-        .expect("formatter should only produce valid UTF-8");
+    let formatted = String::from_utf8(buffer).expect("formatter should only produce valid UTF-8");
     Ok(formatted)
 }
 
@@ -45,8 +44,8 @@ pub fn format_journal_with_options(
     // SAFETY: The formatter only outputs valid UTF-8 since it only writes:
     // 1. Slices from the valid UTF-8 input
     // 2. ASCII characters (spaces, newlines, comment prefixes)
-    let formatted = String::from_utf8(formatted_bytes)
-        .expect("formatter should only produce valid UTF-8");
+    let formatted =
+        String::from_utf8(formatted_bytes).expect("formatter should only produce valid UTF-8");
     Ok(formatted)
 }
 

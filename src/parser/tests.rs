@@ -576,27 +576,39 @@ fn regression_entry_name_with_closing_paren() {
   assets:cash
 "#;
     let result = parse_content(content.as_bytes());
-    assert!(result.is_ok(), "PANIC before fix: slice index starts at 1 but ends at 0");
+    assert!(
+        result.is_ok(),
+        "PANIC before fix: slice index starts at 1 but ends at 0"
+    );
 }
 
 #[test]
 fn regression_single_char_whitespace_line() {
     let content = " \n";
     let result = parse_content(content.as_bytes());
-    assert!(result.is_ok(), "PANIC before fix: out-of-bounds access line[1..0]");
-    
+    assert!(
+        result.is_ok(),
+        "PANIC before fix: out-of-bounds access line[1..0]"
+    );
+
     let content = "\t\n";
     let result = parse_content(content.as_bytes());
-    assert!(result.is_ok(), "PANIC before fix: out-of-bounds access line[1..0]");
+    assert!(
+        result.is_ok(),
+        "PANIC before fix: out-of-bounds access line[1..0]"
+    );
 }
 
 #[test]
 fn regression_commodity_directive_bounds() {
-    let content = "commodity";  // exactly 9 characters, no space
+    let content = "commodity"; // exactly 9 characters, no space
     let result = parse_content(content.as_bytes());
-    assert!(result.is_ok(), "PANIC before fix: unsafe precondition violated at index 9");
-    
-    let content = "commodity ";  // 10 characters with space - valid directive
+    assert!(
+        result.is_ok(),
+        "PANIC before fix: unsafe precondition violated at index 9"
+    );
+
+    let content = "commodity "; // 10 characters with space - valid directive
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok());
 }
