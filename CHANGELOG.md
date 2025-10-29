@@ -14,8 +14,6 @@
 
 - Optimize hot paths with SIMD-friendly UTF-8 counting, memchr comment search,
   and pre-allocation.
-- Add fuzzy testing infrastructure with cargo-fuzz to discover and prevent
-  bounds checking vulnerabilities.
 
 ## 2025-10-27 - [0.3.4]
 
