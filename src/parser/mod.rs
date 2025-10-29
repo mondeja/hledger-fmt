@@ -29,8 +29,8 @@ pub enum JournalCstNode<'a> {
     DirectivesGroup {
         /// Directives in the group
         nodes: Vec<DirectiveNode<'a>>,
-        /// Maximum length of the directive name + content
-        max_name_content_len: usize,
+        /// Maximum length of the directive name + content (u16 max: 65,535 - more than sufficient)
+        max_name_content_len: u16,
     },
 
     /// A transaction.
@@ -50,19 +50,19 @@ pub enum JournalCstNode<'a> {
         title_comment: Option<SingleLineComment<'a>>,
         /// Transaction entries
         entries: Vec<TransactionNode<'a>>,
-        /// Indent of the first transaction entry
-        first_entry_indent: usize,
-        /// Maximum length of the entry names
-        max_entry_name_len: usize,
+        /// Indent of the first transaction entry (u16 max: 65,535 - more than sufficient)
+        first_entry_indent: u16,
+        /// Maximum length of the entry names (u16 max: 65,535 - more than sufficient)
+        max_entry_name_len: u16,
 
-        max_entry_value_first_part_before_decimals_len: usize,
-        max_entry_value_first_part_after_decimals_len: usize,
-        max_entry_value_first_separator_len: usize,
-        max_entry_value_second_part_before_decimals_len: usize,
-        max_entry_value_second_part_after_decimals_len: usize,
-        max_entry_value_second_separator_len: usize,
-        max_entry_value_third_part_before_decimals_len: usize,
-        max_entry_value_third_part_after_decimals_len: usize,
+        max_entry_value_first_part_before_decimals_len: u16,
+        max_entry_value_first_part_after_decimals_len: u16,
+        max_entry_value_first_separator_len: u16,
+        max_entry_value_second_part_before_decimals_len: u16,
+        max_entry_value_second_part_after_decimals_len: u16,
+        max_entry_value_second_separator_len: u16,
+        max_entry_value_third_part_before_decimals_len: u16,
+        max_entry_value_third_part_after_decimals_len: u16,
     },
 }
 
@@ -82,10 +82,10 @@ pub enum CommentPrefix {
 pub struct SingleLineComment<'a> {
     /// The comment content
     pub content: ByteStr<'a>,
+    /// The column number where the comment starts (u32 is sufficient for reasonable indents)
+    pub indent: u32,
     /// The comment prefix ('#' or ';')
     pub prefix: CommentPrefix,
-    /// The column number where the comment starts
-    pub indent: usize,
 }
 
 /// A directive
@@ -139,8 +139,8 @@ struct ParserTempData<'a> {
     multiline_comment_byte_end: usize,
     /// Directives group nodes
     directives_group_nodes: Vec<DirectiveNode<'a>>,
-    /// Maximum length of the directive names + contents
-    directives_group_max_name_content_len: usize,
+    /// Maximum length of the directive names + contents (u16 max: 65,535 - more than sufficient)
+    directives_group_max_name_content_len: u16,
     /// Transaction title
     transaction_title_byte_start: usize,
     transaction_title_byte_end: usize,
@@ -150,18 +150,18 @@ struct ParserTempData<'a> {
     transaction_entries: Vec<TransactionNode<'a>>,
     /// If the current transaction has entries (ignoring comments)
     transaction_has_no_comment_entries: bool,
-    /// Indent of the first transaction entry
-    first_entry_indent: usize,
-    /// Maximum length of the entry names
-    max_entry_name_len: usize,
-    max_entry_value_first_part_before_decimals_len: usize,
-    max_entry_value_first_part_after_decimals_len: usize,
-    max_entry_value_first_separator_len: usize,
-    max_entry_value_second_part_before_decimals_len: usize,
-    max_entry_value_second_part_after_decimals_len: usize,
-    max_entry_value_second_separator_len: usize,
-    max_entry_value_third_part_before_decimals_len: usize,
-    max_entry_value_third_part_after_decimals_len: usize,
+    /// Indent of the first transaction entry (u16 max: 65,535 - more than sufficient)
+    first_entry_indent: u16,
+    /// Maximum length of the entry names (u16 max: 65,535 - more than sufficient)
+    max_entry_name_len: u16,
+    max_entry_value_first_part_before_decimals_len: u16,
+    max_entry_value_first_part_after_decimals_len: u16,
+    max_entry_value_first_separator_len: u16,
+    max_entry_value_second_part_before_decimals_len: u16,
+    max_entry_value_second_part_after_decimals_len: u16,
+    max_entry_value_second_separator_len: u16,
+    max_entry_value_third_part_before_decimals_len: u16,
+    max_entry_value_third_part_after_decimals_len: u16,
     /// Reusable entry value parser to avoid allocations
     entry_value_parser: EntryValueParser,
 }
@@ -469,7 +469,7 @@ fn save_directive<'a>(
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
-        .max(content_len + name_length);
+        .max((content_len + name_length) as u16);
 }
 
 #[cfg_attr(
@@ -507,7 +507,7 @@ fn parse_inline_comment<'a>(
     Some(SingleLineComment {
         content: ByteStr::from(content_bytes),
         prefix,
-        indent: colno_padding,
+        indent: colno_padding as u32,
     })
 }
 
@@ -573,7 +573,7 @@ fn parse_single_line_comment_or_subdirective<'a>(
         let comment = SingleLineComment {
             content,
             prefix,
-            indent: (content_start - 1),
+            indent: (content_start - 1) as u32,
         };
         if data.directives_group_nodes.is_empty() {
             journal.push(JournalCstNode::SingleLineComment(comment));
@@ -705,7 +705,7 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                     //
                     // this is needed for transactions without entries, only comments
                     if indent >= 2 && data.first_entry_indent == 0 {
-                        data.first_entry_indent = indent;
+                        data.first_entry_indent = indent as u16;
                     }
                     data.transaction_entries
                         .push(TransactionNode::SingleLineComment(comment));
@@ -755,13 +755,13 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
 
     if data.first_entry_indent == 0 {
-        data.first_entry_indent = indent;
+        data.first_entry_indent = indent as u16;
     } else if !data.transaction_has_no_comment_entries {
         // if the first entry is a comment, the indent is not
         // properly setted so we need to set it here
-        data.first_entry_indent = indent;
+        data.first_entry_indent = indent as u16;
     }
-    data.max_entry_name_len = data.max_entry_name_len.max(entry_name.chars_count());
+    data.max_entry_name_len = data.max_entry_name_len.max(entry_name.chars_count() as u16);
 
     let mut inside_entry_value = false;
     let mut comment = None;
@@ -816,32 +816,32 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
 
     data.max_entry_value_first_part_before_decimals_len = data
         .max_entry_value_first_part_before_decimals_len
-        .max(p.first_part_before_decimals.chars_count());
+        .max(p.first_part_before_decimals.chars_count() as u16);
     data.max_entry_value_first_part_after_decimals_len = data
         .max_entry_value_first_part_after_decimals_len
-        .max(p.first_part_after_decimals.chars_count());
+        .max(p.first_part_after_decimals.chars_count() as u16);
 
     data.max_entry_value_first_separator_len = data
         .max_entry_value_first_separator_len
-        .max(p.first_separator.len());
+        .max(p.first_separator.len() as u16);
 
     data.max_entry_value_second_part_before_decimals_len = data
         .max_entry_value_second_part_before_decimals_len
-        .max(p.second_part_before_decimals.chars_count());
+        .max(p.second_part_before_decimals.chars_count() as u16);
     data.max_entry_value_second_part_after_decimals_len = data
         .max_entry_value_second_part_after_decimals_len
-        .max(p.second_part_after_decimals.chars_count());
+        .max(p.second_part_after_decimals.chars_count() as u16);
 
     data.max_entry_value_second_separator_len = data
         .max_entry_value_second_separator_len
-        .max(p.second_separator.len());
+        .max(p.second_separator.len() as u16);
 
     data.max_entry_value_third_part_before_decimals_len = data
         .max_entry_value_third_part_before_decimals_len
-        .max(p.third_part_before_decimals.chars_count());
+        .max(p.third_part_before_decimals.chars_count() as u16);
     data.max_entry_value_third_part_after_decimals_len = data
         .max_entry_value_third_part_after_decimals_len
-        .max(p.third_part_after_decimals.chars_count());
+        .max(p.third_part_after_decimals.chars_count() as u16);
 
     data.transaction_has_no_comment_entries = true;
     data.transaction_entries
@@ -1367,16 +1367,17 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
 /// with their size in unit and decimal parts.
 #[derive(Default)]
 pub(crate) struct EntryValueParser {
-    first_part_value_start: usize,
-    first_part_value_end: usize,
-    first_separator_start: usize,
-    first_separator_end: usize,
-    second_part_value_start: usize,
-    second_part_value_end: usize,
-    second_separator_start: usize,
-    second_separator_end: usize,
-    third_part_value_start: usize,
-    third_part_value_end: usize,
+    // Using u16 for positions within entry value (max 65,535 chars - more than sufficient)
+    first_part_value_start: u16,
+    first_part_value_end: u16,
+    first_separator_start: u16,
+    first_separator_end: u16,
+    second_part_value_start: u16,
+    second_part_value_end: u16,
+    second_separator_start: u16,
+    second_separator_end: u16,
+    third_part_value_start: u16,
+    third_part_value_end: u16,
 }
 
 pub(crate) struct EntryValueParserReturn<'a> {
@@ -1425,9 +1426,9 @@ impl EntryValueParser {
     #[inline]
     fn update_first_part_value(&mut self, end: usize) {
         if self.first_part_value_start == 0 && self.first_part_value_end == 0 {
-            self.first_part_value_start = end - 1;
+            self.first_part_value_start = (end - 1) as u16;
         }
-        self.first_part_value_end = end;
+        self.first_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1438,17 +1439,17 @@ impl EntryValueParser {
     #[inline]
     fn update_first_separator(&mut self, end: usize) {
         if self.first_separator_start == 0 && self.first_separator_end == 0 {
-            self.first_separator_start = end - 1;
+            self.first_separator_start = (end - 1) as u16;
         }
-        self.first_separator_end = end;
+        self.first_separator_end = end as u16;
     }
 
     #[inline]
     fn update_second_part_value(&mut self, end: usize) {
         if self.second_part_value_start == 0 && self.second_part_value_end == 0 {
-            self.second_part_value_start = end - 1;
+            self.second_part_value_start = (end - 1) as u16;
         }
-        self.second_part_value_end = end;
+        self.second_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1459,17 +1460,17 @@ impl EntryValueParser {
     #[inline]
     fn update_second_separator(&mut self, end: usize) {
         if self.second_separator_start == 0 && self.second_separator_end == 0 {
-            self.second_separator_start = end - 1;
+            self.second_separator_start = (end - 1) as u16;
         }
-        self.second_separator_end = end;
+        self.second_separator_end = end as u16;
     }
 
     #[inline]
     fn update_third_part_value(&mut self, end: usize) {
         if self.third_part_value_start == 0 && self.third_part_value_end == 0 {
-            self.third_part_value_start = end - 1;
+            self.third_part_value_start = (end - 1) as u16;
         }
-        self.third_part_value_end = end;
+        self.third_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1719,19 +1720,23 @@ impl EntryValueParser {
                 }
             }
         }
-        if self.first_part_value_end > 0 && value[self.first_part_value_end - 1] == b' ' {
+        if self.first_part_value_end > 0 && value[self.first_part_value_end as usize - 1] == b' ' {
             self.first_part_value_end -= 1;
         }
-        if self.second_part_value_end > 0 && value[self.second_part_value_end - 1] == b' ' {
+        if self.second_part_value_end > 0 && value[self.second_part_value_end as usize - 1] == b' '
+        {
             self.second_part_value_end -= 1;
         }
-        if self.third_part_value_end > 0 && value[self.third_part_value_end - 1] == b' ' {
+        if self.third_part_value_end > 0 && value[self.third_part_value_end as usize - 1] == b' ' {
             self.third_part_value_end -= 1;
         }
 
-        let first_part_value = &value[self.first_part_value_start..self.first_part_value_end];
-        let second_part_value = &value[self.second_part_value_start..self.second_part_value_end];
-        let third_part_value = &value[self.third_part_value_start..self.third_part_value_end];
+        let first_part_value =
+            &value[self.first_part_value_start as usize..self.first_part_value_end as usize];
+        let second_part_value =
+            &value[self.second_part_value_start as usize..self.second_part_value_end as usize];
+        let third_part_value =
+            &value[self.third_part_value_start as usize..self.third_part_value_end as usize];
 
         let (first_part_value_before_decimals, first_part_value_after_decimals) =
             split_value_in_before_decimals_after_decimals(first_part_value);
@@ -1744,12 +1749,12 @@ impl EntryValueParser {
             first_part_before_decimals: ByteStr::from(first_part_value_before_decimals),
             first_part_after_decimals: ByteStr::from(first_part_value_after_decimals),
             first_separator: ByteStr::from(
-                &value[self.first_separator_start..self.first_separator_end],
+                &value[self.first_separator_start as usize..self.first_separator_end as usize],
             ),
             second_part_before_decimals: ByteStr::from(second_part_value_before_decimals),
             second_part_after_decimals: ByteStr::from(second_part_value_after_decimals),
             second_separator: ByteStr::from(
-                &value[self.second_separator_start..self.second_separator_end],
+                &value[self.second_separator_start as usize..self.second_separator_end as usize],
             ),
             third_part_before_decimals: ByteStr::from(third_part_value_before_decimals),
             third_part_after_decimals: ByteStr::from(third_part_value_after_decimals),
