@@ -37,7 +37,9 @@ the current changelog. Add entries under the appropriate section names (e.g.,
 "New features", "Enhancements", "Bug fixes", "Breaking changes").
 
 Add the relevant links to the _CHANGELOG.md_ sections in Markdown reference
-links at the bottom of the file.
+links at the bottom of the file. Add section with link named [Unreleased] pointing to
+`vX.Y.Z..master`in the links at the bottom or [`vX.Y.Z`] and the date of today when
+creating releases pointing to `vX.Y.Z..vX.Y.Z`.
 
 ### Benchmarks
 
