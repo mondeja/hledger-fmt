@@ -1,0 +1,11 @@
+[package]
+name = "hledger-fmt-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "hledger_fmt_tests"
+path = "src/lib.rs"
+
+[dependencies]

@@ -63,7 +63,7 @@ codegen-units = 1
 panic = "abort"
 
 [workspace]
-members = ["."]
+members = [".", "tests"]
 
 [workspace.dependencies]
 clap = { version = "4", default-features = false, features = ["std", "help"] }

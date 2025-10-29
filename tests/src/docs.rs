@@ -1,9 +1,9 @@
 /// Test to ensure the version in README.md matches the version in Cargo.toml
 #[test]
 fn readme_version_matches_cargo_toml() {
-    let cargo_toml_content = std::fs::read_to_string("Cargo.toml")
+    let cargo_toml_content = std::fs::read_to_string("../Cargo.toml")
         .expect("Failed to read Cargo.toml");
-    let readme_content = std::fs::read_to_string("README.md")
+    let readme_content = std::fs::read_to_string("../README.md")
         .expect("Failed to read README.md");
 
     // Extract version from Cargo.toml [package] section
