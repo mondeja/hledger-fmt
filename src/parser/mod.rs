@@ -1367,16 +1367,17 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
 /// with their size in unit and decimal parts.
 #[derive(Default)]
 pub(crate) struct EntryValueParser {
-    first_part_value_start: usize,
-    first_part_value_end: usize,
-    first_separator_start: usize,
-    first_separator_end: usize,
-    second_part_value_start: usize,
-    second_part_value_end: usize,
-    second_separator_start: usize,
-    second_separator_end: usize,
-    third_part_value_start: usize,
-    third_part_value_end: usize,
+    // Using u16 for positions within entry value (max 65,535 chars - more than sufficient)
+    first_part_value_start: u16,
+    first_part_value_end: u16,
+    first_separator_start: u16,
+    first_separator_end: u16,
+    second_part_value_start: u16,
+    second_part_value_end: u16,
+    second_separator_start: u16,
+    second_separator_end: u16,
+    third_part_value_start: u16,
+    third_part_value_end: u16,
 }
 
 pub(crate) struct EntryValueParserReturn<'a> {
@@ -1425,9 +1426,9 @@ impl EntryValueParser {
     #[inline]
     fn update_first_part_value(&mut self, end: usize) {
         if self.first_part_value_start == 0 && self.first_part_value_end == 0 {
-            self.first_part_value_start = end - 1;
+            self.first_part_value_start = (end - 1) as u16;
         }
-        self.first_part_value_end = end;
+        self.first_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1438,17 +1439,17 @@ impl EntryValueParser {
     #[inline]
     fn update_first_separator(&mut self, end: usize) {
         if self.first_separator_start == 0 && self.first_separator_end == 0 {
-            self.first_separator_start = end - 1;
+            self.first_separator_start = (end - 1) as u16;
         }
-        self.first_separator_end = end;
+        self.first_separator_end = end as u16;
     }
 
     #[inline]
     fn update_second_part_value(&mut self, end: usize) {
         if self.second_part_value_start == 0 && self.second_part_value_end == 0 {
-            self.second_part_value_start = end - 1;
+            self.second_part_value_start = (end - 1) as u16;
         }
-        self.second_part_value_end = end;
+        self.second_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1459,17 +1460,17 @@ impl EntryValueParser {
     #[inline]
     fn update_second_separator(&mut self, end: usize) {
         if self.second_separator_start == 0 && self.second_separator_end == 0 {
-            self.second_separator_start = end - 1;
+            self.second_separator_start = (end - 1) as u16;
         }
-        self.second_separator_end = end;
+        self.second_separator_end = end as u16;
     }
 
     #[inline]
     fn update_third_part_value(&mut self, end: usize) {
         if self.third_part_value_start == 0 && self.third_part_value_end == 0 {
-            self.third_part_value_start = end - 1;
+            self.third_part_value_start = (end - 1) as u16;
         }
-        self.third_part_value_end = end;
+        self.third_part_value_end = end as u16;
     }
 
     #[inline]
@@ -1719,19 +1720,23 @@ impl EntryValueParser {
                 }
             }
         }
-        if self.first_part_value_end > 0 && value[self.first_part_value_end - 1] == b' ' {
+        if self.first_part_value_end > 0 && value[self.first_part_value_end as usize - 1] == b' ' {
             self.first_part_value_end -= 1;
         }
-        if self.second_part_value_end > 0 && value[self.second_part_value_end - 1] == b' ' {
+        if self.second_part_value_end > 0 && value[self.second_part_value_end as usize - 1] == b' '
+        {
             self.second_part_value_end -= 1;
         }
-        if self.third_part_value_end > 0 && value[self.third_part_value_end - 1] == b' ' {
+        if self.third_part_value_end > 0 && value[self.third_part_value_end as usize - 1] == b' ' {
             self.third_part_value_end -= 1;
         }
 
-        let first_part_value = &value[self.first_part_value_start..self.first_part_value_end];
-        let second_part_value = &value[self.second_part_value_start..self.second_part_value_end];
-        let third_part_value = &value[self.third_part_value_start..self.third_part_value_end];
+        let first_part_value =
+            &value[self.first_part_value_start as usize..self.first_part_value_end as usize];
+        let second_part_value =
+            &value[self.second_part_value_start as usize..self.second_part_value_end as usize];
+        let third_part_value =
+            &value[self.third_part_value_start as usize..self.third_part_value_end as usize];
 
         let (first_part_value_before_decimals, first_part_value_after_decimals) =
             split_value_in_before_decimals_after_decimals(first_part_value);
@@ -1744,12 +1749,12 @@ impl EntryValueParser {
             first_part_before_decimals: ByteStr::from(first_part_value_before_decimals),
             first_part_after_decimals: ByteStr::from(first_part_value_after_decimals),
             first_separator: ByteStr::from(
-                &value[self.first_separator_start..self.first_separator_end],
+                &value[self.first_separator_start as usize..self.first_separator_end as usize],
             ),
             second_part_before_decimals: ByteStr::from(second_part_value_before_decimals),
             second_part_after_decimals: ByteStr::from(second_part_value_after_decimals),
             second_separator: ByteStr::from(
-                &value[self.second_separator_start..self.second_separator_end],
+                &value[self.second_separator_start as usize..self.second_separator_end as usize],
             ),
             third_part_before_decimals: ByteStr::from(third_part_value_before_decimals),
             third_part_after_decimals: ByteStr::from(third_part_value_after_decimals),
