@@ -6,6 +6,8 @@
 
 - Optimize parser and formatter hot paths (2.7% faster parsing, 2.5% faster
   formatting).
+- Reduce memory footprint by 70.8% for transaction-related structures by
+  using smaller integer types (u16 instead of usize) where appropriate.
 
 ## 2025-10-29 - [0.3.5]
 
