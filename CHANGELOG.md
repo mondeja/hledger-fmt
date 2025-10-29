@@ -5,12 +5,7 @@
 ### Enhancements
 
 - Optimize hot paths with SIMD-friendly UTF-8 counting, memchr comment search,
-  and pre-allocation:
-  - 3.5% faster parsing (SIMD-friendly UTF-8 character counting, memchr2 for
-    comment marker search, pre-allocated journal Vec)
-  - 8.1% faster formatting (optimized space buffer operations with fast paths)
-  - Removed unsafe code from UTF-8 counting
-  - Eliminated redundant control flow patterns
+  and pre-allocation.
 
 ## 2025-10-27 - [0.3.4]
 
