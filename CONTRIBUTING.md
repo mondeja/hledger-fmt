@@ -12,7 +12,8 @@ Install [prek](https://github.com/j178/prek/) and set up the pre-commit hooks:
 prek install
 ```
 
-Before committing code, run all pre-commit hooks to ensure code quality and consistency:
+Before committing code, run all pre-commit hooks to ensure code quality and
+consistency:
 
 ```sh
 prek run -a
@@ -21,11 +22,8 @@ prek run -a
 ### Building and Testing
 
 Always build the project before running tests to ensure that the CLI is being
-integrated in the tests suite:
-
-```sh
-cargo build && cargo test
-```
+integrated in the tests suite. See the "Running tests" section below for the
+specific commands.
 
 ### Coding Style
 
@@ -47,11 +45,9 @@ links at the bottom of the file.
 
 ### Benchmarks
 
-Run benchmarks with the `--release` flag to get accurate performance measurements:
-
-```sh
-cargo bench --release --features bench
-```
+When running benchmarks, use the `--release` flag to get accurate performance
+measurements. See the "Running benchmarks" section below for the specific
+commands.
 
 ### Additional Guidelines
 
@@ -65,6 +61,14 @@ cargo build && cargo test
 ```
 
 ## Running benchmarks
+
+For accurate performance measurements, use the `--release` flag:
+
+```sh
+cargo bench --release --features bench
+```
+
+Or without the `--release` flag for quick checks:
 
 ```sh
 cargo bench --features bench
