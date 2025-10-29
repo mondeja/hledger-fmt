@@ -68,7 +68,7 @@ impl<'a> std::fmt::Debug for ByteStr<'a> {
 /// to determine the number of Unicode characters in the slice.
 #[inline]
 pub(crate) fn utf8_chars_count(buf: &[u8]) -> usize {
-    // Optimized: use iterator which is SIMD-friendly and avoids manual bounds checking
+    // Use iterator which is SIMD-friendly and avoids manual bounds checking
     buf.iter().filter(|&&b| b & 0b1100_0000 != 0b1000_0000).count()
 }
 
