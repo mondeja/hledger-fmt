@@ -29,8 +29,8 @@ pub enum JournalCstNode<'a> {
     DirectivesGroup {
         /// Directives in the group
         nodes: Vec<DirectiveNode<'a>>,
-        /// Maximum length of the directive name + content (u32 is sufficient)
-        max_name_content_len: u32,
+        /// Maximum length of the directive name + content (u16 max: 65,535 - more than sufficient)
+        max_name_content_len: u16,
     },
 
     /// A transaction.
@@ -50,19 +50,19 @@ pub enum JournalCstNode<'a> {
         title_comment: Option<SingleLineComment<'a>>,
         /// Transaction entries
         entries: Vec<TransactionNode<'a>>,
-        /// Indent of the first transaction entry (u32 is sufficient for reasonable indents)
-        first_entry_indent: u32,
-        /// Maximum length of the entry names (u32 is sufficient for reasonable lengths)
-        max_entry_name_len: u32,
+        /// Indent of the first transaction entry (u16 max: 65,535 - more than sufficient)
+        first_entry_indent: u16,
+        /// Maximum length of the entry names (u16 max: 65,535 - more than sufficient)
+        max_entry_name_len: u16,
 
-        max_entry_value_first_part_before_decimals_len: u32,
-        max_entry_value_first_part_after_decimals_len: u32,
-        max_entry_value_first_separator_len: u32,
-        max_entry_value_second_part_before_decimals_len: u32,
-        max_entry_value_second_part_after_decimals_len: u32,
-        max_entry_value_second_separator_len: u32,
-        max_entry_value_third_part_before_decimals_len: u32,
-        max_entry_value_third_part_after_decimals_len: u32,
+        max_entry_value_first_part_before_decimals_len: u16,
+        max_entry_value_first_part_after_decimals_len: u16,
+        max_entry_value_first_separator_len: u16,
+        max_entry_value_second_part_before_decimals_len: u16,
+        max_entry_value_second_part_after_decimals_len: u16,
+        max_entry_value_second_separator_len: u16,
+        max_entry_value_third_part_before_decimals_len: u16,
+        max_entry_value_third_part_after_decimals_len: u16,
     },
 }
 
@@ -139,8 +139,8 @@ struct ParserTempData<'a> {
     multiline_comment_byte_end: usize,
     /// Directives group nodes
     directives_group_nodes: Vec<DirectiveNode<'a>>,
-    /// Maximum length of the directive names + contents (u32 is sufficient)
-    directives_group_max_name_content_len: u32,
+    /// Maximum length of the directive names + contents (u16 max: 65,535 - more than sufficient)
+    directives_group_max_name_content_len: u16,
     /// Transaction title
     transaction_title_byte_start: usize,
     transaction_title_byte_end: usize,
@@ -150,18 +150,18 @@ struct ParserTempData<'a> {
     transaction_entries: Vec<TransactionNode<'a>>,
     /// If the current transaction has entries (ignoring comments)
     transaction_has_no_comment_entries: bool,
-    /// Indent of the first transaction entry (u32 is sufficient)
-    first_entry_indent: u32,
-    /// Maximum length of the entry names (u32 is sufficient)
-    max_entry_name_len: u32,
-    max_entry_value_first_part_before_decimals_len: u32,
-    max_entry_value_first_part_after_decimals_len: u32,
-    max_entry_value_first_separator_len: u32,
-    max_entry_value_second_part_before_decimals_len: u32,
-    max_entry_value_second_part_after_decimals_len: u32,
-    max_entry_value_second_separator_len: u32,
-    max_entry_value_third_part_before_decimals_len: u32,
-    max_entry_value_third_part_after_decimals_len: u32,
+    /// Indent of the first transaction entry (u16 max: 65,535 - more than sufficient)
+    first_entry_indent: u16,
+    /// Maximum length of the entry names (u16 max: 65,535 - more than sufficient)
+    max_entry_name_len: u16,
+    max_entry_value_first_part_before_decimals_len: u16,
+    max_entry_value_first_part_after_decimals_len: u16,
+    max_entry_value_first_separator_len: u16,
+    max_entry_value_second_part_before_decimals_len: u16,
+    max_entry_value_second_part_after_decimals_len: u16,
+    max_entry_value_second_separator_len: u16,
+    max_entry_value_third_part_before_decimals_len: u16,
+    max_entry_value_third_part_after_decimals_len: u16,
     /// Reusable entry value parser to avoid allocations
     entry_value_parser: EntryValueParser,
 }
@@ -469,7 +469,7 @@ fn save_directive<'a>(
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
-        .max((content_len + name_length) as u32);
+        .max((content_len + name_length) as u16);
 }
 
 #[cfg_attr(
@@ -705,7 +705,7 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                     //
                     // this is needed for transactions without entries, only comments
                     if indent >= 2 && data.first_entry_indent == 0 {
-                        data.first_entry_indent = indent as u32;
+                        data.first_entry_indent = indent as u16;
                     }
                     data.transaction_entries
                         .push(TransactionNode::SingleLineComment(comment));
@@ -755,13 +755,13 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     let entry_name = ByteStr::from(&line[entry_name_start..entry_name_end]);
 
     if data.first_entry_indent == 0 {
-        data.first_entry_indent = indent as u32;
+        data.first_entry_indent = indent as u16;
     } else if !data.transaction_has_no_comment_entries {
         // if the first entry is a comment, the indent is not
         // properly setted so we need to set it here
-        data.first_entry_indent = indent as u32;
+        data.first_entry_indent = indent as u16;
     }
-    data.max_entry_name_len = data.max_entry_name_len.max(entry_name.chars_count() as u32);
+    data.max_entry_name_len = data.max_entry_name_len.max(entry_name.chars_count() as u16);
 
     let mut inside_entry_value = false;
     let mut comment = None;
@@ -816,32 +816,32 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
 
     data.max_entry_value_first_part_before_decimals_len = data
         .max_entry_value_first_part_before_decimals_len
-        .max(p.first_part_before_decimals.chars_count() as u32);
+        .max(p.first_part_before_decimals.chars_count() as u16);
     data.max_entry_value_first_part_after_decimals_len = data
         .max_entry_value_first_part_after_decimals_len
-        .max(p.first_part_after_decimals.chars_count() as u32);
+        .max(p.first_part_after_decimals.chars_count() as u16);
 
     data.max_entry_value_first_separator_len = data
         .max_entry_value_first_separator_len
-        .max(p.first_separator.len() as u32);
+        .max(p.first_separator.len() as u16);
 
     data.max_entry_value_second_part_before_decimals_len = data
         .max_entry_value_second_part_before_decimals_len
-        .max(p.second_part_before_decimals.chars_count() as u32);
+        .max(p.second_part_before_decimals.chars_count() as u16);
     data.max_entry_value_second_part_after_decimals_len = data
         .max_entry_value_second_part_after_decimals_len
-        .max(p.second_part_after_decimals.chars_count() as u32);
+        .max(p.second_part_after_decimals.chars_count() as u16);
 
     data.max_entry_value_second_separator_len = data
         .max_entry_value_second_separator_len
-        .max(p.second_separator.len() as u32);
+        .max(p.second_separator.len() as u16);
 
     data.max_entry_value_third_part_before_decimals_len = data
         .max_entry_value_third_part_before_decimals_len
-        .max(p.third_part_before_decimals.chars_count() as u32);
+        .max(p.third_part_before_decimals.chars_count() as u16);
     data.max_entry_value_third_part_after_decimals_len = data
         .max_entry_value_third_part_after_decimals_len
-        .max(p.third_part_after_decimals.chars_count() as u32);
+        .max(p.third_part_after_decimals.chars_count() as u16);
 
     data.transaction_has_no_comment_entries = true;
     data.transaction_entries

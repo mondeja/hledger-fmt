@@ -204,13 +204,16 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                                 );
 
                                 let comment_separation = if !e.value_second_separator.is_empty() {
-                                    entry_spacing + *max_entry_value_third_part_after_decimals_len as usize
+                                    entry_spacing
+                                        + *max_entry_value_third_part_after_decimals_len as usize
                                         - after_decimals_chars_count
                                 } else if !e.value_first_separator.is_empty() {
-                                    entry_spacing + *max_entry_value_second_part_after_decimals_len as usize
+                                    entry_spacing
+                                        + *max_entry_value_second_part_after_decimals_len as usize
                                         - after_decimals_chars_count
                                 } else {
-                                    entry_spacing + *max_entry_value_first_part_after_decimals_len as usize
+                                    entry_spacing
+                                        + *max_entry_value_first_part_after_decimals_len as usize
                                         - after_decimals_chars_count
                                 };
 
@@ -277,15 +280,15 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
 fn extend_entry(
     buffer: &mut Vec<u8>,
     entry: &crate::parser::TransactionEntry,
-    first_entry_indent: u32,
-    max_entry_name_len: u32,
-    max_entry_value_first_part_before_decimals_len: u32,
-    max_entry_value_first_part_after_decimals_len: u32,
-    max_entry_value_first_separator_len: u32,
-    max_entry_value_second_part_before_decimals_len: u32,
-    max_entry_value_second_part_after_decimals_len: u32,
-    max_entry_value_second_separator_len: u32,
-    max_entry_value_third_part_before_decimals_len: u32,
+    first_entry_indent: u16,
+    max_entry_name_len: u16,
+    max_entry_value_first_part_before_decimals_len: u16,
+    max_entry_value_first_part_after_decimals_len: u16,
+    max_entry_value_first_separator_len: u16,
+    max_entry_value_second_part_before_decimals_len: u16,
+    max_entry_value_second_part_after_decimals_len: u16,
+    max_entry_value_second_separator_len: u16,
+    max_entry_value_third_part_before_decimals_len: u16,
     entry_spacing: usize,
 ) {
     spaces::extend(buffer, first_entry_indent as usize);
@@ -303,8 +306,8 @@ fn extend_entry(
 
     if !entry.value_first_separator.is_empty() {
         let after_decimals_len = entry.value_first_part_after_decimals.chars_count();
-        let n_spaces =
-            entry_spacing + max_entry_value_first_part_after_decimals_len as usize - after_decimals_len;
+        let n_spaces = entry_spacing + max_entry_value_first_part_after_decimals_len as usize
+            - after_decimals_len;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_first_separator);
