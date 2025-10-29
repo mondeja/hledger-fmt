@@ -18,7 +18,8 @@ fn readme_version_matches_cargo_toml() {
             continue;
         }
         
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+        // Exit package section only when encountering a new TOML section (not array brackets)
+        if trimmed.starts_with('[') && !trimmed.contains('=') && trimmed != "[package]" {
             in_package_section = false;
         }
         
@@ -38,10 +39,11 @@ fn readme_version_matches_cargo_toml() {
     
     // Look for the version in the pre-commit configuration section
     // We search for a pattern that includes both the repo and rev to ensure we're in the right context
+    const CONTEXT_WINDOW_SIZE: usize = 5;
     let in_pre_commit_section = readme_content
         .lines()
         .collect::<Vec<_>>()
-        .windows(5)
+        .windows(CONTEXT_WINDOW_SIZE)
         .any(|window| {
             let window_text = window.join("\n");
             window_text.contains("mondeja/hledger-fmt")
