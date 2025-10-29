@@ -484,26 +484,17 @@ fn parse_inline_comment<'a>(
     let (content_bytes, prefix) = if let Some(comment_prefix) = from_comment_prefix {
         (&line[colno_padding..line_length], comment_prefix)
     } else {
-        let mut comment_prefix = None;
-        let mut start = colno_padding;
-        let mut end = start;
-        while end < line_length {
-            let c = line[end];
-            if c == b'#' {
-                comment_prefix = Some(CommentPrefix::Hash);
-                start = end + 1;
-                end = line_length;
-                break;
-            } else if c == b';' {
-                comment_prefix = Some(CommentPrefix::Semicolon);
-                start = end + 1;
-                end = line_length;
-                break;
-            }
-            end += 1;
-        }
-        comment_prefix?;
-        (&line[start..end], comment_prefix.unwrap())
+        // Use memchr2 to efficiently find comment markers
+        let search_slice = &line[colno_padding..line_length];
+        let pos = memchr::memchr2(b'#', b';', search_slice)?;
+        let c = search_slice[pos];
+        let comment_prefix = if c == b'#' {
+            CommentPrefix::Hash
+        } else {
+            CommentPrefix::Semicolon
+        };
+        let start = colno_padding + pos + 1;
+        (&line[start..line_length], comment_prefix)
     };
 
     Some(SingleLineComment {

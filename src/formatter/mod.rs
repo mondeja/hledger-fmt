@@ -345,11 +345,20 @@ mod spaces {
     const SPACES_64: [u8; 64] = make_spaces::<64>();
 
     pub fn extend(buffer: &mut Vec<u8>, n: usize) {
-        if n <= 64 {
-            buffer.extend_from_slice(&SPACES_64[..n]);
-        } else {
-            let old_len = buffer.len();
-            buffer.resize(old_len + n, b' ');
+        // Optimize for common small values with early returns
+        match n {
+            0 => return,
+            1 => {
+                buffer.push(b' ');
+                return;
+            }
+            2..=64 => {
+                buffer.extend_from_slice(&SPACES_64[..n]);
+            }
+            _ => {
+                let old_len = buffer.len();
+                buffer.resize(old_len + n, b' ');
+            }
         }
     }
 }
