@@ -347,11 +347,8 @@ mod spaces {
     pub fn extend(buffer: &mut Vec<u8>, n: usize) {
         // Optimize for common small values with early returns
         match n {
-            0 => return,
-            1 => {
-                buffer.push(b' ');
-                return;
-            }
+            0 => (),
+            1 => buffer.push(b' '),
             2..=64 => {
                 buffer.extend_from_slice(&SPACES_64[..n]);
             }
