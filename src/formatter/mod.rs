@@ -177,6 +177,16 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                             let e = inner.as_ref();
 
                             if let Some(ref comment) = e.comment {
+                                // Cache the chars_count that we'll need later
+                                let after_decimals_chars_count =
+                                    if !e.value_second_separator.is_empty() {
+                                        e.value_third_part_after_decimals.chars_count()
+                                    } else if !e.value_first_separator.is_empty() {
+                                        e.value_second_part_after_decimals.chars_count()
+                                    } else {
+                                        e.value_first_part_after_decimals.chars_count()
+                                    };
+
                                 let mut entry_line_buffer = Vec::with_capacity(e.name.len() + 32);
                                 extend_entry(
                                     &mut entry_line_buffer,
@@ -195,13 +205,13 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
 
                                 let comment_separation = if !e.value_second_separator.is_empty() {
                                     entry_spacing + max_entry_value_third_part_after_decimals_len
-                                        - e.value_third_part_after_decimals.chars_count()
+                                        - after_decimals_chars_count
                                 } else if !e.value_first_separator.is_empty() {
                                     entry_spacing + max_entry_value_second_part_after_decimals_len
-                                        - e.value_second_part_after_decimals.chars_count()
+                                        - after_decimals_chars_count
                                 } else {
                                     entry_spacing + max_entry_value_first_part_after_decimals_len
-                                        - e.value_first_part_after_decimals.chars_count()
+                                        - after_decimals_chars_count
                                 };
 
                                 let entry_line_chars_count =

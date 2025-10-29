@@ -162,6 +162,8 @@ struct ParserTempData<'a> {
     max_entry_value_second_separator_len: usize,
     max_entry_value_third_part_before_decimals_len: usize,
     max_entry_value_third_part_after_decimals_len: usize,
+    /// Reusable entry value parser to avoid allocations
+    entry_value_parser: EntryValueParser,
 }
 
 impl<'a> ParserTempData<'a> {
@@ -185,9 +187,8 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
 
     let mut inside_multiline_comment = false;
     let mut data = ParserTempData::new();
-    // Pre-allocate capacity based on estimated nodes per file
-    // Typical hledger files have ~1 node per 50-100 bytes
-    let estimated_nodes = (bytes.len() / 75).max(16);
+    // Pre-allocate capacity based on file size
+    let estimated_nodes = bytes.len().max(16);
     let mut journal = Vec::with_capacity(estimated_nodes);
 
     let mut lineno = 1;
@@ -480,6 +481,7 @@ fn save_directive<'a>(
         )
     )
 )]
+#[inline]
 fn parse_inline_comment<'a>(
     line: &'a [u8],
     line_length: usize,
@@ -809,8 +811,8 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     //     + entry_name.chars().count()
     //     + indent + 1;
     let entry_value = &line[entry_value_start..entry_value_end];
-    let mut parser = EntryValueParser::new();
-    let p = parser.parse(entry_value);
+    data.entry_value_parser.reset();
+    let p = data.entry_value_parser.parse(entry_value);
 
     data.max_entry_value_first_part_before_decimals_len = data
         .max_entry_value_first_part_before_decimals_len
@@ -973,6 +975,7 @@ fn save_transaction<'a>(
 /// Supposes that:
 ///
 /// - line is not empty
+#[inline]
 unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     /*
         "account "
@@ -1335,18 +1338,6 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         }
     }
 
-    // "value "
-    if line_length >= 6
-        && *l.get_unchecked(0) == b'v'
-        && *l.get_unchecked(1) == b'a'
-        && *l.get_unchecked(2) == b'l'
-        && *l.get_unchecked(3) == b'u'
-        && *l.get_unchecked(4) == b'e'
-        && *l.get_unchecked(5) == b' '
-    {
-        return Some(&line[0..5]);
-    }
-
     None
 }
 
@@ -1415,16 +1406,18 @@ enum EntryValueParserState {
 }
 
 impl EntryValueParser {
-    pub fn new() -> Self {
-        Self::default()
+    /// Reset the parser state for reuse
+    #[inline]
+    fn reset(&mut self) {
+        *self = Self::default();
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_number_char(c: u8) -> bool {
         c.is_ascii_digit() || c == b'.' || c == b','
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_separator_char(c: u8) -> bool {
         c == b'@' || c == b'*' || c == b'='
     }
@@ -1764,10 +1757,17 @@ impl EntryValueParser {
     }
 }
 
+#[inline]
 fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8]) {
-    if let Some(pos) = value.iter().rposition(|&c| c == b'.' || c == b',') {
+    // Use memchr2 for faster decimal point search (rightmost position)
+    if let Some(pos) = memchr::memrchr2(b'.', b',', value) {
         let after = &value[pos + 1..];
-        if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
+        // Fast path: check for thousands separator (3 digits after decimal)
+        if after.len() == 3
+            && after[0].is_ascii_digit()
+            && after[1].is_ascii_digit()
+            && after[2].is_ascii_digit()
+        {
             return (value, &[]);
         }
         let before = &value[..pos];
