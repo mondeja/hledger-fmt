@@ -2,3 +2,7 @@
 .prettier-cache
 /dist/
 *.log
+/fuzz/target
+/fuzz/artifacts
+/fuzz/corpus/fuzz_*
+/fuzz/Cargo.lock

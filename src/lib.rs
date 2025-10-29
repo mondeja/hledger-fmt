@@ -26,7 +26,10 @@ pub use parser::errors::SyntaxError;
 /// Format an hledger journal string file content as a String.
 pub fn format_journal(content: &str) -> Result<String, SyntaxError> {
     let buffer = format_journal_bytes(content.as_bytes())?;
-    let formatted = String::from_utf8(buffer).unwrap();
+    // SAFETY: The formatter only outputs valid UTF-8 since it only writes:
+    // 1. Slices from the valid UTF-8 input
+    // 2. ASCII characters (spaces, newlines, comment prefixes)
+    let formatted = String::from_utf8(buffer).expect("formatter should only produce valid UTF-8");
     Ok(formatted)
 }
 
@@ -38,7 +41,11 @@ pub fn format_journal_with_options(
     let parsed: Vec<parser::JournalCstNode<'_>> = parser::parse_content(content.as_bytes())?;
     let merged_options = options.with_estimated_length(content.len());
     let formatted_bytes = formatter::format_content_with_options(&parsed, &merged_options);
-    let formatted = String::from_utf8(formatted_bytes).unwrap();
+    // SAFETY: The formatter only outputs valid UTF-8 since it only writes:
+    // 1. Slices from the valid UTF-8 input
+    // 2. ASCII characters (spaces, newlines, comment prefixes)
+    let formatted =
+        String::from_utf8(formatted_bytes).expect("formatter should only produce valid UTF-8");
     Ok(formatted)
 }
 
