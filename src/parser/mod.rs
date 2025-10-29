@@ -786,7 +786,6 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                 inside_entry_value = true;
                 entry_value_start = end - 1;
                 entry_value_end = entry_value_start;
-                continue;
             }
         } else if c == b';' || c == b'#' {
             comment = parse_inline_comment(
@@ -1769,11 +1768,10 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
         let after = &value[pos + 1..];
         if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
             return (value, &[]);
-        } else {
-            let before = &value[..pos];
-            let after = &value[pos..];
-            return (before, after);
         }
+        let before = &value[..pos];
+        let after = &value[pos..];
+        return (before, after);
     }
 
     let mut idx = 0;
