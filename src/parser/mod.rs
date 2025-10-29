@@ -480,6 +480,7 @@ fn save_directive<'a>(
         )
     )
 )]
+#[inline]
 fn parse_inline_comment<'a>(
     line: &'a [u8],
     line_length: usize,
@@ -973,6 +974,7 @@ fn save_transaction<'a>(
 /// Supposes that:
 ///
 /// - line is not empty
+#[inline]
 unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     /*
         "account "
@@ -1335,18 +1337,6 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         }
     }
 
-    // "value "
-    if line_length >= 6
-        && *l.get_unchecked(0) == b'v'
-        && *l.get_unchecked(1) == b'a'
-        && *l.get_unchecked(2) == b'l'
-        && *l.get_unchecked(3) == b'u'
-        && *l.get_unchecked(4) == b'e'
-        && *l.get_unchecked(5) == b' '
-    {
-        return Some(&line[0..5]);
-    }
-
     None
 }
 
@@ -1419,12 +1409,12 @@ impl EntryValueParser {
         Self::default()
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_number_char(c: u8) -> bool {
         c.is_ascii_digit() || c == b'.' || c == b','
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_separator_char(c: u8) -> bool {
         c == b'@' || c == b'*' || c == b'='
     }
@@ -1764,6 +1754,7 @@ impl EntryValueParser {
     }
 }
 
+#[inline]
 fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8]) {
     if let Some(pos) = value.iter().rposition(|&c| c == b'.' || c == b',') {
         let after = &value[pos + 1..];
