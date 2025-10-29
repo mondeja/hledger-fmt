@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Unreleased
+
+### Enhancements
+
+- Optimize hot paths with SIMD-friendly UTF-8 counting, memchr comment search,
+  and pre-allocation:
+  - 3.5% faster parsing (SIMD-friendly UTF-8 character counting, memchr2 for
+    comment marker search, pre-allocated journal Vec)
+  - 8.1% faster formatting (optimized space buffer operations with fast paths)
+  - Removed unsafe code from UTF-8 counting
+  - Eliminated redundant control flow patterns
+
 ## 2025-10-27 - [0.3.4]
 
 ### New features
@@ -192,6 +204,7 @@
 
 First beta release
 
+[unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...master
 [0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/mondeja/hledger-fmt/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/mondeja/hledger-fmt/compare/v0.3.1...v0.3.2
