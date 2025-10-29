@@ -9,7 +9,7 @@ cargo build && cargo test
 ## Running benchmarks
 
 ```sh
-cargo bench --features bench
+cargo bench --release --features bench
 ```
 
 ## Debugging with tracing
