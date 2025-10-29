@@ -1760,7 +1760,8 @@ impl EntryValueParser {
 
 #[inline]
 fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8]) {
-    if let Some(pos) = value.iter().rposition(|&c| c == b'.' || c == b',') {
+    // Use memchr2 for faster decimal point search (rightmost position)
+    if let Some(pos) = memchr::memrchr2(b'.', b',', value) {
         let after = &value[pos + 1..];
         if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
             return (value, &[]);
