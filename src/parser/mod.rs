@@ -1407,10 +1407,6 @@ enum EntryValueParserState {
 }
 
 impl EntryValueParser {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    
     /// Reset the parser state for reuse
     #[inline]
     fn reset(&mut self) {
