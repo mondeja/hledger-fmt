@@ -568,3 +568,65 @@ value $100.00
 fn parse_empty() {
     assert_journal("", vec![]);
 }
+
+// Regression tests for bugs found via fuzzing
+
+#[test]
+fn regression_entry_name_with_closing_paren() {
+    // Bug: slice index panic when entry_name_end < entry_name_start
+    // This happened with entries like " ) expenses:food" where the closing paren
+    // followed by a space caused entry_name_end to be decremented below entry_name_start
+    let content = r#"2015-10-16 bought food
+ ) expenses:food        $10
+  assets:cash
+"#;
+    // Should not panic
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+}
+
+#[test]
+fn regression_single_char_whitespace_line() {
+    // Bug: potential out-of-bounds access with single-character whitespace lines
+    // The code was accessing line[1..line_length-1] without checking if line_length >= 2
+    let content = " \n";
+    // Should not panic
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+    
+    let content = "\t\n";
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+}
+
+#[test]
+fn regression_commodity_directive_bounds() {
+    // Bug: off-by-one error in maybe_start_with_directive for "commodity" directive
+    // The check was "line_length >= 9" but accessed index 9, which requires length >= 10
+    let content = "commodity";  // exactly 9 characters, no space
+    // Should not panic
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+    
+    let content = "commodity ";  // 10 characters with space - valid directive
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+}
+
+#[test]
+fn regression_various_edge_cases() {
+    // Additional edge cases found during fuzzing
+    
+    // Multiple spaces in entry names with special characters
+    let content = r#"2015-10-16 test
+   )   foo  $10
+  assets:cash
+"#;
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+    
+    // Tab-indented entries
+    let content = "2015-10-16 test\n\tassets:cash  $10\n\texpenses:food\n";
+    let result = parse_content(content.as_bytes());
+    assert!(result.is_ok());
+}
