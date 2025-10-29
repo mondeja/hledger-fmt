@@ -178,13 +178,14 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
 
                             if let Some(ref comment) = e.comment {
                                 // Cache the chars_count that we'll need later
-                                let after_decimals_chars_count = if !e.value_second_separator.is_empty() {
-                                    e.value_third_part_after_decimals.chars_count()
-                                } else if !e.value_first_separator.is_empty() {
-                                    e.value_second_part_after_decimals.chars_count()
-                                } else {
-                                    e.value_first_part_after_decimals.chars_count()
-                                };
+                                let after_decimals_chars_count =
+                                    if !e.value_second_separator.is_empty() {
+                                        e.value_third_part_after_decimals.chars_count()
+                                    } else if !e.value_first_separator.is_empty() {
+                                        e.value_second_part_after_decimals.chars_count()
+                                    } else {
+                                        e.value_first_part_after_decimals.chars_count()
+                                    };
 
                                 let mut entry_line_buffer = Vec::with_capacity(e.name.len() + 32);
                                 extend_entry(

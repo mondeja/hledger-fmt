@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [Unreleased]
+
+### Enhancements
+
+- Optimize parser and formatter hot paths for 4-6% performance improvement.
+
 ## 2025-10-29 - [0.3.5]
 
 ### Bug fixes
@@ -207,6 +213,7 @@
 
 First beta release
 
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...master
 [0.3.5]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/mondeja/hledger-fmt/compare/v0.3.2...v0.3.3
