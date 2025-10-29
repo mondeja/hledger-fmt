@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-- Optimize parser and formatter hot paths (7.4% faster parsing, 6.3% faster
+- Optimize parser and formatter hot paths (2.7% faster parsing, 2.5% faster
   formatting).
 
 ## 2025-10-29 - [0.3.5]
