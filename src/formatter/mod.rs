@@ -347,7 +347,7 @@ mod spaces {
     pub fn extend(buffer: &mut Vec<u8>, n: usize) {
         // Fast paths for common values to avoid slice operations overhead
         match n {
-            0 => (), // No-op for zero spaces
+            0 => (),                // No-op for zero spaces
             1 => buffer.push(b' '), // Direct push for single space
             2..=64 => {
                 buffer.extend_from_slice(&SPACES_64[..n]);

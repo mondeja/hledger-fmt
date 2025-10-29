@@ -69,7 +69,9 @@ impl<'a> std::fmt::Debug for ByteStr<'a> {
 #[inline]
 pub(crate) fn utf8_chars_count(buf: &[u8]) -> usize {
     // Use iterator which is SIMD-friendly and avoids manual bounds checking
-    buf.iter().filter(|&&b| b & 0b1100_0000 != 0b1000_0000).count()
+    buf.iter()
+        .filter(|&&b| b & 0b1100_0000 != 0b1000_0000)
+        .count()
 }
 
 #[cfg(test)]
