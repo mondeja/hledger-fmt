@@ -345,10 +345,10 @@ mod spaces {
     const SPACES_64: [u8; 64] = make_spaces::<64>();
 
     pub fn extend(buffer: &mut Vec<u8>, n: usize) {
-        // Optimize for common small values with early returns
+        // Fast paths for common values to avoid slice operations overhead
         match n {
-            0 => (),
-            1 => buffer.push(b' '),
+            0 => (), // No-op for zero spaces
+            1 => buffer.push(b' '), // Direct push for single space
             2..=64 => {
                 buffer.extend_from_slice(&SPACES_64[..n]);
             }
