@@ -1763,7 +1763,12 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
     // Use memchr2 for faster decimal point search (rightmost position)
     if let Some(pos) = memchr::memrchr2(b'.', b',', value) {
         let after = &value[pos + 1..];
-        if after.len() == 3 && after.iter().all(|c| c.is_ascii_digit()) {
+        // Fast path: check for thousands separator (3 digits after decimal)
+        if after.len() == 3
+            && after[0].is_ascii_digit()
+            && after[1].is_ascii_digit()
+            && after[2].is_ascii_digit()
+        {
             return (value, &[]);
         }
         let before = &value[..pos];
