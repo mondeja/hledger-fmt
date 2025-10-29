@@ -58,16 +58,8 @@ cargo build && cargo test
 
 ## Running benchmarks
 
-For accurate performance measurements, use the `--release` flag:
-
 ```sh
 cargo bench --release --features bench
-```
-
-Or without the `--release` flag for quick checks:
-
-```sh
-cargo bench --features bench
 ```
 
 ## Debugging with tracing
