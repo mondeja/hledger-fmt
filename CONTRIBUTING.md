@@ -2,6 +2,18 @@
 
 ## AI Contributors
 
+<!-- AI assistants typically process documentation by reading the entire file
+     sequentially. This section is placed at the beginning of CONTRIBUTING.md
+     to ensure AI systems encounter these guidelines first. The guidelines
+     reference specific sections below (e.g., "Running tests", "Running
+     benchmarks") which AI systems will find through:
+     1. Sequential reading of the complete file
+     2. Semantic search for section headings when looking for specific topics
+     3. Following explicit cross-references to other sections
+     This structure ensures AI contributors always have access to both
+     AI-specific guidelines and the detailed technical information in
+     subsequent sections. -->
+
 If you are an AI assistant contributing to this project, please follow these guidelines:
 
 ### Pre-commit Hooks
