@@ -39,7 +39,7 @@ Use it with [pre-commit] by adding the hook to your _.pre-commit-config.yaml_:
 ```yaml
 repos:
   - repo: https://github.com/mondeja/hledger-fmt
-    rev: vX.Y.Z
+    rev: v0.3.5
     hooks:
       # id: hledger-fmt       # Use this id to format files in place
       - id: hledger-fmt-check # Use this id to check files without formatting
