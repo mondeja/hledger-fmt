@@ -187,9 +187,8 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
 
     let mut inside_multiline_comment = false;
     let mut data = ParserTempData::new();
-    // Pre-allocate capacity based on estimated nodes per file
-    // Typical hledger files have ~1 node per 50-100 bytes
-    let estimated_nodes = (bytes.len() / 75).max(16);
+    // Pre-allocate capacity based on file size
+    let estimated_nodes = bytes.len().max(16);
     let mut journal = Vec::with_capacity(estimated_nodes);
 
     let mut lineno = 1;

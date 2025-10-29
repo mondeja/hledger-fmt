@@ -37,7 +37,7 @@ current `/75` may be sub-optimal for typical journal files.
 - Adjust ratio based on average nodes per byte
 - Test with various file sizes
 
-**Effort:** Low  
+**Effort:** Low
 **Risk:** Low
 
 ### 2. Reduce Repeated Bounds Checking (Estimated: 2-3% gain)
@@ -49,7 +49,7 @@ optimization:
 
 ```rust
 // Example in split_value_in_before_decimals_after_decimals
-if after.len() == 3 
+if after.len() == 3
     && after[0].is_ascii_digit()  // Could use get_unchecked
     && after[1].is_ascii_digit()
     && after[2].is_ascii_digit()
@@ -57,7 +57,7 @@ if after.len() == 3
 
 **Implementation:** Add unsafe blocks with proper safety comments
 
-**Effort:** Low  
+**Effort:** Low
 **Risk:** Medium (requires careful safety analysis)
 
 ### 3. String Interning for Common Values (Estimated: 3-5% gain)
@@ -71,7 +71,7 @@ and payees. String interning could reduce allocations.
 - Use a simple hash map for deduplication
 - Trade memory for speed
 
-**Effort:** High  
+**Effort:** High
 **Risk:** Medium (increases code complexity)
 
 ### 4. Specialized Fast Path for ASCII-only Files (Estimated: 5-10% gain)
@@ -92,7 +92,7 @@ if is_ascii {
 }
 ```
 
-**Effort:** Medium  
+**Effort:** Medium
 **Risk:** Low (can fallback to current implementation)
 
 ### 5. Lazy Evaluation for Max Length Calculations (Estimated: 1-2% gain)
@@ -103,7 +103,7 @@ even when not needed (e.g., for transactions without values).
 **Implementation:** Compute max lengths only when actually formatting, not
 during parsing.
 
-**Effort:** Medium  
+**Effort:** Medium
 **Risk:** Medium (requires restructuring data flow)
 
 ### 6. SIMD for Whitespace and Digit Scanning (Estimated: 3-7% gain)
@@ -120,7 +120,7 @@ during parsing.
 - Provide scalar fallback for portability
 - Test on target architectures
 
-**Effort:** High  
+**Effort:** High
 **Risk:** High (complexity, portability concerns)
 
 ### 7. Reduce Vec Resizing (Estimated: 1-2% gain)
@@ -138,7 +138,7 @@ The `+ 32` heuristic could be improved based on typical entry sizes.
 
 **Implementation:** Profile typical entry sizes and adjust capacity estimates
 
-**Effort:** Low  
+**Effort:** Low
 **Risk:** Low
 
 ### 8. Custom Allocator (Estimated: 5-15% gain)
@@ -153,7 +153,7 @@ The `+ 32` heuristic could be improved based on typical entry sizes.
 - Integrate `bumpalo` or similar
 - Requires lifetime management changes
 
-**Effort:** Very High  
+**Effort:** Very High
 **Risk:** High (API changes, complexity)
 
 ## Recommended Next Steps
@@ -166,14 +166,14 @@ The `+ 32` heuristic could be improved based on typical entry sizes.
 
 ### Medium Priority
 
-4. **Vec resizing optimization** - Low hanging fruit
-5. **Lazy evaluation** - Requires design changes but good potential
+1. **Vec resizing optimization** - Low hanging fruit
+2. **Lazy evaluation** - Requires design changes but good potential
 
 ### Low Priority (High effort/risk)
 
-6. **String interning** - Complexity vs. gain trade-off
-7. **SIMD operations** - Portability concerns
-8. **Custom allocator** - Major refactoring required
+1. **String interning** - Complexity vs. gain trade-off
+2. **SIMD operations** - Portability concerns
+3. **Custom allocator** - Major refactoring required
 
 ## Profiling Recommendations
 
