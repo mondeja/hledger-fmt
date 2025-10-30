@@ -1796,9 +1796,10 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
         return (before, after);
     }
 
+    // Find the first non-numeric character
     let mut idx = 0;
-    for c in value {
-        if c.is_ascii_digit() || *c == b',' || *c == b'.' || *c == b'-' || *c == b'+' {
+    for &c in value {
+        if c.is_ascii_digit() || c == b',' || c == b'.' || c == b'-' || c == b'+' {
             idx += 1;
         } else {
             break;
@@ -1812,13 +1813,14 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
             (after, before)
         } else {
             // case $453534€
-            for c in after.iter().rev() {
+            let mut trailing_non_digits = 0;
+            for &c in after.iter().rev() {
                 if c.is_ascii_digit() {
                     break;
                 }
-                idx += 1;
+                trailing_non_digits += 1;
             }
-            let (before, after) = value.split_at(after.len() - idx);
+            let (before, after) = value.split_at(value.len() - trailing_non_digits);
             (before, after)
         }
     } else {

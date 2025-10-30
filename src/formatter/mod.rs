@@ -171,6 +171,9 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                 }
                 buffer.push(b'\n');
 
+                // Cache title_chars_count outside the loop since title doesn't change
+                let title_chars_count = title.chars_count();
+
                 for entry in entries {
                     match entry {
                         TransactionNode::TransactionEntry(inner) => {
@@ -221,8 +224,6 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                                     crate::byte_str::utf8_chars_count(&entry_line_buffer);
 
                                 buffer.append(&mut entry_line_buffer);
-
-                                let title_chars_count = title.chars_count();
 
                                 let n_spaces = if title_chars_count + 2 > entry_line_chars_count + 2
                                 {
