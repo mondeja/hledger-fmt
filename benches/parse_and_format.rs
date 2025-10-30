@@ -11,8 +11,6 @@ fn benchmark_formatter(c: &mut Criterion) {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_file()
-                && (path.extension().map_or(false, |ext| ext == "journal")
-                    || path.extension().map_or(false, |ext| ext == "hledger"))
             {
                 Some(path)
             } else {
