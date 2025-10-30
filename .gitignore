@@ -14,3 +14,7 @@ perf.data.old
 callgrind.out.*
 massif.out.*
 bloat-analysis.json
+
+# README conversion for crates.io
+README.crates.md
+README.github.md

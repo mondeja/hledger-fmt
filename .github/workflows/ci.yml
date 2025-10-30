@@ -218,10 +218,15 @@ jobs:
         with:
           rust-version: stable
           profile: minimal
+      - name: Prepare README for crates.io
+        run: |
+          ./scripts/prepare-readme-for-crates.sh README.md README.crates.md
+          mv README.md README.github.md
+          mv README.crates.md README.md
       - name: Publish
         run: |
           cargo login ${{ secrets.CRATES_TOKEN }}
-          cargo publish -v --dry-run --features=manpages
+          cargo publish -v --dry-run --features=manpages --allow-dirty
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -235,10 +240,15 @@ jobs:
         with:
           rust-version: stable
           profile: minimal
+      - name: Prepare README for crates.io
+        run: |
+          ./scripts/prepare-readme-for-crates.sh README.md README.crates.md
+          mv README.md README.github.md
+          mv README.crates.md README.md
       - name: Publish
         run: |
           cargo login ${{ secrets.CRATES_TOKEN }}
-          cargo publish -v --features=manpages
+          cargo publish -v --features=manpages --allow-dirty
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/')
