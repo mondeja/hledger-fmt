@@ -12,28 +12,6 @@ cargo build && cargo test
 cargo bench --features bench
 ```
 
-## Code Size Analysis
-
-Analyze binary size and identify code bloat:
-
-```sh
-# Install cargo-bloat (one-time)
-cargo install cargo-bloat
-
-# Run bloat analysis
-./scripts/bloat-analysis.sh
-
-# Or install and run in one command
-./scripts/bloat-analysis.sh --install
-```
-
-This helps identify:
-
-- Large functions that could be optimized
-- Generic code instantiations
-- Dependency bloat
-- Size optimization opportunities
-
 ## Profiling
 
 See [PROFILING.md](PROFILING.md) for detailed profiling instructions.
