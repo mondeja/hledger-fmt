@@ -9,9 +9,6 @@
 - Reduce memory footprint by 70.8% using smaller integer types (u16 instead of
   usize).
 - Improve directive recognition with tree-based matching.
-- Performance benchmarks show formatting is 13.0% faster compared to v0.3.4
-  (6.2% faster than v0.3.5), and the combined parse+format workflow is 4.4%
-  faster than v0.3.4.
 
 ## 2025-10-29 - [0.3.5]
 
