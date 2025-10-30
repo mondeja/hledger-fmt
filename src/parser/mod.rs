@@ -1928,6 +1928,39 @@ mod test {
         assert_eq!(after, b".50");
     }
 
+    /// Regression test for bug fix in split_value_in_before_decimals_after_decimals
+    /// 
+    /// Previously, the function incorrectly reused the `idx` variable when counting
+    /// trailing non-digit characters in values like "$453534€". This caused incorrect
+    /// splitting because `idx` would contain the sum of:
+    /// 1. The count of leading numeric chars (0 in this case since '$' is not numeric)
+    /// 2. The count of trailing non-numeric chars (1 for '€')
+    /// 
+    /// This would result in split_at(value.len() - idx) using the wrong index.
+    /// 
+    /// The fix introduced a separate `trailing_non_digits` counter to avoid this issue.
+    #[test]
+    fn test_split_value_regression_variable_reuse() {
+        // Test case: currency symbol at start and end
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("$453534€".as_bytes());
+        assert_eq!(before, "$453534".as_bytes());
+        assert_eq!(after, "€".as_bytes());
+
+        // Additional edge cases that would fail with the bug:
+        // Multiple trailing non-digits
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("$123ABC".as_bytes());
+        assert_eq!(before, "$123".as_bytes());
+        assert_eq!(after, "ABC".as_bytes());
+
+        // Leading symbol, digits, trailing multi-char currency
+        let (before, after) =
+            split_value_in_before_decimals_after_decimals("€9999USD".as_bytes());
+        assert_eq!(before, "€9999".as_bytes());
+        assert_eq!(after, "USD".as_bytes());
+    }
+
     #[test]
     fn test_entry_value_parser_stock_lot() {
         let mut parser = EntryValueParser::default();
