@@ -1,0 +1,71 @@
+#+hledger-lots avg_cost:false, check:true
+#+hledger-lots no_desc:
+
+#+args buy_aapl:bal desc:"Buy AAPL"
+#+args aapl_cur:bal desc:"Buy AAPL" cur:{commodity}
+#+args sell_aapl: bal desc:"Sold" {tag_price}
+
+commodity 1,000.00   USD
+commodity 1,000.0000 AAPL        ; yahoo_ticker:AAPL
+commodity 1,000.0000 GOOG        ; yahoo_ticker:GOOG
+commodity 1,000.0000 "PETR4.SA"  ; yahoo_ticker:PETR4.SA
+
+2023-01-01 Initial
+    Asset:Bank                             100000.00 USD
+    Equity:Initial
+
+2023-01-05 Buy AAPL
+    Asset:Stocks                                  5 AAPL @ 160 USD
+    Asset:Bank
+
+2023-01-10 Buy AAPL
+    Asset:Stocks                                  10 AAPL @ 145 USD
+    Asset:Bank
+
+2023-01-15 Sold Y.AAPL  ; cost_method:fifo
+    ; commodity:Y.AAPL, qtty:3.00, price:163.00
+    ; avg_cost:160.0000, xirr:0.95% annual percent rate 30/360US
+    Asset:Bank                           489.00 USD
+    Asset:Stocks            -3.0 AAPL @ 160 USD  ; buy_date:2023-01-05, base_cur:USD
+    Revenue:Capital Gain                  -9.00 USD
+
+
+2023-01-20 Buy AAPL
+    Asset:Stocks                                  15 AAPL @ 168 USD
+    Asset:Bank
+
+2023-01-25 Sold AAPL  ; cost_method:fifo
+    ; commodity:AAPL, qtty:8.00, price:168.00
+    ; avg_cost:148.7500, xirr:13.55% annual percent rate 30/360US
+    Asset:Bank                      1344.00 USD
+    Asset:Stocks            -2.0 AAPL @ 160 USD  ; buy_date:2023-01-05, base_cur:USD
+    Asset:Stocks            -6.0 AAPL @ 145 USD  ; buy_date:2023-01-10, base_cur:USD
+    Revenue:Capital Gain            -154.00 USD
+
+
+2023-02-01 Buy GOOG
+    Asset:Stocks                                  15 GOOG @ 102 USD
+    Asset:Bank
+
+
+
+2023-02-05 Sold GOOG  ; cost_method:fifo
+    ; commodity:GOOG, qtty:12.00, price:106.00
+    ; avg_cost:102.0000, xirr:30.88% annual percent rate 30/360US
+    Asset:Bank                       1272.00 USD
+    Asset:Stocks            -12.0 GOOG @ 102 USD  ; buy_date:2023-02-01, base_cur:USD
+    Revenue:Capital Gain              -48.00 USD
+
+
+P 2023-01-06 "AAPL" 129.42239379882812 USD
+P 2023-01-09 "AAPL" 129.9515838623047 USD
+P 2023-01-10 "AAPL" 130.53070068359375 USD
+P 2023-01-20 "AAPL" 137.65980529785156 USD
+P 2023-01-23 "AAPL" 140.89488220214844 USD
+P 2023-01-25 "AAPL" 141.64373779296875 USD
+P 2023-02-01 "AAPL" 145.20828247070312 USD
+P 2023-02-02 "AAPL" 150.590087890625 USD
+
+P 2023-02-02 "GOOG" 108.80000305175781 USD
+P 2023-02-03 "GOOG" 105.22000122070312 USD
+P 2023-02-06 "GOOG" 103.47000122070312 USD
