@@ -297,7 +297,8 @@ fn extend_entry(
     spaces::extend(buffer, first_entry_indent as usize);
     buffer.extend_from_slice(&entry.name);
     if !entry.value_first_part_before_decimals.is_empty() {
-        let n_spaces = entry_spacing + max_entry_name_len as usize - entry.name_chars_count as usize
+        let n_spaces = entry_spacing + max_entry_name_len as usize
+            - entry.name_chars_count as usize
             + max_entry_value_first_part_before_decimals_len as usize
             - entry.value_first_part_before_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);

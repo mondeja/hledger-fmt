@@ -859,12 +859,18 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
 
     // Cache the character counts we just computed
     let name_chars_count = entry_name.chars_count() as u16;
-    let value_first_part_before_decimals_chars_count = p.first_part_before_decimals.chars_count() as u16;
-    let value_first_part_after_decimals_chars_count = p.first_part_after_decimals.chars_count() as u16;
-    let value_second_part_before_decimals_chars_count = p.second_part_before_decimals.chars_count() as u16;
-    let value_second_part_after_decimals_chars_count = p.second_part_after_decimals.chars_count() as u16;
-    let value_third_part_before_decimals_chars_count = p.third_part_before_decimals.chars_count() as u16;
-    let value_third_part_after_decimals_chars_count = p.third_part_after_decimals.chars_count() as u16;
+    let value_first_part_before_decimals_chars_count =
+        p.first_part_before_decimals.chars_count() as u16;
+    let value_first_part_after_decimals_chars_count =
+        p.first_part_after_decimals.chars_count() as u16;
+    let value_second_part_before_decimals_chars_count =
+        p.second_part_before_decimals.chars_count() as u16;
+    let value_second_part_after_decimals_chars_count =
+        p.second_part_after_decimals.chars_count() as u16;
+    let value_third_part_before_decimals_chars_count =
+        p.third_part_before_decimals.chars_count() as u16;
+    let value_third_part_after_decimals_chars_count =
+        p.third_part_after_decimals.chars_count() as u16;
 
     data.transaction_has_no_comment_entries = true;
     data.transaction_entries
