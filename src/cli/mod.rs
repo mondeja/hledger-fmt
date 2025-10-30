@@ -284,6 +284,7 @@ fn gather_input_files(
 }
 
 /// Search for hledger files in the passed directory and its subdirectories
+#[cold]
 fn gather_files_from_directory_and_subdirectories<'a>(
     root: &'a FilePathOrStdin,
     files: &'a mut Vec<(FilePathOrStdin, Vec<u8>)>,
@@ -350,6 +351,7 @@ fn gather_files_from_directory_and_subdirectories<'a>(
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
+#[cold]
 fn read_file(file_path: &FilePathOrStdin) -> Result<Vec<u8>, ()> {
     std::fs::read(file_path).map_err(|e| {
         eprintln!("Error reading file {file_path}: {e}");
@@ -357,6 +359,7 @@ fn read_file(file_path: &FilePathOrStdin) -> Result<Vec<u8>, ()> {
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
+#[cold]
 fn read_stdin() -> Vec<u8> {
     let mut buffer = Vec::new();
     _ = std::io::stdin().read_to_end(&mut buffer).map_err(|e| {

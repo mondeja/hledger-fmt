@@ -285,6 +285,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
 }
 
 #[allow(clippy::too_many_arguments)]
+#[inline]
 fn extend_entry(
     buffer: &mut Vec<u8>,
     entry: &crate::parser::TransactionEntry,
