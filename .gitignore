@@ -13,3 +13,4 @@ perf.data
 perf.data.old
 callgrind.out.*
 massif.out.*
+bloat-analysis.json

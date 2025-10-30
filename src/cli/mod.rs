@@ -6,6 +6,7 @@ mod tests;
 use crate::file_path::FilePathOrStdin;
 use std::io::Read;
 
+#[inline]
 #[doc(hidden)]
 /// Run the hledger-fmt CLI and return the exit code.
 pub fn run(cmd: clap::Command) -> i32 {
@@ -35,8 +36,6 @@ pub fn run(cmd: clap::Command) -> i32 {
     #[cfg(feature = "diff")]
     let no_diff = args.get_flag("no-diff");
 
-    let mut exitcode = 0;
-
     // if no files, search in current directory and its subdirectories
     let mut files: Vec<(FilePathOrStdin, Vec<u8>)> = Vec::new();
     let stdin = if std::env::args().any(|arg| arg == "-") {
@@ -45,75 +44,8 @@ pub fn run(cmd: clap::Command) -> i32 {
         Vec::with_capacity(0)
     };
 
-    if stdin.is_empty() {
-        if files_arg.is_empty() {
-            if gather_files_from_directory_and_subdirectories(
-                &FilePathOrStdin::FilePath(std::path::PathBuf::from(".")),
-                &mut files,
-            )
-            .is_err()
-            {
-                exitcode = 1;
-            }
-
-            if files.is_empty() {
-                eprintln!(
-                    "No hledger journal files found in the current directory nor its subdirectories.\n\
-                     Ensure that they have extensions '.hledger', '.journal' or '.j'."
-                );
-                exitcode = 1;
-                return exitcode;
-            }
-        } else {
-            for file_path in &files_arg {
-                let path = file_path.as_ref();
-                if path.is_dir() {
-                    if gather_files_from_directory_and_subdirectories(file_path, &mut files)
-                        .is_err()
-                    {
-                        exitcode = 1;
-                    }
-                    break;
-                } else if path.is_file() {
-                    if let Ok(content) = read_file(file_path) {
-                        // TODO: stop cloning here
-                        files.push((file_path.clone(), content));
-                    } else {
-                        exitcode = 1;
-                    }
-                } else if !path.exists() {
-                    eprintln!("Path {:?} does not exist.", path.display());
-                    exitcode = 1;
-                } else if path.is_symlink() {
-                    eprintln!(
-                        "Path {:?} is a symlink. Symbolic links are not supported.",
-                        path.display()
-                    );
-                    exitcode = 1;
-                }
-            }
-
-            if exitcode != 0 {
-                return exitcode;
-            }
-
-            if files.is_empty() {
-                let files_arg_as_strings: Vec<std::borrow::Cow<'_, str>> =
-                    files_arg.iter().map(|f| f.to_string_lossy()).collect();
-
-                eprintln!(
-                    "No hledger journal files found looking for next files and/or directories: {files_arg_as_strings:#?}.\n\
-                     Ensure that they have extensions '.hledger', '.journal' or '.j'.",
-                );
-                exitcode = 1;
-                return exitcode;
-            }
-        }
-    } else if files.is_empty() {
-        files.push((FilePathOrStdin::Stdin, stdin));
-    } else {
-        eprintln!("Cannot read from STDIN and pass files at the same time.");
-        exitcode = 1;
+    let mut exitcode = gather_input_files(&files_arg, stdin, &mut files);
+    if exitcode != 0 {
         return exitcode;
     }
 
@@ -212,8 +144,6 @@ pub fn run(cmd: clap::Command) -> i32 {
 
             #[cfg(feature = "diff")]
             {
-                use similar::{ChangeTag, TextDiff};
-
                 if no_diff {
                     #[allow(clippy::print_stdout)]
                     {
@@ -222,41 +152,7 @@ pub fn run(cmd: clap::Command) -> i32 {
                     continue;
                 }
 
-                let content_as_str = String::from_utf8_lossy(&content);
-
-                let diff = TextDiff::from_lines(&content_as_str, &formatted);
-                for change in diff.iter_all_changes() {
-                    #[cfg(not(feature = "color"))]
-                    {
-                        let line = match change.tag() {
-                            ChangeTag::Delete => format!("- {change}"),
-                            ChangeTag::Insert => format!("+ {change}"),
-                            ChangeTag::Equal => format!("  {change}"),
-                        };
-                        eprint!("{line}");
-                    }
-
-                    #[cfg(feature = "color")]
-                    {
-                        let line = match change.tag() {
-                            ChangeTag::Delete => {
-                                let bright_red = anstyle::Style::new()
-                                    .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
-                                format!("{bright_red}- {change}{bright_red:#}")
-                            }
-                            ChangeTag::Insert => {
-                                let bright_green = anstyle::Style::new()
-                                    .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
-                                format!("{bright_green}+ {change}{bright_green:#}")
-                            }
-                            ChangeTag::Equal => {
-                                let dimmed = anstyle::Style::new().dimmed();
-                                format!("{dimmed}  {change}{dimmed:#}")
-                            }
-                        };
-                        anstream::eprint!("{line}");
-                    }
-                }
+                print_diff(&content, &formatted);
             }
         }
     }
@@ -264,7 +160,132 @@ pub fn run(cmd: clap::Command) -> i32 {
     exitcode
 }
 
+/// Print a colored diff between original and formatted content
+#[cfg(feature = "diff")]
+#[cold]
+#[inline(never)]
+fn print_diff(original: &[u8], formatted: &str) {
+    use similar::{ChangeTag, TextDiff};
+
+    let content_as_str = String::from_utf8_lossy(original);
+    let diff = TextDiff::from_lines(content_as_str.as_ref(), formatted);
+
+    for change in diff.iter_all_changes() {
+        #[cfg(not(feature = "color"))]
+        {
+            let line = match change.tag() {
+                ChangeTag::Delete => format!("- {change}"),
+                ChangeTag::Insert => format!("+ {change}"),
+                ChangeTag::Equal => format!("  {change}"),
+            };
+            eprint!("{line}");
+        }
+
+        #[cfg(feature = "color")]
+        {
+            let line = match change.tag() {
+                ChangeTag::Delete => {
+                    let bright_red =
+                        anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+                    format!("{bright_red}- {change}{bright_red:#}")
+                }
+                ChangeTag::Insert => {
+                    let bright_green = anstyle::Style::new()
+                        .fg_color(Some(anstyle::AnsiColor::BrightGreen.into()));
+                    format!("{bright_green}+ {change}{bright_green:#}")
+                }
+                ChangeTag::Equal => {
+                    let dimmed = anstyle::Style::new().dimmed();
+                    format!("{dimmed}  {change}{dimmed:#}")
+                }
+            };
+            anstream::eprint!("{line}");
+        }
+    }
+}
+
+/// Gather input files from arguments or stdin
+/// Returns 0 on success, non-zero exit code on error
+#[cold]
+#[inline(never)]
+fn gather_input_files(
+    files_arg: &[FilePathOrStdin],
+    stdin: Vec<u8>,
+    files: &mut Vec<(FilePathOrStdin, Vec<u8>)>,
+) -> i32 {
+    let mut exitcode = 0;
+
+    if stdin.is_empty() {
+        if files_arg.is_empty() {
+            if gather_files_from_directory_and_subdirectories(
+                &FilePathOrStdin::FilePath(std::path::PathBuf::from(".")),
+                files,
+            )
+            .is_err()
+            {
+                exitcode = 1;
+            }
+
+            if files.is_empty() {
+                eprintln!(
+                    "No hledger journal files found in the current directory nor its subdirectories.\n\
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'."
+                );
+                return 1;
+            }
+        } else {
+            for file_path in files_arg {
+                let path = file_path.as_ref();
+                if path.is_dir() {
+                    if gather_files_from_directory_and_subdirectories(file_path, files).is_err() {
+                        exitcode = 1;
+                    }
+                    break;
+                } else if path.is_file() {
+                    if let Ok(content) = read_file(file_path) {
+                        files.push((file_path.clone(), content));
+                    } else {
+                        exitcode = 1;
+                    }
+                } else if !path.exists() {
+                    eprintln!("Path {:?} does not exist.", path.display());
+                    exitcode = 1;
+                } else if path.is_symlink() {
+                    eprintln!(
+                        "Path {:?} is a symlink. Symbolic links are not supported.",
+                        path.display()
+                    );
+                    exitcode = 1;
+                }
+            }
+
+            if exitcode != 0 {
+                return exitcode;
+            }
+
+            if files.is_empty() {
+                let files_arg_as_strings: Vec<std::borrow::Cow<'_, str>> =
+                    files_arg.iter().map(|f| f.to_string_lossy()).collect();
+
+                eprintln!(
+                    "No hledger journal files found looking for next files and/or directories: {files_arg_as_strings:#?}.\n\
+                     Ensure that they have extensions '.hledger', '.journal' or '.j'.",
+                );
+                return 1;
+            }
+        }
+    } else if files.is_empty() {
+        files.push((FilePathOrStdin::Stdin, stdin));
+    } else {
+        eprintln!("Cannot read from STDIN and pass files at the same time.");
+        return 1;
+    }
+
+    exitcode
+}
+
 /// Search for hledger files in the passed directory and its subdirectories
+#[cold]
 fn gather_files_from_directory_and_subdirectories<'a>(
     root: &'a FilePathOrStdin,
     files: &'a mut Vec<(FilePathOrStdin, Vec<u8>)>,
@@ -331,6 +352,7 @@ fn gather_files_from_directory_and_subdirectories<'a>(
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
+#[cold]
 fn read_file(file_path: &FilePathOrStdin) -> Result<Vec<u8>, ()> {
     std::fs::read(file_path).map_err(|e| {
         eprintln!("Error reading file {file_path}: {e}");
@@ -338,6 +360,7 @@ fn read_file(file_path: &FilePathOrStdin) -> Result<Vec<u8>, ()> {
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace"))]
+#[cold]
 fn read_stdin() -> Vec<u8> {
     let mut buffer = Vec::new();
     _ = std::io::stdin().read_to_end(&mut buffer).map_err(|e| {

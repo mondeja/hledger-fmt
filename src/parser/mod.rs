@@ -1814,16 +1814,19 @@ impl EntryValueParser {
     }
 }
 
-#[inline]
+#[inline(always)]
 fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8]) {
     // Use memchr2 for faster decimal point search (rightmost position)
     if let Some(pos) = memchr::memrchr2(b'.', b',', value) {
         let after = &value[pos + 1..];
         // Fast path: check for thousands separator (3 digits after decimal)
+        // Use unsafe for faster bounds-checked access since we know the length
         if after.len() == 3
-            && after[0].is_ascii_digit()
-            && after[1].is_ascii_digit()
-            && after[2].is_ascii_digit()
+            && unsafe {
+                after.get_unchecked(0).is_ascii_digit()
+                    && after.get_unchecked(1).is_ascii_digit()
+                    && after.get_unchecked(2).is_ascii_digit()
+            }
         {
             return (value, &[]);
         }
@@ -1832,30 +1835,25 @@ fn split_value_in_before_decimals_after_decimals(value: &[u8]) -> (&[u8], &[u8])
         return (before, after);
     }
 
-    // Find the first non-numeric character
-    let mut idx = 0;
-    for &c in value {
-        if c.is_ascii_digit() || c == b',' || c == b'.' || c == b'-' || c == b'+' {
-            idx += 1;
-        } else {
-            break;
-        }
-    }
+    // Find the first non-numeric character using iterator
+    let idx = value
+        .iter()
+        .position(|&c| !(c.is_ascii_digit() || c == b',' || c == b'.' || c == b'-' || c == b'+'))
+        .unwrap_or(value.len());
 
     let (before, after) = value.split_at(idx);
     if before.is_empty() && !after.is_empty() {
-        if after[after.len() - 1].is_ascii_digit() {
+        // SAFETY: We just checked that after is not empty
+        if unsafe { *after.get_unchecked(after.len() - 1) }.is_ascii_digit() {
             // case $-1
             (after, before)
         } else {
             // case $453534€
-            let mut trailing_non_digits = 0;
-            for &c in after.iter().rev() {
-                if c.is_ascii_digit() {
-                    break;
-                }
-                trailing_non_digits += 1;
-            }
+            let trailing_non_digits = after
+                .iter()
+                .rev()
+                .position(|&c| c.is_ascii_digit())
+                .unwrap_or(after.len());
             let (before, after) = value.split_at(value.len() - trailing_non_digits);
             (before, after)
         }
