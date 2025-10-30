@@ -3,6 +3,7 @@ use clap::{value_parser, Arg, ArgAction, Command};
 #[doc(hidden)]
 /// Build the hledger-fmt CLI with clap.
 #[cold]
+#[allow(clippy::missing_inline_in_public_items)]
 pub fn build() -> Command {
     let cmd = Command::new("hledger-fmt")
         .long_about("An opinionated hledger's journal files formatter.")

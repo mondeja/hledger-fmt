@@ -78,7 +78,7 @@ Look for:
 5. **Use `opt-level = "z"`**: Optimize for size instead of speed
 6. **Strip symbols**: `strip = true` in release profile
 7. **Minimize dependencies**: Remove unused features with `default-features =
-   false`
+false`
 
 ## Manual Profiling
 

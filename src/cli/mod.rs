@@ -6,6 +6,7 @@ mod tests;
 use crate::file_path::FilePathOrStdin;
 use std::io::Read;
 
+#[inline]
 #[doc(hidden)]
 /// Run the hledger-fmt CLI and return the exit code.
 pub fn run(cmd: clap::Command) -> i32 {
