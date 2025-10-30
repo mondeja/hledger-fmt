@@ -16,16 +16,30 @@ fi
 cp "$README_PATH" "$TEMP_README"
 
 # Convert GitHub-style warning callout to standard markdown
+# This is a more targeted approach that handles the specific pattern in the README
 # Pattern: > [!WARNING]\
-#          > warning text
-# Replace with: **Warning:** warning text
-sed -i '/^> \[!WARNING\]\\$/,/^$/{
-    /^> \[!WARNING\]\\$/d
-    s/^> //
-}' "$TEMP_README"
+#          > This is a potentially destructive...
+# Replace with: **Warning:** This is a potentially destructive...
 
-# Add bold "Warning:" prefix to the warning text
-# Find the line that starts with "This is a potentially destructive"
-sed -i 's/^This is a potentially destructive/**Warning:** This is a potentially destructive/' "$TEMP_README"
+# First, remove the GitHub-specific callout marker and preserve the content
+# Then add the **Warning:** prefix to the first line of content
+awk '
+/^> \[!WARNING\]\\$/ {
+    # Skip the warning marker line
+    getline
+    # Remove the "> " prefix and add **Warning:** prefix
+    sub(/^> /, "**Warning:** ")
+    print
+    # Process remaining lines in the warning block
+    while (getline && /^> /) {
+        sub(/^> /, "")
+        print
+    }
+    # Print the current line (empty line or next content)
+    print
+    next
+}
+{ print }
+' "$README_PATH" > "$TEMP_README"
 
 echo "Prepared README for crates.io at $TEMP_README"
