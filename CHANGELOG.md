@@ -7,8 +7,12 @@
 - Optimize parser and formatter performance with multiple improvements including
   caching character counts in data structures, optimizing hot paths, reducing
   memory footprint by 70.8% using smaller integer types (u16 instead of usize),
-  and improving directive recognition with tree-based matching. Overall results:
-  ~4.8% faster formatting, ~2.9% faster overall workflow, ~2.7% faster parsing.
+  and improving directive recognition with tree-based matching. Performance
+  benchmarks show formatting is 15.6% faster compared to v0.3.4 (8.1% faster
+  than v0.3.5), and the combined parse+format workflow is 5.2% faster than
+  v0.3.4. These improvements build upon the v0.3.5 optimizations (SIMD-friendly
+  UTF-8 counting, memchr comment search, pre-allocation) and the v0.3.4 major
+  performance improvements.
 
 ## 2025-10-29 - [0.3.5]
 
