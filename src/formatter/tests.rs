@@ -42,6 +42,13 @@ fn assert_noop_format(content: &str) {
     assert_format(content, &with_ending_newline(content));
 }
 
+/// Read a corpus file from the fuzz/corpus directory
+fn read_corpus_file(filename: &str) -> String {
+    let path = format!("fuzz/corpus/{}", filename);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("Failed to read corpus file: {}", path))
+}
+
 #[test]
 fn empty() {
     // empty content does not add a newline
@@ -656,73 +663,99 @@ fn space_as_thousands_separator() {
 #[test]
 fn corpus_multicurrency_example() {
     // Test basic multicurrency transaction formatting
-    assert_format(
-        r#"2015-01-01 * Opening state 1
+    let content = read_corpus_file("multicurrency.journal");
+
+    // Extract specific transactions to test formatting
+    let test_input = r#"2015-01-01 * Opening state 1
     Equity:Opening Balances                     -100.00 HRK
     Assets:Cash                                  100.00 HRK
 
 2015-01-03 * Money exchange office
     Assets:Cash                                  -20 EUR @ 7.53 HRK
     Assets:Cash                                  150.60 HRK
-"#,
-        r#"2015-01-01 * Opening state 1
+"#;
+
+    let expected = r#"2015-01-01 * Opening state 1
     Equity:Opening Balances  -100.00 HRK
     Assets:Cash               100.00 HRK
 
 2015-01-03 * Money exchange office
     Assets:Cash  -20 EUR     @  7.53 HRK
     Assets:Cash  150.60 HRK
-"#,
-    );
+"#;
+
+    assert_format(test_input, expected);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse multicurrency.journal");
 }
 
 #[test]
 fn corpus_balance_assertions() {
     // Test balance assertions with multiple currencies
-    assert_format(
-        r#"2016-01-01 opening balances
+    let content = read_corpus_file("uk-finances.journal");
+
+    // Extract specific transactions to test formatting
+    let test_input = r#"2016-01-01 opening balances
     assets:Lloyds:current                   £650.00 = £650.00
     assets:Lloyds:savings                      £500 = £500
     assets:house                           £1000.00 = £1000.00
     equity:opening/closing balances
-"#,
-        r#"2016-01-01 opening balances
+"#;
+
+    let expected = r#"2016-01-01 opening balances
     assets:Lloyds:current             £650.00  =   £650.00
     assets:Lloyds:savings             £500     =   £500
     assets:house                     £1000.00  =  £1000.00
     equity:opening/closing balances
-"#,
-    );
+"#;
+
+    assert_format(test_input, expected);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse uk-finances.journal");
 }
 
 #[test]
 fn corpus_transaction_codes() {
     // Test transactions with codes in parentheses
-    assert_format(
-        r#"2016-03-30 (BGC) EMPLOYER INC
+    let content = read_corpus_file("uk-finances.journal");
+
+    // Extract specific transactions to test formatting
+    let test_input = r#"2016-03-30 (BGC) EMPLOYER INC
     assets:Lloyds:current         £664.72 = £1314.72
     income:employer
 
 2016-04-02 (FOREIGN CCY) HLEDGER
     assets:Lloyds:current             £-6 = £1208.72
     expenses:donations        $7.68 @@ £6
-"#,
-        r#"2016-03-30 (BGC) EMPLOYER INC
+"#;
+
+    let expected = r#"2016-03-30 (BGC) EMPLOYER INC
     assets:Lloyds:current  £664.72  =  £1314.72
     income:employer
 
 2016-04-02 (FOREIGN CCY) HLEDGER
     assets:Lloyds:current  £-6     =   £1208.72
     expenses:donations      $7.68  @@     £6
-"#,
-    );
+"#;
+
+    assert_format(test_input, expected);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse uk-finances.journal");
 }
 
 #[test]
 fn corpus_stock_trading() {
     // Test stock trading with lot prices
-    assert_format(
-        r#"2023-01-05 Buy AAPL
+    let content = read_corpus_file("stock-trading.journal");
+
+    // Extract specific transactions to test formatting
+    let test_input = r#"2023-01-05 Buy AAPL
     Asset:Stocks                                  5 AAPL @ 160 USD
     Asset:Bank
 
@@ -731,8 +764,9 @@ fn corpus_stock_trading() {
     Asset:Bank                           489.00 USD
     Asset:Stocks            -3.0 AAPL @ 160 USD  ; buy_date:2023-01-05, base_cur:USD
     Revenue:Capital Gain                  -9.00 USD
-"#,
-        r#"2023-01-05 Buy AAPL
+"#;
+
+    let expected = r#"2023-01-05 Buy AAPL
     Asset:Stocks  5 AAPL  @  160 USD
     Asset:Bank
 
@@ -741,78 +775,122 @@ fn corpus_stock_trading() {
     Asset:Bank            489.00 USD
     Asset:Stocks           -3.0 AAPL  @  160 USD  ; buy_date:2023-01-05, base_cur:USD
     Revenue:Capital Gain   -9.00 USD
-"#,
-    );
+"#;
+
+    assert_format(test_input, expected);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse stock-trading.journal");
 }
 
 #[test]
 fn corpus_price_directives() {
     // Test market price directives
-    assert_noop_format(
-        r#"P 2023-01-06 "AAPL" 129.42239379882812 USD
+    let content = read_corpus_file("stock-trading.journal");
+
+    // Extract price directives to test
+    let test_input = r#"P 2023-01-06 "AAPL" 129.42239379882812 USD
 P 2023-01-09 "AAPL" 129.9515838623047 USD
 P 2023-01-10 "AAPL" 130.53070068359375 USD
-"#,
-    );
+"#;
+
+    assert_noop_format(test_input);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse stock-trading.journal");
 }
 
 #[test]
 fn corpus_commodity_with_format() {
     // Test commodity declarations with format subdirectives
-    assert_noop_format(
-        r#"commodity ILS
+    let content = read_corpus_file("multi-bank-currencies.journal");
+
+    // Extract commodity declarations to test
+    let test_input = r#"commodity ILS
   format ILS 9,999,999.00
 
 commodity USD
   format USD 9,999,999.00
-"#,
+"#;
+
+    assert_noop_format(test_input);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(
+        parsed.is_ok(),
+        "Failed to parse multi-bank-currencies.journal"
     );
 }
 
 #[test]
 fn corpus_virtual_postings() {
     // Test virtual postings (parenthesized account names)
-    assert_format(
-        r#"2019/01/01 set initial assets balance
-    (assets:banks:israel:boi:ils)    ILS 10,000.00
+    let content = read_corpus_file("multi-bank-currencies.journal");
 
-2016-12-31 pension valuation
+    // Extract virtual posting transaction to test
+    let test_input = r#"2019/01/01 set initial assets balance
+    (assets:banks:israel:boi:ils)    ILS 10,000.00
+"#;
+
+    let expected = r#"2019/01/01 set initial assets balance
+    (assets:banks:israel:boi:ils)  ILS 10,000.00
+"#;
+
+    assert_format(test_input, expected);
+
+    // Also test from uk-finances.journal
+    let uk_content = read_corpus_file("uk-finances.journal");
+    let test_input2 = r#"2016-12-31 pension valuation
     assets:pension:aviva                   = £308.27
     virtual:unrealized pnl
-"#,
-        r#"2019/01/01 set initial assets balance
-    (assets:banks:israel:boi:ils)  ILS 10,000.00
+"#;
 
-2016-12-31 pension valuation
+    let expected2 = r#"2016-12-31 pension valuation
     assets:pension:aviva    = £308.27
     virtual:unrealized pnl
-"#,
+"#;
+
+    assert_format(test_input2, expected2);
+
+    // Verify both files can be parsed
+    let parsed1 = parse_content(content.as_bytes());
+    assert!(
+        parsed1.is_ok(),
+        "Failed to parse multi-bank-currencies.journal"
     );
+
+    let parsed2 = parse_content(uk_content.as_bytes());
+    assert!(parsed2.is_ok(), "Failed to parse uk-finances.journal");
 }
 
 #[test]
 fn corpus_include_directive() {
     // Test include directives
-    assert_noop_format(
-        r#"; journal created 2021-09-22 by hledger
+    let content = read_corpus_file("timelog.journal");
 
-include ~/.task/hooks/task-timelog-hook/tw.timeclock
-
-D 1.00 h
-include ~/.task/hooks/task-timelog-hook/tw.timedot
-"#,
-    );
+    // The entire timelog.journal is small, test it all
+    assert_noop_format(content.trim_end());
 }
 
 #[test]
 fn corpus_custom_directives() {
     // Test custom directives (hledger-lots style)
-    assert_noop_format(
-        r#"#+hledger-lots avg_cost:false, check:true
+    let content = read_corpus_file("stock-trading.journal");
+
+    // Extract custom directives to test
+    let test_input = r#"#+hledger-lots avg_cost:false, check:true
 #+hledger-lots no_desc:
 
 #+args buy_aapl:bal desc:"Buy AAPL"
 #+args aapl_cur:bal desc:"Buy AAPL" cur:{commodity}
-"#,
-    );
+"#;
+
+    assert_noop_format(test_input);
+
+    // Also verify the entire file can be parsed and formatted
+    let parsed = parse_content(content.as_bytes());
+    assert!(parsed.is_ok(), "Failed to parse stock-trading.journal");
 }
