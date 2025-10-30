@@ -19,7 +19,7 @@ cp "$README_PATH" "$TEMP_README"
 # Pattern: > [!WARNING]\
 #          > warning text
 # Replace with: **Warning:** warning text
-sed -i '/^> \[!WARNING\]\\$/,/^$/{ 
+sed -i '/^> \[!WARNING\]\\$/,/^$/{
     /^> \[!WARNING\]\\$/d
     s/^> //
 }' "$TEMP_README"
