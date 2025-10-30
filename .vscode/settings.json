@@ -1,7 +1,7 @@
 {
   "customLocalFormatters.formatters": [
     {
-      "command": "./target/debug/hledger-fmt - --no-diff",
+      "command": "./target/debug/hledger-fmt - --no-diff --exit-zero-on-changes",
       "languages": ["hledger"]
     }
   ]
