@@ -220,11 +220,11 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
                     };
                 (end_with_newline, end_without_newline)
             }
-            None => (bytes_length, bytes_length), // última línea sin newline
+            None => (bytes_length, bytes_length), // last line without newline
         };
 
         if line_end == byteno {
-            // línea vacía
+            // empty line
             process_empty_line(&mut journal, &mut data, bytes);
             byteno = line_end_including_newline;
             lineno += 1;
