@@ -78,6 +78,14 @@ pub(crate) fn format_content_with_options(
 }
 
 fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize) {
+    let buffer_capacity = buffer.capacity();
+    if buffer_capacity > 256 {
+        // Avoid to allocate space for small buffers
+        if buffer.len() + 1024 > buffer_capacity {
+            buffer.reserve(1024);
+        }
+    }
+
     #[cfg(any(test, feature = "tracing"))]
     {
         let span = tracing::span!(tracing::Level::TRACE, "format_nodes");
