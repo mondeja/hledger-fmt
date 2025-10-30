@@ -43,7 +43,6 @@ fn assert_noop_format(content: &str) {
 }
 
 /// Read a corpus file from the fuzz/corpus directory
-/// Normalizes line endings to LF (\n) for cross-platform compatibility
 fn read_corpus_file(filename: &str) -> String {
     let path = format!("fuzz/corpus/{}", filename);
     let content = std::fs::read_to_string(&path)
