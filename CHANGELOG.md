@@ -4,13 +4,11 @@
 
 ### Enhancements
 
-- Optimize parser and formatter hot paths (2.7% faster parsing, 2.5% faster
-  formatting).
-- Reduce memory footprint by 70.8% for transaction-related structures by
-  using smaller integer types (u16 instead of usize) where appropriate.
-- Optimize `maybe_start_with_directive` function by removing redundant length
-  checks and grouping directives by first letter (tree-based matching), resulting
-  in 2.6% faster complete workflow and 0.8% faster parsing.
+- Optimize parser and formatter performance with multiple improvements including
+  caching character counts in data structures, optimizing hot paths, reducing
+  memory footprint by 70.8% using smaller integer types (u16 instead of usize),
+  and improving directive recognition with tree-based matching. Overall results:
+  ~4.8% faster formatting, ~2.9% faster overall workflow, ~2.7% faster parsing.
 
 ## 2025-10-29 - [0.3.5]
 
