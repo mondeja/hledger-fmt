@@ -97,7 +97,7 @@ pub struct Directive<'a> {
     pub content: ByteStr<'a>,
     /// Comment associated with the directive
     pub comment: Option<SingleLineComment<'a>>,
-    /// Cached character count for name (u16 max: 65,535 - more than sufficient)
+    /// Cached character count for name
     pub(crate) name_chars_count: u16,
     /// Cached character count for content (u16 max: 65,535 - more than sufficient)
     pub(crate) content_chars_count: u16,
