@@ -1,0 +1,7 @@
+
+; journal created 2021-09-22 by hledger
+
+include ~/.task/hooks/task-timelog-hook/tw.timeclock
+
+D 1.00 h
+include ~/.task/hooks/task-timelog-hook/tw.timedot

@@ -1,0 +1,96 @@
+; Set exchange rate from other currencies to ILS.
+P 2019-01-01 USD ILS3.50
+P 2019-01-01 EUR ILS3.85
+
+; We create a commodity called `USD:[BANK NAME]`, thus making sure hledger will
+; show us the funds in each bank, without consolidating everything under a
+; single USD value.
+P 2019-01-01 USD:BOI ILS3.50
+P 2019-01-01 USD:BOJ ILS3.50
+P 2019-01-01 ILS:BOJ ILS1
+
+; Set formatting
+commodity ILS
+  format ILS 9,999,999.00
+
+commodity USD
+  format USD 9,999,999.00
+
+commodity USD:BOI
+  format USD:BOI 9,999,999.00
+
+commodity USD:BOI
+  format USD:BOI 9,999,999.00
+
+commodity ILS:BOJ
+  format ILS:BOJ 9,999,999.00
+
+; We have main accounts for ILS (BOI) and USD (BOA). We want to
+; keep knowledge of the ILS and USD in BOJ. However if we will add them under for
+; example `assets:banks:israel:boi:ils` then when we group
+; together by setting depth two 2 (i.e. `assets:banks`) then it won't be clear
+; what's the exact state of the main banks.
+; For this reason we register them as `assets:banks-ancillary`.
+
+
+;; Cash flow starts here.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+2019/01/01 set initial assets balance, ILS:BOI
+    (assets:banks:israel:boi:ils)    ILS 10,000.00
+
+2019/01/01 set initial assets balance, USD:BOI
+    (assets:banks:israel:boi:usd)    USD:BOI 500.00
+
+2019/01/01 set initial assets balance, BOA
+    (assets:banks:us:boa)         USD1000
+
+2019/01/01 set initial assets balance, ILS:BOJ
+    (assets:banks-ancillary:israel:boj:ils)    ILS:BOJ 300.00
+
+2019/01/01 set initial assets balance, USD:BOJ
+    (assets:banks-ancillary:israel:boi:usd)       USD:BOJ50
+
+2019/01/01 set initial assets balance, ILS:BOI
+    (assets:banks:israel:boi:ils)    ILS 10,000.00
+
+2019/01/01 set initial assets balance, USD:BOI
+    (assets:banks:israel:boi:usd)    USD:BOI 500.00
+
+2019/01/01 set initial assets balance, BOA
+    (assets:banks:us:boa)         USD1000
+
+2019/01/01 set initial assets balance, ILS:BOJ
+    (assets:banks-ancillary:israel:boj:ils)    ILS:BOJ 300.00
+
+2019/01/01 set initial assets balance, USD:BOJ
+    (assets:banks-ancillary:israel:boi:usd)       USD:BOJ50
+
+2019/02/05 Israel Salaries, January 2019
+    expenses:israel:salary         ILS 2,000.00
+    assets:banks:israel:boi:ils
+
+2019/02/05 US Salaries, January 2019
+    expenses:us:salary           USD700
+    assets:banks:us:boa
+
+2019/02/08 Transfer from US to Israel
+    assets:banks:israel:boi:usd    USD:BOI 200.00
+    assets:banks:us:boa                   USD-200
+
+2019/02/08 Convert the money that was transfered from USD to ILS
+    assets:banks:israel:boi:ils    ILS 340.00 @@ USD:BOI100
+    assets:banks:israel:boi:usd
+
+2019/02/15 Credit card ILS, January 2019
+    liabilities:israel:cc:1234:ils      ILS 600.00
+    assets:banks:israel:boi:ils
+
+2019/02/15 Credit card USD, January 2019
+    liabilities:israel:cc:1234:usd    USD:BOI 150.00
+    assets:banks:israel:boi:usd
+
+2025/02/05 US Salaries, January 2025
+    expenses:us:salary           USD700
+    assets:banks:us:boa
