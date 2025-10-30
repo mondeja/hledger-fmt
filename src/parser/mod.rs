@@ -126,7 +126,7 @@ pub struct TransactionEntry<'a> {
     pub value_third_part_after_decimals: ByteStr<'a>,
     /// Comment associated with the entry
     pub comment: Option<SingleLineComment<'a>>,
-    /// Cached character counts (u16 max: 65,535 - more than sufficient)
+    /// Cached character counts
     pub(crate) name_chars_count: u16,
     pub(crate) value_first_part_before_decimals_chars_count: u16,
     pub(crate) value_first_part_after_decimals_chars_count: u16,
