@@ -99,6 +99,13 @@ pub fn hot_function() {
 buf.iter().filter(|&&b| b & 0b1100_0000 != 0b1000_0000).count()
 
 // Avoid: Manual loops with complex branching
+let mut count = 0;
+for &b in buf {
+    if b & 0b1100_0000 != 0b1000_0000 {
+        count += 1;
+    }
+}
+count
 ```
 
 #### 4. Strategic Unsafe Code
@@ -178,8 +185,8 @@ cargo bench --features bench
 # With profiling
 ./scripts/profile.sh combined
 
-# Check for regressions
-cargo bench --features bench -- --baseline main
+# Check for regressions (replace 'my-baseline' with your baseline name)
+cargo bench --features bench -- --baseline my-baseline
 ```
 
 ### Performance History
@@ -187,11 +194,11 @@ cargo bench --features bench -- --baseline main
 Track performance over time using Criterion's baseline feature:
 
 ```sh
-# Save current performance as baseline
-cargo bench --features bench -- --save-baseline main
+# Save current performance as baseline (choose a descriptive name)
+cargo bench --features bench -- --save-baseline my-baseline
 
 # Compare against baseline
-cargo bench --features bench -- --baseline main
+cargo bench --features bench -- --baseline my-baseline
 ```
 
 ## Tips
@@ -202,5 +209,9 @@ cargo bench --features bench -- --baseline main
 - Measure before and after each optimization
 - See [Rust Performance Book](https://nnethercote.github.io/perf-book/) for
   more details
-- Consider compile-time optimizations in `Cargo.toml`
+- Consider compile-time optimizations in `Cargo.toml`:
+  - `lto = true` - Enable Link-Time Optimization
+  - `codegen-units = 1` - Better optimization (slower compile)
+  - `opt-level = 3` or `opt-level = "z"` - Optimization level
+  - `strip = true` - Remove debug symbols from binary
 - Use `cargo-bloat` to identify code size issues
