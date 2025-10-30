@@ -168,7 +168,7 @@ fn print_diff(original: &[u8], formatted: &str) {
 
     let content_as_str = String::from_utf8_lossy(original);
     let diff = TextDiff::from_lines(content_as_str.as_ref(), formatted);
-    
+
     for change in diff.iter_all_changes() {
         #[cfg(not(feature = "color"))]
         {
@@ -184,8 +184,8 @@ fn print_diff(original: &[u8], formatted: &str) {
         {
             let line = match change.tag() {
                 ChangeTag::Delete => {
-                    let bright_red = anstyle::Style::new()
-                        .fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
+                    let bright_red =
+                        anstyle::Style::new().fg_color(Some(anstyle::AnsiColor::BrightRed.into()));
                     format!("{bright_red}- {change}{bright_red:#}")
                 }
                 ChangeTag::Insert => {
