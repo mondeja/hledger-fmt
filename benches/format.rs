@@ -10,8 +10,7 @@ fn benchmark_formatter(c: &mut Criterion) {
         .filter_map(|entry| {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.is_file()
-            {
+            if path.is_file() {
                 Some(path)
             } else {
                 None
