@@ -2,13 +2,14 @@
 
 ## [Unreleased]
 
+## 2025-10-30 - [0.3.6]
+
 ### Enhancements
 
-- Optimize parser and formatter performance with multiple improvements including
-  caching character counts in data structures, optimizing hot paths, reducing
-  memory footprint by 70.8% using smaller integer types (u16 instead of usize),
-  and improving directive recognition with tree-based matching. Overall results:
-  ~4.8% faster formatting, ~2.9% faster overall workflow, ~2.7% faster parsing.
+- Cache character counts in data structures for improved formatting performance.
+- Optimize hot paths in parser and formatter for better overall performance.
+- Reduce memory footprint by 70.8% using smaller integer types.
+- Improve directive recognition with tree-based matching.
 
 ## 2025-10-29 - [0.3.5]
 
@@ -217,7 +218,8 @@
 
 First beta release
 
-[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...master
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...master
+[0.3.6]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/mondeja/hledger-fmt/compare/v0.3.2...v0.3.3
