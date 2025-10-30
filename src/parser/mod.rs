@@ -97,6 +97,10 @@ pub struct Directive<'a> {
     pub content: ByteStr<'a>,
     /// Comment associated with the directive
     pub comment: Option<SingleLineComment<'a>>,
+    /// Cached character count for name (u16 max: 65,535 - more than sufficient)
+    pub(crate) name_chars_count: u16,
+    /// Cached character count for content (u16 max: 65,535 - more than sufficient)
+    pub(crate) content_chars_count: u16,
 }
 
 /// A directive or a single line comment
@@ -122,6 +126,14 @@ pub struct TransactionEntry<'a> {
     pub value_third_part_after_decimals: ByteStr<'a>,
     /// Comment associated with the entry
     pub comment: Option<SingleLineComment<'a>>,
+    /// Cached character counts (u16 max: 65,535 - more than sufficient)
+    pub(crate) name_chars_count: u16,
+    pub(crate) value_first_part_before_decimals_chars_count: u16,
+    pub(crate) value_first_part_after_decimals_chars_count: u16,
+    pub(crate) value_second_part_before_decimals_chars_count: u16,
+    pub(crate) value_second_part_after_decimals_chars_count: u16,
+    pub(crate) value_third_part_before_decimals_chars_count: u16,
+    pub(crate) value_third_part_after_decimals_chars_count: u16,
 }
 
 /// A transaction entry or a single line comment
@@ -466,6 +478,8 @@ fn save_directive<'a>(
             name,
             content,
             comment,
+            name_chars_count: name_length as u16,
+            content_chars_count: content_len as u16,
         }));
     data.directives_group_max_name_content_len = data
         .directives_group_max_name_content_len
@@ -843,6 +857,15 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
         .max_entry_value_third_part_after_decimals_len
         .max(p.third_part_after_decimals.chars_count() as u16);
 
+    // Cache the character counts we just computed
+    let name_chars_count = entry_name.chars_count() as u16;
+    let value_first_part_before_decimals_chars_count = p.first_part_before_decimals.chars_count() as u16;
+    let value_first_part_after_decimals_chars_count = p.first_part_after_decimals.chars_count() as u16;
+    let value_second_part_before_decimals_chars_count = p.second_part_before_decimals.chars_count() as u16;
+    let value_second_part_after_decimals_chars_count = p.second_part_after_decimals.chars_count() as u16;
+    let value_third_part_before_decimals_chars_count = p.third_part_before_decimals.chars_count() as u16;
+    let value_third_part_after_decimals_chars_count = p.third_part_after_decimals.chars_count() as u16;
+
     data.transaction_has_no_comment_entries = true;
     data.transaction_entries
         .push(TransactionNode::TransactionEntry(Box::new(
@@ -857,6 +880,13 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                 value_third_part_before_decimals: p.third_part_before_decimals,
                 value_third_part_after_decimals: p.third_part_after_decimals,
                 comment,
+                name_chars_count,
+                value_first_part_before_decimals_chars_count,
+                value_first_part_after_decimals_chars_count,
+                value_second_part_before_decimals_chars_count,
+                value_second_part_after_decimals_chars_count,
+                value_third_part_before_decimals_chars_count,
+                value_third_part_after_decimals_chars_count,
             },
         )));
 }

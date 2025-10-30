@@ -112,6 +112,8 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                             name,
                             content,
                             comment,
+                            name_chars_count,
+                            content_chars_count,
                             ..
                         }) => {
                             buffer.extend_from_slice(name);
@@ -122,8 +124,8 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                                 spaces::extend(
                                     buffer,
                                     2 + *max_name_content_len as usize
-                                        - name.chars_count()
-                                        - content.chars_count(),
+                                        - *name_chars_count as usize
+                                        - *content_chars_count as usize,
                                 );
                                 buffer.push(comment.prefix as u8);
                                 buffer.extend_from_slice(&comment.content);
@@ -180,14 +182,14 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                             let e = inner.as_ref();
 
                             if let Some(ref comment) = e.comment {
-                                // Cache the chars_count that we'll need later
+                                // Use cached chars_count values
                                 let after_decimals_chars_count =
                                     if !e.value_second_separator.is_empty() {
-                                        e.value_third_part_after_decimals.chars_count()
+                                        e.value_third_part_after_decimals_chars_count as usize
                                     } else if !e.value_first_separator.is_empty() {
-                                        e.value_second_part_after_decimals.chars_count()
+                                        e.value_second_part_after_decimals_chars_count as usize
                                     } else {
-                                        e.value_first_part_after_decimals.chars_count()
+                                        e.value_first_part_after_decimals_chars_count as usize
                                     };
 
                                 let mut entry_line_buffer = Vec::with_capacity(e.name.len() + 32);
@@ -295,52 +297,43 @@ fn extend_entry(
     spaces::extend(buffer, first_entry_indent as usize);
     buffer.extend_from_slice(&entry.name);
     if !entry.value_first_part_before_decimals.is_empty() {
-        let name_len = entry.name.chars_count();
-        let before_decimals_len = entry.value_first_part_before_decimals.chars_count();
-        let n_spaces = entry_spacing + max_entry_name_len as usize - name_len
+        let n_spaces = entry_spacing + max_entry_name_len as usize - entry.name_chars_count as usize
             + max_entry_value_first_part_before_decimals_len as usize
-            - before_decimals_len;
+            - entry.value_first_part_before_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_first_part_before_decimals);
     buffer.extend_from_slice(&entry.value_first_part_after_decimals);
 
     if !entry.value_first_separator.is_empty() {
-        let after_decimals_len = entry.value_first_part_after_decimals.chars_count();
         let n_spaces = entry_spacing + max_entry_value_first_part_after_decimals_len as usize
-            - after_decimals_len;
+            - entry.value_first_part_after_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_first_separator);
     if !entry.value_second_part_before_decimals.is_empty() {
         let value_first_separator_len = entry.value_first_separator.len();
-        let value_second_part_before_decimals_len =
-            entry.value_second_part_before_decimals.chars_count();
         let n_spaces = entry_spacing + max_entry_value_first_separator_len as usize
             - value_first_separator_len
             + max_entry_value_second_part_before_decimals_len as usize
-            - value_second_part_before_decimals_len;
+            - entry.value_second_part_before_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_second_part_before_decimals);
     buffer.extend_from_slice(&entry.value_second_part_after_decimals);
 
     if !entry.value_second_separator.is_empty() {
-        let value_second_part_after_decimals_len =
-            entry.value_second_part_after_decimals.chars_count();
         let n_spaces = entry_spacing + max_entry_value_second_part_after_decimals_len as usize
-            - value_second_part_after_decimals_len;
+            - entry.value_second_part_after_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_second_separator);
     if !entry.value_third_part_before_decimals.is_empty() {
         let value_second_separator_len = entry.value_second_separator.len();
-        let value_third_part_before_decimals_len =
-            entry.value_third_part_before_decimals.chars_count();
         let n_spaces = entry_spacing + max_entry_value_second_separator_len as usize
             - value_second_separator_len
             + max_entry_value_third_part_before_decimals_len as usize
-            - value_third_part_before_decimals_len;
+            - entry.value_third_part_before_decimals_chars_count as usize;
         spaces::extend(buffer, n_spaces);
     }
     buffer.extend_from_slice(&entry.value_third_part_before_decimals);
