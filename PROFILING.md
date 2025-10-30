@@ -1,11 +1,11 @@
 # Profiling Guide
 
 This document describes how to profile `hledger-fmt` to identify performance
-bottlenecks.
+bottlenecks and code size issues.
 
 ## Quick Start
 
-The easiest way to profile is using the included script:
+The easiest way to profile is using the included scripts:
 
 ```sh
 # Profile the combined parse+format operation
@@ -14,6 +14,9 @@ The easiest way to profile is using the included script:
 # Profile just parsing or formatting
 ./scripts/profile.sh parse
 ./scripts/profile.sh format
+
+# Analyze binary size and code bloat
+./scripts/bloat-analysis.sh
 ```
 
 This generates `flamegraph-*.svg` files showing where CPU time is spent.
@@ -28,6 +31,54 @@ cargo bench --features bench
 
 This measures parse, format, and combined operations and generates reports in
 `target/criterion/`.
+
+## Code Size Analysis
+
+### Using cargo-bloat
+
+Analyze binary size to identify large functions and code bloat:
+
+```sh
+# Install cargo-bloat
+cargo install cargo-bloat
+
+# Run the bloat analysis script
+./scripts/bloat-analysis.sh
+
+# Or install automatically
+./scripts/bloat-analysis.sh --install
+
+# Generate JSON output for programmatic analysis
+./scripts/bloat-analysis.sh --json
+```
+
+The script will show:
+
+- **Top functions by size**: Identifies the largest functions in the binary
+- **Crate-level breakdown**: Shows which dependencies contribute most to binary
+  size
+- **Optimization opportunities**: Suggests ways to reduce binary size
+
+### Interpreting bloat results
+
+Look for:
+
+- **Generic instantiations**: Same function compiled multiple times for
+  different types
+- **Large formatting code**: String formatting can be surprisingly large
+- **Dependency bloat**: Unused features from dependencies
+- **Debug code**: Ensure debug symbols are stripped in release builds
+
+### Size optimization strategies
+
+1. **Mark large cold functions with `#[cold]` or `#[inline(never)]`**
+2. **Use dynamic dispatch (`dyn Trait`) for rarely-used generics**
+3. **Enable LTO**: `lto = true` in `Cargo.toml`
+4. **Reduce codegen-units**: `codegen-units = 1` for better optimization
+5. **Use `opt-level = "z"`**: Optimize for size instead of speed
+6. **Strip symbols**: `strip = true` in release profile
+7. **Minimize dependencies**: Remove unused features with `default-features =
+   false`
 
 ## Manual Profiling
 
