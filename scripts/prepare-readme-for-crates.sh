@@ -12,17 +12,13 @@ if [ ! -f "$README_PATH" ]; then
     exit 1
 fi
 
-# Copy README to temporary file
-cp "$README_PATH" "$TEMP_README"
-
 # Convert GitHub-style warning callout to standard markdown
 # This is a more targeted approach that handles the specific pattern in the README
 # Pattern: > [!WARNING]\
 #          > This is a potentially destructive...
 # Replace with: **Warning:** This is a potentially destructive...
 
-# First, remove the GitHub-specific callout marker and preserve the content
-# Then add the **Warning:** prefix to the first line of content
+# Remove the GitHub-specific callout marker and add **Warning:** prefix
 awk '
 /^> \[!WARNING\]\\$/ {
     # Skip the warning marker line
