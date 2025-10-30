@@ -2,11 +2,6 @@
 
 ## [Unreleased]
 
-### Enhancements
-
-- Convert GitHub-specific markdown syntax in README to standard markdown for
-  proper rendering on crates.io.
-
 ## 2025-10-30 - [0.3.6]
 
 ### Enhancements
