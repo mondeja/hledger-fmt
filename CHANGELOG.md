@@ -6,8 +6,7 @@
 
 - Cache character counts in data structures for improved formatting performance.
 - Optimize hot paths in parser and formatter for better overall performance.
-- Reduce memory footprint by 70.8% using smaller integer types (u16 instead of
-  usize).
+- Reduce memory footprint by 70.8% using smaller integer types.
 - Improve directive recognition with tree-based matching.
 
 ## 2025-10-29 - [0.3.5]
