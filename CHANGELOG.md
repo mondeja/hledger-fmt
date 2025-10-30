@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 2025-10-30 - [`v0.3.6`]
+
 ### Enhancements
 
 - Cache character counts in data structures for improved formatting performance.
@@ -216,7 +218,8 @@
 
 First beta release
 
-[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...master
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...master
+[`v0.3.6`]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/mondeja/hledger-fmt/compare/v0.3.2...v0.3.3
