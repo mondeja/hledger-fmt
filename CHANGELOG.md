@@ -2,11 +2,6 @@
 
 ## [Unreleased]
 
-### Bug fixes
-
-- Fix variable reuse in `split_value_in_before_decimals_after_decimals`
-  function that made the code confusing and error-prone for future modifications.
-
 ### Enhancements
 
 - Optimize parser and formatter performance with multiple improvements including
