@@ -21,18 +21,21 @@ fi
 # Remove the GitHub-specific callout marker and add **Warning:** prefix
 awk '
 /^> \[!WARNING\]\\$/ {
-    # Skip the warning marker line
-    getline
-    # Remove the "> " prefix and add **Warning:** prefix
-    sub(/^> /, "**Warning:** ")
-    print
-    # Process remaining lines in the warning block
-    while (getline && /^> /) {
-        sub(/^> /, "")
+    # Skip the warning marker line and read the first warning content line
+    if (getline > 0) {
+        # Remove the "> " prefix and add **Warning:** prefix
+        sub(/^> /, "**Warning:** ")
         print
+        # Process remaining lines in the warning block
+        while (getline > 0 && /^> /) {
+            sub(/^> /, "")
+            print
+        }
+        # Print the current line if it was successfully read
+        if (NF > 0 || length($0) > 0) {
+            print
+        }
     }
-    # Print the current line (empty line or next content)
-    print
     next
 }
 { print }
