@@ -1,34 +1,43 @@
 # Real-World Hledger Journal Corpus Files
 
-This document describes the real-world Hledger journal examples added to the `fuzz/corpus/` directory for comprehensive testing.
+This document describes the real-world Hledger journal examples added to the
+`fuzz/corpus/` directory for comprehensive testing.
 
 ## Files Added
 
 ### 1. basic.journal
+
 **Source**: Existing basic test file
 **Features**:
+
 - Simple transaction with two postings
 - Basic date and account formatting
 
 ### 2. cheatsheet.hledger
+
 **Source**: Existing comprehensive example file
 **Features**:
+
 - Complete syntax reference
 - All directive types
 - Various transaction patterns
 
 ### 3. multicurrency.journal
+
 **Source**: Official hledger repository examples
 **Features**:
+
 - Multi-currency transactions (HRK, EUR)
 - Currency exchange operations using @ syntax
-- Balance assertions with ==*
+- Balance assertions with ==\*
 - Account declarations with type tags
 - Multiline comments with example output
 
 ### 4. multi-bank-currencies.journal
+
 **Source**: Real user's multi-bank financial tracking setup
 **Features**:
+
 - Multiple currency tracking (ILS, USD, EUR)
 - Bank-specific currency commodities (USD:BOI, USD:BOJ)
 - Price directives (P) for exchange rates
@@ -38,8 +47,10 @@ This document describes the real-world Hledger journal examples added to the `fu
 - Complex account hierarchies
 
 ### 5. uk-finances.journal
+
 **Source**: Real UK personal finance journal
 **Features**:
+
 - Balance assertions with multiple forms (=)
 - Transaction codes in parentheses (BGC, DEB, BP, FOREIGN CCY)
 - Foreign currency conversions with @@ syntax
@@ -48,8 +59,10 @@ This document describes the real-world Hledger journal examples added to the `fu
 - Interest calculations with descriptive notes
 
 ### 6. stock-trading.journal
+
 **Source**: Investment tracking with hledger-lots integration
 **Features**:
+
 - Custom directives (#+hledger-lots, #+args)
 - Stock lot tracking with @ price syntax
 - Capital gains calculations
@@ -59,8 +72,10 @@ This document describes the real-world Hledger journal examples added to the `fu
 - Complex commodity symbols with quotes ("AAPL", "GOOG", "PETR4.SA")
 
 ### 7. timelog.journal
+
 **Source**: Time tracking integration (taskwarrior)
 **Features**:
+
 - Include directives
 - Default commodity directive (D)
 - Integration with external time tracking systems
@@ -68,6 +83,7 @@ This document describes the real-world Hledger journal examples added to the `fu
 ## Test Coverage
 
 Each corpus file is used to test:
+
 1. **Parsing**: Files can be successfully parsed without errors
 2. **Formatting**: Files can be formatted with consistent spacing and alignment
 3. **Round-trip**: Parse → Format → Parse produces identical AST
@@ -76,6 +92,7 @@ Each corpus file is used to test:
 ## Unit Tests Added
 
 New unit tests in `src/formatter/tests.rs`:
+
 - `corpus_multicurrency_example`: Multi-currency transaction formatting
 - `corpus_balance_assertions`: Balance assertions with multiple currencies
 - `corpus_transaction_codes`: Transactions with parenthesized codes
@@ -89,6 +106,7 @@ New unit tests in `src/formatter/tests.rs`:
 ## Verification
 
 All corpus files have been verified to:
+
 1. Parse successfully ✓
 2. Format without errors ✓
 3. Work with all three fuzz targets (parse, format, roundtrip) ✓
@@ -107,4 +125,6 @@ cargo +nightly fuzz run fuzz_format
 cargo +nightly fuzz run fuzz_roundtrip
 ```
 
-When fuzzing runs, it copies files from `fuzz/corpus/` into target-specific directories like `fuzz/corpus/fuzz_parse/`, which are gitignored and can grow during fuzzing sessions.
+When fuzzing runs, it copies files from `fuzz/corpus/` into target-specific
+directories like `fuzz/corpus/fuzz_parse/`, which are gitignored and can grow
+during fuzzing sessions.
