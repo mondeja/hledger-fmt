@@ -2,8 +2,18 @@
 
 ## [Unreleased]
 
+### Bug fixes
+
+- Fix variable reuse in `split_value_in_before_decimals_after_decimals`
+  function that made the code confusing and error-prone for future modifications.
+
 ### Enhancements
 
+- Cache character counts in `Directive` and `TransactionEntry` structures to
+  eliminate repeated `chars_count()` calls in the formatter (~4.8% faster
+  formatting, ~2.9% faster overall).
+- Cache `title_chars_count` outside transaction entry loop (~1.5% improvement
+  in formatting).
 - Optimize parser and formatter hot paths (2.7% faster parsing, 2.5% faster
   formatting).
 - Reduce memory footprint by 70.8% for transaction-related structures by
