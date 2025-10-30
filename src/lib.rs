@@ -1,4 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+// Performance-focused clippy lints to catch common performance issues
+#![warn(clippy::perf)]
+#![warn(clippy::missing_inline_in_public_items)]
+#![warn(clippy::large_types_passed_by_value)]
+#![warn(clippy::inefficient_to_string)]
+#![warn(clippy::clone_on_ref_ptr)]
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -24,6 +30,7 @@ pub use formatter::FormatJournalOptions;
 pub use parser::errors::SyntaxError;
 
 /// Format an hledger journal string file content as a String.
+#[inline]
 pub fn format_journal(content: &str) -> Result<String, SyntaxError> {
     let buffer = format_journal_bytes(content.as_bytes())?;
     // SAFETY: The formatter only outputs valid UTF-8 since it only writes:
@@ -34,6 +41,7 @@ pub fn format_journal(content: &str) -> Result<String, SyntaxError> {
 }
 
 /// Format an hledger journal string file content as a String with specified options.
+#[inline]
 pub fn format_journal_with_options(
     content: &str,
     options: formatter::FormatJournalOptions,
@@ -50,6 +58,7 @@ pub fn format_journal_with_options(
 }
 
 /// Format an hledger journal file content as bytes.
+#[inline]
 pub fn format_journal_bytes(content: &[u8]) -> Result<Vec<u8>, SyntaxError> {
     let parsed = parser::parse_content(content)?;
     let opts = formatter::FormatJournalOptions::new().with_estimated_length(content.len());
@@ -57,6 +66,7 @@ pub fn format_journal_bytes(content: &[u8]) -> Result<Vec<u8>, SyntaxError> {
 }
 
 /// Format an hledger journal file content as bytes with specified options.
+#[inline]
 pub fn format_journal_bytes_with_options(
     content: &[u8],
     options: formatter::FormatJournalOptions,
@@ -68,6 +78,7 @@ pub fn format_journal_bytes_with_options(
 }
 
 #[cfg(feature = "bench")]
+#[inline]
 pub fn format_parsed_journal(parsed: &parser::JournalFile) -> Result<Vec<u8>, SyntaxError> {
     let format_opts = formatter::FormatJournalOptions::new();
     let formatted = formatter::format_content_with_options(parsed, &format_opts);

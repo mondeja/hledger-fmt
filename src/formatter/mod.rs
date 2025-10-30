@@ -12,6 +12,7 @@ pub struct FormatJournalOptions {
 }
 
 impl Default for FormatJournalOptions {
+    #[inline]
     fn default() -> Self {
         Self {
             estimated_length: 1024,
@@ -38,21 +39,25 @@ impl Default for FormatJournalOptions {
 }
 
 impl FormatJournalOptions {
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[inline]
     pub(crate) fn with_estimated_length(mut self, estimated_length: usize) -> Self {
         self.estimated_length = estimated_length;
         self
     }
 
+    #[inline]
     pub fn with_entry_spacing(mut self, entry_spacing: usize) -> Self {
         self.entry_spacing = entry_spacing;
         self
     }
 
     #[must_use]
+    #[inline]
     pub fn entry_spacing(&self) -> usize {
         self.entry_spacing
     }
@@ -351,7 +356,10 @@ mod spaces {
     }
 
     const SPACES_64: [u8; 64] = make_spaces::<64>();
+    // Add a larger buffer for common larger space counts
+    const SPACES_256: [u8; 256] = make_spaces::<256>();
 
+    #[inline(always)]
     pub fn extend(buffer: &mut Vec<u8>, n: usize) {
         // Fast paths for common values to avoid slice operations overhead
         match n {
@@ -360,9 +368,19 @@ mod spaces {
             2..=64 => {
                 buffer.extend_from_slice(&SPACES_64[..n]);
             }
+            65..=256 => {
+                buffer.extend_from_slice(&SPACES_256[..n]);
+            }
             _ => {
+                // For very large counts, use a more efficient approach
+                buffer.reserve(n);
                 let old_len = buffer.len();
-                buffer.resize(old_len + n, b' ');
+                // SAFETY: We just reserved exactly n bytes
+                unsafe {
+                    let ptr = buffer.as_mut_ptr().add(old_len);
+                    core::ptr::write_bytes(ptr, b' ', n);
+                    buffer.set_len(old_len + n);
+                }
             }
         }
     }
