@@ -14,7 +14,7 @@ fn assert_journal_err(content: &str, expected: SyntaxError) {
 fn single_line_comment_hash() {
     assert_journal(
         "# comment",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment".into(),
             prefix: CommentPrefix::Hash,
             indent: 0,
@@ -26,7 +26,7 @@ fn single_line_comment_hash() {
 fn single_line_comment_semicolon() {
     assert_journal(
         "; comment",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment".into(),
             prefix: CommentPrefix::Semicolon,
             indent: 0,
@@ -38,7 +38,7 @@ fn single_line_comment_semicolon() {
 fn single_line_comment_indented() {
     assert_journal(
         "  # comment",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment".into(),
             prefix: CommentPrefix::Hash,
             indent: 2,
@@ -47,7 +47,7 @@ fn single_line_comment_indented() {
 
     assert_journal(
         "    ; comment # foo ; bar",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment # foo ; bar".into(),
             prefix: CommentPrefix::Semicolon,
             indent: 4,
@@ -59,7 +59,7 @@ fn single_line_comment_indented() {
 fn single_line_comment_tab_indented_hash() {
     assert_journal(
         "\t# comment",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment".into(),
             prefix: CommentPrefix::Hash,
             // a tab is the second column in the line
@@ -72,7 +72,7 @@ fn single_line_comment_tab_indented_hash() {
 fn single_line_comment_tab_indented_semicolon() {
     assert_journal(
         "\t\t; comment # foo ; bar",
-        vec![JournalCstNode::SingleLineComment(SingleLineComment {
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
             content: " comment # foo ; bar".into(),
             prefix: CommentPrefix::Semicolon,
             indent: 2,
@@ -135,10 +135,9 @@ fn directive_with_tabbed_comment() {
             nodes: vec![DirectiveNode::Directive(Directive {
                 name: "account".into(),
                 content: "bank".into(),
-                comment: Some(SingleLineComment {
+                comment: Some(InlineComment {
                     prefix: CommentPrefix::Semicolon,
                     content: " comment".into(),
-                    indent: 4,
                 }),
                 name_chars_count: 7,
                 content_chars_count: 4,
@@ -157,10 +156,9 @@ fn directives_with_multiple_tabbed_comments() {
                 DirectiveNode::Directive(Directive {
                     name: "account".into(),
                     content: "foo".into(),
-                    comment: Some(SingleLineComment {
+                    comment: Some(InlineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " foo comment".into(),
-                        indent: 4,
                     }),
                     name_chars_count: 7,
                     content_chars_count: 3,
@@ -168,10 +166,9 @@ fn directives_with_multiple_tabbed_comments() {
                 DirectiveNode::Directive(Directive {
                     name: "account".into(),
                     content: "bar".into(),
-                    comment: Some(SingleLineComment {
+                    comment: Some(InlineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " bar comment".into(),
-                        indent: 4,
                     }),
                     name_chars_count: 7,
                     content_chars_count: 3,
@@ -224,10 +221,9 @@ fn account_directive_with_comment() {
             nodes: vec![DirectiveNode::Directive(Directive {
                 name: "account".into(),
                 content: "Assets:Bank:Checking".into(),
-                comment: Some(SingleLineComment {
+                comment: Some(InlineComment {
                     prefix: CommentPrefix::Semicolon,
                     content: " comment".into(),
-                    indent: 1, // TODO: idents for directive comments are not used in the formatter
                 }),
                 name_chars_count: 7,
                 content_chars_count: 20,
@@ -385,7 +381,7 @@ fn directives_group_with_comments() {
                     name_chars_count: 7,
                     content_chars_count: 7,
                 }),
-                DirectiveNode::SingleLineComment(SingleLineComment {
+                DirectiveNode::SingleLineComment(IndentedComment {
                     content: " comment".into(),
                     prefix: CommentPrefix::Semicolon,
                     indent: 0,
@@ -393,15 +389,14 @@ fn directives_group_with_comments() {
                 DirectiveNode::Directive(Directive {
                     name: "commodity".into(),
                     content: "$100.00".into(),
-                    comment: Some(SingleLineComment {
+                    comment: Some(InlineComment {
                         prefix: CommentPrefix::Semicolon,
                         content: " comment".into(),
-                        indent: 1, // TODO: idents for directive comments are not used in the formatter
                     }),
                     name_chars_count: 9,
                     content_chars_count: 7,
                 }),
-                DirectiveNode::SingleLineComment(SingleLineComment {
+                DirectiveNode::SingleLineComment(IndentedComment {
                     content: " other comment".into(),
                     prefix: CommentPrefix::Hash,
                     indent: 2,

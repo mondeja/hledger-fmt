@@ -3,7 +3,7 @@ mod tests;
 use crate::Vec;
 
 use crate::parser::{
-    Directive, DirectiveNode, JournalCstNode, JournalFile, SingleLineComment, TransactionNode,
+    Directive, DirectiveNode, IndentedComment, JournalCstNode, JournalFile, TransactionNode,
 };
 
 pub struct FormatJournalOptions {
@@ -87,7 +87,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
 
     for node in nodes {
         match node {
-            JournalCstNode::SingleLineComment(SingleLineComment {
+            JournalCstNode::SingleLineComment(IndentedComment {
                 content,
                 prefix,
                 indent,
@@ -142,7 +142,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                             buffer.extend_from_slice(content);
                             buffer.push(b'\n');
                         }
-                        DirectiveNode::SingleLineComment(SingleLineComment {
+                        DirectiveNode::SingleLineComment(IndentedComment {
                             content,
                             prefix,
                             ..
@@ -259,7 +259,7 @@ fn format_nodes(nodes: &JournalFile, buffer: &mut Vec<u8>, entry_spacing: usize)
                             }
                             buffer.push(b'\n');
                         }
-                        TransactionNode::SingleLineComment(SingleLineComment {
+                        TransactionNode::SingleLineComment(IndentedComment {
                             content,
                             prefix,
                             ..

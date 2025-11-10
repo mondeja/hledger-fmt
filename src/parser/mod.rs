@@ -23,7 +23,7 @@ pub enum JournalCstNode<'a> {
         content: ByteStr<'a>,
     },
 
-    SingleLineComment(SingleLineComment<'a>),
+    SingleLineComment(IndentedComment<'a>),
 
     /// Directives group
     DirectivesGroup {
@@ -47,7 +47,7 @@ pub enum JournalCstNode<'a> {
         /// Transaction title
         title: ByteStr<'a>,
         /// Transaction title comment
-        title_comment: Option<SingleLineComment<'a>>,
+        title_comment: Option<InlineComment<'a>>,
         /// Transaction entries
         entries: Vec<TransactionNode<'a>>,
         /// Indent of the first transaction entry (u16 max: 65,535 - more than sufficient)
@@ -77,9 +77,29 @@ pub enum CommentPrefix {
     Semicolon = b';',
 }
 
-/// A single line comment (starting with '#' or ';')
+impl CommentPrefix {
+    #[inline]
+    fn from_byte(byte: u8) -> Self {
+        if byte == b'#' {
+            CommentPrefix::Hash
+        } else {
+            CommentPrefix::Semicolon
+        }
+    }
+}
+
+/// A single line comment without indentation (inline comment)
 #[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
-pub struct SingleLineComment<'a> {
+pub struct InlineComment<'a> {
+    /// The comment content
+    pub content: ByteStr<'a>,
+    /// The comment prefix ('#' or ';')
+    pub prefix: CommentPrefix,
+}
+
+/// A single line comment that starts at the beginning of a line and tracks indentation
+#[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
+pub struct IndentedComment<'a> {
     /// The comment content
     pub content: ByteStr<'a>,
     /// The column number where the comment starts (u16 covers practical indent widths)
@@ -96,7 +116,7 @@ pub struct Directive<'a> {
     /// The directive content
     pub content: ByteStr<'a>,
     /// Comment associated with the directive
-    pub comment: Option<SingleLineComment<'a>>,
+    pub comment: Option<InlineComment<'a>>,
     /// Cached character count for name
     pub(crate) name_chars_count: u16,
     /// Cached character count for content
@@ -108,7 +128,7 @@ pub struct Directive<'a> {
 pub enum DirectiveNode<'a> {
     Directive(Directive<'a>),
     Subdirective(ByteStr<'a>), // includes comments after the subdirective content
-    SingleLineComment(SingleLineComment<'a>),
+    SingleLineComment(IndentedComment<'a>),
 }
 
 /// A transaction entry
@@ -125,7 +145,7 @@ pub struct TransactionEntry<'a> {
     pub value_third_part_before_decimals: ByteStr<'a>,
     pub value_third_part_after_decimals: ByteStr<'a>,
     /// Comment associated with the entry
-    pub comment: Option<SingleLineComment<'a>>,
+    pub comment: Option<InlineComment<'a>>,
     /// Cached character counts
     pub(crate) name_chars_count: u16,
     pub(crate) value_first_part_before_decimals_chars_count: u16,
@@ -140,7 +160,7 @@ pub struct TransactionEntry<'a> {
 #[cfg_attr(any(test, feature = "tracing"), derive(Debug, PartialEq))]
 pub enum TransactionNode<'a> {
     TransactionEntry(Box<TransactionEntry<'a>>),
-    SingleLineComment(SingleLineComment<'a>),
+    SingleLineComment(IndentedComment<'a>),
 }
 
 #[derive(Default)]
@@ -157,7 +177,7 @@ struct ParserTempData<'a> {
     transaction_title_byte_start: usize,
     transaction_title_byte_end: usize,
     /// Transaction title comment
-    transaction_title_comment: Option<SingleLineComment<'a>>,
+    transaction_title_comment: Option<InlineComment<'a>>,
     /// Transaction entries
     transaction_entries: Vec<TransactionNode<'a>>,
     /// If the current transaction has entries (ignoring comments)
@@ -298,14 +318,10 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
                 .entered();
             }
             // single line comment
-            let prefix = if first_byte == b'#' {
-                CommentPrefix::Hash
-            } else {
-                CommentPrefix::Semicolon
-            };
+            let prefix = CommentPrefix::from_byte(first_byte);
 
             let content = ByteStr::from(&line[1..]);
-            let comment = SingleLineComment {
+            let comment = IndentedComment {
                 content,
                 prefix,
                 indent: 0,
@@ -467,7 +483,7 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
 fn save_directive<'a>(
     name: ByteStr<'a>,
     content: ByteStr<'a>,
-    comment: Option<SingleLineComment<'a>>,
+    comment: Option<InlineComment<'a>>,
     data: &mut ParserTempData<'a>,
 ) {
     let content_len = content.chars_count();
@@ -500,27 +516,21 @@ fn parse_inline_comment<'a>(
     line_length: usize,
     colno_padding: usize,
     from_comment_prefix: Option<CommentPrefix>,
-) -> Option<SingleLineComment<'a>> {
+) -> Option<InlineComment<'a>> {
     let (content_bytes, prefix) = if let Some(comment_prefix) = from_comment_prefix {
         (&line[colno_padding..line_length], comment_prefix)
     } else {
         // Use memchr2 to efficiently find comment markers
         let search_slice = &line[colno_padding..line_length];
         let pos = memchr::memchr2(b'#', b';', search_slice)?;
-        let c = search_slice[pos];
-        let comment_prefix = if c == b'#' {
-            CommentPrefix::Hash
-        } else {
-            CommentPrefix::Semicolon
-        };
+        let comment_prefix = CommentPrefix::from_byte(search_slice[pos]);
         let start = colno_padding + pos + 1;
         (&line[start..line_length], comment_prefix)
     };
 
-    Some(SingleLineComment {
+    Some(InlineComment {
         content: ByteStr::from(content_bytes),
         prefix,
-        indent: colno_padding as u16,
     })
 }
 
@@ -583,7 +593,7 @@ fn parse_single_line_comment_or_subdirective<'a>(
 
     let content = ByteStr::from(&line[content_start..end]);
     if let Some(prefix) = comment_prefix {
-        let comment = SingleLineComment {
+        let comment = IndentedComment {
             content,
             prefix,
             indent: (content_start - 1) as u16,
@@ -721,7 +731,11 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                         data.first_entry_indent = indent as u16;
                     }
                     data.transaction_entries
-                        .push(TransactionNode::SingleLineComment(comment));
+                        .push(TransactionNode::SingleLineComment(IndentedComment {
+                            content: comment.content,
+                            prefix: comment.prefix,
+                            indent: indent as u16,
+                        }));
                     return; // is comment only
                 }
                 break;
@@ -754,7 +768,11 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
                     parse_inline_comment(line, line_length, end, Some(CommentPrefix::Semicolon));
                 if let Some(comment) = maybe_comment {
                     data.transaction_entries
-                        .push(TransactionNode::SingleLineComment(comment));
+                        .push(TransactionNode::SingleLineComment(IndentedComment {
+                            content: comment.content,
+                            prefix: comment.prefix,
+                            indent: indent as u16,
+                        }));
                     return; // is comment only
                 }
                 break;
