@@ -82,8 +82,8 @@ pub enum CommentPrefix {
 pub struct SingleLineComment<'a> {
     /// The comment content
     pub content: ByteStr<'a>,
-    /// The column number where the comment starts (u32 is sufficient for reasonable indents)
-    pub indent: u32,
+    /// The column number where the comment starts (u16 covers practical indent widths)
+    pub indent: u16,
     /// The comment prefix ('#' or ';')
     pub prefix: CommentPrefix,
 }
@@ -521,7 +521,7 @@ fn parse_inline_comment<'a>(
     Some(SingleLineComment {
         content: ByteStr::from(content_bytes),
         prefix,
-        indent: colno_padding as u32,
+        indent: colno_padding as u16,
     })
 }
 
@@ -587,7 +587,7 @@ fn parse_single_line_comment_or_subdirective<'a>(
         let comment = SingleLineComment {
             content,
             prefix,
-            indent: (content_start - 1) as u32,
+            indent: (content_start - 1) as u16,
         };
         if data.directives_group_nodes.is_empty() {
             journal.push(JournalCstNode::SingleLineComment(comment));
