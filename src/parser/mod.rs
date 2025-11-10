@@ -1026,14 +1026,14 @@ fn save_transaction<'a>(
 /// Extremely performant function to check if a line starts with a directive
 /// and return the name of the directive.
 ///
-/// Supposes that:
-///
-/// - line is not empty
 #[inline(always)]
 const fn is_directive_delimiter(byte: u8) -> bool {
     byte == b' ' || byte == b'\t'
 }
 
+/// Supposes that:
+///
+/// - line is not empty
 #[inline]
 unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     /*
