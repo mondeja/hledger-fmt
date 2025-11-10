@@ -28,6 +28,7 @@ Run benchmarks to measure performance:
 ```sh
 cargo bench --features bench
 ```
+
 Set the `HLEDGER_FMT_BENCH_FILES` environment variable to a comma-separated list
 of filenames to restrict the run to specific corpus samples:
 
