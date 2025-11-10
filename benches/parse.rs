@@ -1,22 +1,10 @@
+use bench_helpers::collect_corpus_files;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hledger_fmt::parse_content;
 use std::fs;
-use std::path::Path;
 
 fn benchmark_parser(c: &mut Criterion) {
-    let corpus_dir = Path::new("fuzz/corpus");
-    let mut corpus_files: Vec<_> = fs::read_dir(corpus_dir)
-        .unwrap()
-        .filter_map(|entry| {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() {
-                Some(path)
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut corpus_files = collect_corpus_files();
     corpus_files.sort();
 
     let mut group = c.benchmark_group("parse_content");

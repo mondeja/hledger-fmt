@@ -29,6 +29,14 @@ Run benchmarks to measure performance:
 cargo bench --features bench
 ```
 
+Set the `HLEDGER_FMT_BENCH_FILES` environment variable to a comma-separated list
+of filenames to restrict the run to specific corpus samples:
+
+```sh
+HLEDGER_FMT_BENCH_FILES="cheatsheet.hledger,stock-trading.journal" \
+  cargo bench --features bench
+```
+
 This measures parse, format, and combined operations and generates reports in
 `target/criterion/`.
 
