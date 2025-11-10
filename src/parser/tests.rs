@@ -35,6 +35,18 @@ fn single_line_comment_semicolon() {
 }
 
 #[test]
+fn single_line_comment_unicode() {
+    assert_journal(
+        "# こんにちは世界",
+        vec![JournalCstNode::SingleLineComment(IndentedComment {
+            content: " こんにちは世界".into(),
+            prefix: CommentPrefix::Hash,
+            indent: 0,
+        })],
+    );
+}
+
+#[test]
 fn single_line_comment_indented() {
     assert_journal(
         "  # comment",
@@ -143,6 +155,32 @@ fn directive_with_tabbed_comment() {
                 content_chars_count: 4,
             })],
             max_name_content_len: 11,
+        }],
+    );
+}
+
+#[test]
+fn directives_with_tabbed_delimiters() {
+    assert_journal(
+        "account\tAssets:Bank\ncommodity $\n",
+        vec![JournalCstNode::DirectivesGroup {
+            nodes: vec![
+                DirectiveNode::Directive(Directive {
+                    name: "account".into(),
+                    content: "Assets:Bank".into(),
+                    comment: None,
+                    name_chars_count: 7,
+                    content_chars_count: 11,
+                }),
+                DirectiveNode::Directive(Directive {
+                    name: "commodity".into(),
+                    content: "$".into(),
+                    comment: None,
+                    name_chars_count: 9,
+                    content_chars_count: 1,
+                }),
+            ],
+            max_name_content_len: 18,
         }],
     );
 }
@@ -405,6 +443,26 @@ fn directives_group_with_comments() {
             max_name_content_len: 16,
         }],
     )
+}
+
+#[test]
+fn directive_with_unicode_content_and_comment() {
+    assert_journal(
+        "account 资产:现金  ; 注释✨\n",
+        vec![JournalCstNode::DirectivesGroup {
+            nodes: vec![DirectiveNode::Directive(Directive {
+                name: "account".into(),
+                content: "资产:现金".into(),
+                comment: Some(InlineComment {
+                    prefix: CommentPrefix::Semicolon,
+                    content: " 注释✨".into(),
+                }),
+                name_chars_count: 7,
+                content_chars_count: 5,
+            })],
+            max_name_content_len: 12,
+        }],
+    );
 }
 
 #[test]
