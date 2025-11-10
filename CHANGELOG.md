@@ -6,6 +6,7 @@
 
 - Parse directives correctly when the keyword is followed by tabs (e.g.
   `account\tAssets`) instead of being misclassified as transaction titles.
+- Preserve posting prices when extra spaces appear before the third value.
 - Avoid to allocate a lot of memory when parsing big files.
 
 ## 2025-10-30 - [0.3.6]
