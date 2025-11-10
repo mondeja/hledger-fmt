@@ -199,9 +199,8 @@ pub fn parse_content<'a>(bytes: &'a [u8]) -> Result<JournalFile<'a>, errors::Syn
 
     let mut inside_multiline_comment = false;
     let mut data = ParserTempData::new();
-    // Pre-allocate capacity based on file size
-    let estimated_nodes = bytes.len().max(16);
-    let mut journal = Vec::with_capacity(estimated_nodes);
+    // Start with a modest capacity; Vec grows as needed without huge upfront allocations.
+    let mut journal = Vec::with_capacity(16);
 
     let mut lineno = 1;
     let mut byteno = 0;

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bug fixes
+
+- Avoid to allocate a lot of memory when parsing big files.
+
 ## 2025-10-30 - [0.3.6]
 
 ### Enhancements
