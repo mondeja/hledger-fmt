@@ -63,7 +63,7 @@ codegen-units = 1
 panic = "abort"
 
 [workspace]
-members = [".", "tests", "bench_helpers"]
+members = [".", "tests", "crates/bench_helpers"]
 
 [workspace.dependencies]
 clap = { version = "4", default-features = false, features = ["std", "help"] }
@@ -81,7 +81,7 @@ criterion = { version = "0.7", default-features = false, features = [
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = { workspace = true }
-bench_helpers = { path = "bench_helpers" }
+bench_helpers = { path = "crates/bench_helpers" }
 
 [profile.bench]
 debug = true  # Enable debug symbols for profiling
