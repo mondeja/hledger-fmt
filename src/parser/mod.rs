@@ -427,11 +427,12 @@ fn process_empty_line<'a>(
 fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData<'a>) {
     let name_length = name.len();
     let line_length = line.len();
-    let start = if name_length < line_length && line[name_length] == b' ' {
-        name_length + 1
-    } else {
-        name_length
-    };
+    let mut start = name_length;
+    if start < line_length && is_directive_delimiter(line[start]) {
+        while start < line_length && is_directive_delimiter(line[start]) {
+            start += 1;
+        }
+    }
     let mut end = start;
 
     let mut prev_was_whitespace = false;
@@ -1028,6 +1029,11 @@ fn save_transaction<'a>(
 /// Supposes that:
 ///
 /// - line is not empty
+#[inline(always)]
+const fn is_directive_delimiter(byte: u8) -> bool {
+    byte == b' ' || byte == b'\t'
+}
+
 #[inline]
 unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
     /*
@@ -1126,7 +1132,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
                 && *l.get_unchecked(6) == b'p'
                 && *l.get_unchecked(7) == b'l'
                 && *l.get_unchecked(8) == b'y'
-                && *l.get_unchecked(9) == b' '
+                && is_directive_delimiter(*l.get_unchecked(9))
             {
                 // "end apply tag"
                 if *l.get_unchecked(10) == b't'
@@ -1171,7 +1177,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(2) == b'y'
             && *l.get_unchecked(3) == b'e'
             && *l.get_unchecked(4) == b'e'
-            && *l.get_unchecked(5) == b' '
+            && is_directive_delimiter(*l.get_unchecked(5))
         {
             return Some(&line[0..5]);
         }
@@ -1183,7 +1189,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(3) == b'h'
             && *l.get_unchecked(4) == b'o'
             && *l.get_unchecked(5) == b'n'
-            && *l.get_unchecked(6) == b' '
+            && is_directive_delimiter(*l.get_unchecked(6))
         {
             return Some(&line[0..6]);
         }
@@ -1195,7 +1201,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         && *l.get_unchecked(2) == b'l'
         && *l.get_unchecked(3) == b'u'
         && *l.get_unchecked(4) == b'e'
-        && *l.get_unchecked(5) == b' '
+        && is_directive_delimiter(*l.get_unchecked(5))
     {
         return Some(&line[0..5]);
     }
@@ -1211,7 +1217,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(3) == b'i'
             && *l.get_unchecked(4) == b'n'
             && *l.get_unchecked(5) == b'e'
-            && *l.get_unchecked(6) == b' '
+            && is_directive_delimiter(*l.get_unchecked(6))
         {
             return Some(&line[0..6]);
         }
@@ -1228,7 +1234,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(9) == b'a'
             && *l.get_unchecked(10) == b'r'
             && *l.get_unchecked(11) == b'k'
-            && *l.get_unchecked(12) == b' '
+            && is_directive_delimiter(*l.get_unchecked(12))
         {
             return Some(&line[0..12]);
         }
@@ -1247,7 +1253,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(4) == b'u'
             && *l.get_unchecked(5) == b'n'
             && *l.get_unchecked(6) == b't'
-            && *l.get_unchecked(7) == b' '
+            && is_directive_delimiter(*l.get_unchecked(7))
         {
             return Some(&line[0..7]);
         }
@@ -1258,7 +1264,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(3) == b'e'
             && *l.get_unchecked(4) == b'r'
             && *l.get_unchecked(5) == b't'
-            && *l.get_unchecked(6) == b' '
+            && is_directive_delimiter(*l.get_unchecked(6))
         {
             return Some(&line[0..6]);
         }
@@ -1269,7 +1275,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(2) == b'p'
             && *l.get_unchecked(3) == b'l'
             && *l.get_unchecked(4) == b'y'
-            && *l.get_unchecked(5) == b' '
+            && is_directive_delimiter(*l.get_unchecked(5))
         {
             // "apply tag"
             if *l.get_unchecked(6) == b't'
@@ -1314,7 +1320,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(4) == b'u'
             && *l.get_unchecked(5) == b'r'
             && *l.get_unchecked(6) == b'e'
-            && *l.get_unchecked(7) == b' '
+            && is_directive_delimiter(*l.get_unchecked(7))
         {
             return Some(&line[0..7]);
         }
@@ -1324,7 +1330,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(2) == b'e'
             && *l.get_unchecked(3) == b'c'
             && *l.get_unchecked(4) == b'k'
-            && *l.get_unchecked(5) == b' '
+            && is_directive_delimiter(*l.get_unchecked(5))
         {
             return Some(&line[0..5]);
         }
@@ -1339,7 +1345,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
             && *l.get_unchecked(6) == b'i'
             && *l.get_unchecked(7) == b't'
             && *l.get_unchecked(8) == b'y'
-            && *l.get_unchecked(9) == b' '
+            && is_directive_delimiter(*l.get_unchecked(9))
         {
             return Some(&line[0..9]);
         }
@@ -1353,7 +1359,7 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         && *l.get_unchecked(4) == b'u'
         && *l.get_unchecked(5) == b'd'
         && *l.get_unchecked(6) == b'e'
-        && *l.get_unchecked(7) == b' '
+        && is_directive_delimiter(*l.get_unchecked(7))
     {
         return Some(&line[0..7]);
     }
@@ -1369,11 +1375,11 @@ unsafe fn maybe_start_with_directive(line: &[u8]) -> Option<&[u8]> {
         && *l.get_unchecked(3) == b'k'
         && *l.get_unchecked(4) == b'e'
         && *l.get_unchecked(5) == b't'
-        && *l.get_unchecked(6) == b' '
+        && is_directive_delimiter(*l.get_unchecked(6))
         && *l.get_unchecked(7) == b'/'
-        && *l.get_unchecked(8) == b' '
+        && is_directive_delimiter(*l.get_unchecked(8))
         && *l.get_unchecked(9) == b'A'
-        && *l.get_unchecked(10) == b' '
+        && is_directive_delimiter(*l.get_unchecked(10))
     {
         return Some(&line[0..10]);
     }
