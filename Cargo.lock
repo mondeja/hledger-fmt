@@ -331,7 +331,7 @@ dependencies = [
 
 [[package]]
 name = "hledger-fmt"
-version = "0.3.7"
+version = "0.3.6"
 dependencies = [
  "anstream",
  "anstyle",
