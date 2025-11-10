@@ -1548,11 +1548,6 @@ impl EntryValueParser {
         self.third_part_value_end = end as u16;
     }
 
-    #[inline]
-    fn is_third_part_value_empty(&self) -> bool {
-        self.third_part_value_start == 0 && self.third_part_value_end == 0
-    }
-
     pub(crate) fn parse<'a>(&mut self, value: &'a [u8]) -> EntryValueParserReturn<'a> {
         //let chars = value.chars();
         let value_length = value.len();
@@ -1737,20 +1732,21 @@ impl EntryValueParser {
                 }
                 ThirdPartCommodityBefore => {
                     if c.is_ascii_whitespace() {
-                        if current_spaces_in_a_row == 0 {
-                            if current_commodity_is_quoted {
-                                self.update_third_part_value(end);
-                            }
-                            current_spaces_in_a_row += 1;
-                        } else {
-                            // no commodity
-                            //current_spaces_in_a_row = 0;
-                            // end
-                            break;
+                        if current_commodity_is_quoted {
+                            self.update_third_part_value(end);
                         }
-                    } else if Self::is_number_char(c) {
+                        current_spaces_in_a_row += 1;
+                        continue;
+                    }
+
+                    current_spaces_in_a_row = 0;
+
+                    if Self::is_number_char(c) {
                         self.update_third_part_value(end);
                         state = ThirdPartNumber;
+                    } else if Self::is_separator_char(c) {
+                        // treat separator after third part as terminator
+                        break;
                     } else if c == b'"' {
                         self.update_third_part_value(end);
                         if current_commodity_is_quoted {
@@ -1765,32 +1761,36 @@ impl EntryValueParser {
                     if Self::is_number_char(c) {
                         self.update_third_part_value(end);
                     } else if c.is_ascii_whitespace() {
-                        if self.is_third_part_value_empty() {
-                            continue;
-                        }
                         state = ThirdPartCommodityAfter;
+                    } else if Self::is_separator_char(c) {
+                        break;
                     } else {
                         self.update_third_part_value(end);
                         if c == b'"' {
                             current_commodity_is_quoted = true;
                         }
                         state = ThirdPartCommodityAfter;
-                        current_spaces_in_a_row = 0;
                     }
                 }
                 ThirdPartCommodityAfter => {
+                    if c.is_ascii_whitespace() {
+                        continue;
+                    }
+
+                    if Self::is_separator_char(c) {
+                        break;
+                    }
+
                     if current_commodity_is_quoted {
                         self.update_third_part_value(end);
                         if c == b'"' {
-                            // end
                             break;
                         }
-                    } else if c.is_ascii_whitespace() {
-                        // end
-                        break;
                     } else {
-                        // really numbers are forbidden by hledger, but don't care
                         self.update_third_part_value(end);
+                        if c == b'"' {
+                            current_commodity_is_quoted = true;
+                        }
                     }
                 }
             }
@@ -1986,6 +1986,21 @@ mod test {
             p.second_part_after_decimals,
             " \"Chocolate Frogs\"".as_bytes().into()
         );
+        assert_eq!(p.second_separator, "".as_bytes().into());
+        assert_eq!(p.third_part_before_decimals, "".as_bytes().into());
+        assert_eq!(p.third_part_after_decimals, "".as_bytes().into());
+    }
+
+    #[test]
+    fn test_entry_value_parser_third_part_with_extra_spaces() {
+        let mut parser = EntryValueParser::default();
+        let p = parser.parse(b"1 USD  @   $1.50   ");
+
+        assert_eq!(p.first_part_before_decimals, "1".as_bytes().into());
+        assert_eq!(p.first_part_after_decimals, " USD".as_bytes().into());
+        assert_eq!(p.first_separator, "@".as_bytes().into());
+        assert_eq!(p.second_part_before_decimals, "$1".as_bytes().into());
+        assert_eq!(p.second_part_after_decimals, ".50".as_bytes().into());
         assert_eq!(p.second_separator, "".as_bytes().into());
         assert_eq!(p.third_part_before_decimals, "".as_bytes().into());
         assert_eq!(p.third_part_after_decimals, "".as_bytes().into());
