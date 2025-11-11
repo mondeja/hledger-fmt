@@ -102,9 +102,6 @@ re-scans slices to compute display widths.
 - **Library facade (`src/lib.rs`)** – exposes `format_journal`,
   `format_journal_bytes`, `format_content_with_options`, etc., for both CLI and
   embedding.
-- **Bench helpers (`crates/bench_helpers`)** – shared utility to collect corpus
-  files for Criterion benchmarks with optional filtering via
-  `HLEDGER_FMT_BENCH_FILES`.
 - **Tests**
   - Unit tests live alongside parser/formatter logic.
   - Integration tests in `tests/` exercise CLI behaviors.
