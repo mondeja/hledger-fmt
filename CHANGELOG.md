@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## 2025-11-11 - [0.3.7]
+
 ### Bug fixes
 
 - Parse directives correctly when the keyword is followed by tabs (e.g.
@@ -225,7 +227,8 @@
 
 First beta release
 
-[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...master
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.7...master
+[0.3.7]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/mondeja/hledger-fmt/compare/v0.3.3...v0.3.4
