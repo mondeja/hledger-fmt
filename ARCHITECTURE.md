@@ -119,11 +119,3 @@ re-scans slices to compute display widths.
   locale-agnostic.
 - Formatting alignment assumes monospace output; cached counts handle multi-byte
   UTF-8 but not East Asian width—sufficient for the current CLI use case.
-
-## Future Considerations
-
-- Extending the AST to include richer semantic nodes (e.g. posting metadata)
-  without compromising borrow semantics.
-- Exploring incremental parsing if interactive use becomes important.
-- Documenting the benchmarking corpus and performance dashboards alongside
-  `bench_helpers`.
