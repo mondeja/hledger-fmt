@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD013 MD038 MD040 -->
+<!-- markdownlint-disable MD013 MD040 -->
 
 # Architecture Overview
 
@@ -38,7 +38,7 @@ Supporting nodes:
 
 - `DirectiveNode`
   - `Directive` – name/content/comment + cached UTF-8 counts
-  - `Subdirective` – e.g. `  subdirective foo`
+  - `Subdirective` – e.g. `subdirective foo`
   - `SingleLineComment`
 - `TransactionNode`
   - `TransactionEntry` – postings with cached widths and optional comment
