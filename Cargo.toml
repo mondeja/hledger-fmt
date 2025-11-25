@@ -98,5 +98,5 @@ name = "format"
 harness = false
 
 [[bench]]
-name = "parse_and_format"
+name = "roundtrip"
 harness = false

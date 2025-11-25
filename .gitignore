@@ -6,6 +6,8 @@
 /fuzz/artifacts
 /fuzz/corpus/fuzz_*
 /fuzz/Cargo.lock
+reports/
+
 
 # Profiling outputs
 flamegraph*.svg

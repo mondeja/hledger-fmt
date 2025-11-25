@@ -27,6 +27,10 @@ pub fn collect_corpus_files() -> Vec<PathBuf> {
                     .map(|name| allowed.contains(name))
                     .unwrap_or(false)
             });
+            if corpus_files.len() == 0 {
+                eprintln!("None of the specified files in HLEDGER_FMT_BENCH_FILES were found.");
+                std::process::exit(1);
+            }
         }
     }
 

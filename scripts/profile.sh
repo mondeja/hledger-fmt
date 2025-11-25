@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Profile hledger-fmt and identify potential improvements
 #
-# Usage: ./scripts/profile.sh [parse|format|combined]
+# Usage: ./scripts/profile.sh [parse|format|roundtrip]
 
 set -euo pipefail
 
-BENCH_TYPE="${1:-combined}"
+BENCH_TYPE="${1:-roundtrip}"
 
 echo "=== Profiling hledger-fmt ($BENCH_TYPE) ==="
 echo ""
@@ -26,12 +26,12 @@ case "$BENCH_TYPE" in
     format)
         BENCH_NAME="format"
         ;;
-    combined)
-        BENCH_NAME="parse_and_format"
+    roundtrip)
+        BENCH_NAME="roundtrip"
         ;;
     *)
         echo "Error: Unknown benchmark type '$BENCH_TYPE'"
-        echo "Usage: $0 [parse|format|combined]"
+        echo "Usage: $0 [parse|format|roundtrip]"
         exit 1
         ;;
 esac
@@ -44,12 +44,13 @@ echo "2. Generating flamegraph for $BENCH_NAME..."
 echo "   This will take a few moments..."
 
 # Generate flamegraph
-cargo flamegraph --bench "$BENCH_NAME" --features bench -o "flamegraph-$BENCH_NAME.svg" -- --bench
+mkdir -p reports
+cargo flamegraph --bench "$BENCH_NAME" --features bench -o "reports/flamegraph-$BENCH_NAME.svg" -- --bench
 
 echo ""
 echo "=== Profiling complete! ==="
 echo ""
-echo "Flamegraph saved to: flamegraph-$BENCH_NAME.svg"
+echo "Flamegraph saved to: reports/flamegraph-$BENCH_NAME.svg"
 echo ""
 echo "To view the flamegraph:"
 echo "  - Open flamegraph-$BENCH_NAME.svg in your browser"
