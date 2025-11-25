@@ -123,7 +123,7 @@ jobs:
       - name: Download MacOS X86 artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-13-build
+          name: macos-15-intel-build
           path: ./build/mac-x64
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
