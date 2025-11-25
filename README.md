@@ -7,6 +7,10 @@
 
 An opinionated [hledger]'s journal files formatter.
 
+See [how hledger-fmt formats files].
+
+[how hledger-fmt formats files]: https://github.com/mondeja/hledger-fmt/blob/master/CHANGELOG.md
+
 ## Installation
 
 [![Crates.io downloads](https://img.shields.io/crates/d/hledger-fmt?label=Crate%20downloads)](https://crates.io/crates/hledger-fmt)

@@ -19,8 +19,10 @@ See [PROFILING.md](PROFILING.md) for detailed profiling instructions.
 Quick start:
 
 ```sh
+export HLEDGER_FMT_BENCH_FILES="basic.journal"
+
 # Profile the combined parse+format operation
-./scripts/profile.sh combined
+./scripts/profile.sh roundtrip
 
 # Profile just parsing
 ./scripts/profile.sh parse

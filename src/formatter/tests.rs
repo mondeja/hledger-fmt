@@ -154,10 +154,7 @@ tag foo  ; comment
 #[test]
 fn transaction_comment_with_title_comment() {
     // transaction titles and entry comments are aligned
-    assert_format(
-        r#"
-2021-01-01 title  ; comment
-  account  10  ; entry comment"#,
+    assert_noop_format(
         r#"
 2021-01-01 title  ; comment
   account  10     ; entry comment
@@ -241,6 +238,25 @@ fn comment_before_transaction() {
 }
 
 #[test]
+fn first_entry_defines_indentation() {
+    // The indentation of a transaction is defined by the indentation of the first entry
+    assert_format(
+        r#"
+2023-05-25 trip to the supermarket
+    expenses             $10.06   ; hello
+      assets              $-1  ; hello
+      assets              $-1000
+"#,
+        r#"
+2023-05-25 trip to the supermarket
+    expenses     $10.06             ; hello
+    assets       $-1                ; hello
+    assets    $-1000
+"#,
+    );
+}
+
+#[test]
 fn periodic_transaction() {
     assert_format(
         r#"
@@ -260,12 +276,12 @@ fn periodic_transaction() {
 fn auto_posting_rule() {
     assert_format(
         r#"
-= revenues:consulting
+= revenues:consulting  ; different transactions can have different indentation of entries.
     liabilities:tax:2024:us          *0.25  ; Add a tax liability & expense
     expenses:tax:2024:us            *-0.25  ; for 25% of the revenue.
 "#,
         r#"
-= revenues:consulting
+= revenues:consulting  ; different transactions can have different indentation of entries.
     liabilities:tax:2024:us   *0.25  ; Add a tax liability & expense
     expenses:tax:2024:us     *-0.25  ; for 25% of the revenue.
 "#,
@@ -338,14 +354,14 @@ fn transaction_with_payee_note() {
 fn transaction_with_shares() {
     assert_format(
         r#"
-2024-01-15 buy some shares, in two lots                 ; Cost can be noted.
+2024-01-15 buy some shares, in two lots                 ; Cost
     assets:investments:2024-01-15     2.0 AAAA @ $1.50  ; @  means per-unit cost
     assets:investments:2024-01-15-02  3.0 AAAA @@ $4    ; @@ means total cost
                       ; ^ Per-lot subaccounts are sometimes useful.
     assets:checking                 $-7
 "#,
         r#"
-2024-01-15 buy some shares, in two lots  ; Cost can be noted.
+2024-01-15 buy some shares, in two lots  ; Cost
     assets:investments:2024-01-15       2.0 AAAA  @   $1.50  ; @  means per-unit cost
     assets:investments:2024-01-15-02    3.0 AAAA  @@  $4     ; @@ means total cost
     ; ^ Per-lot subaccounts are sometimes useful.

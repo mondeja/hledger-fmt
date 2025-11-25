@@ -8,8 +8,10 @@ bottlenecks and code size issues.
 The easiest way to profile is using the included scripts:
 
 ```sh
+export HLEDGER_FMT_BENCH_FILES="basic.journal"
+
 # Profile the combined parse+format operation
-./scripts/profile.sh combined
+./scripts/profile.sh roundtrip
 
 # Profile just parsing or formatting
 ./scripts/profile.sh parse
@@ -109,7 +111,7 @@ cargo flamegraph --bench parse --features bench -- --bench
 Record performance data:
 
 ```sh
-perf record --call-graph dwarf ./target/release/hledger-fmt file.journal
+perf record --call-graph dwarf ./target/release/hledger-fmt fuzz/corpus/basic.journal
 perf report
 ```
 
@@ -186,17 +188,6 @@ if after.len() == 3 {
 - Pack structs to reduce memory footprint
 - Use `u16` instead of `usize` for bounded values
 
-### Clippy Lints for Performance
-
-Enable performance lints in your code:
-
-```rust
-#![warn(clippy::perf)]
-#![warn(clippy::missing_inline_in_public_items)]
-#![warn(clippy::large_types_passed_by_value)]
-#![warn(clippy::inefficient_to_string)]
-```
-
 ### Known Optimization Opportunities
 
 #### Parser
@@ -233,21 +224,6 @@ Enable performance lints in your code:
    - Cached character counts
    - Minimal string operations
 
-### Performance Testing
-
-Run the full benchmark suite:
-
-```sh
-# Quick benchmark
-cargo bench --features bench
-
-# With profiling
-./scripts/profile.sh combined
-
-# Check for regressions (replace 'my-baseline' with your baseline name)
-cargo bench --features bench -- --baseline my-baseline
-```
-
 ### Performance History
 
 Track performance over time using Criterion's baseline feature:
@@ -259,18 +235,3 @@ cargo bench --features bench -- --save-baseline my-baseline
 # Compare against baseline
 cargo bench --features bench -- --baseline my-baseline
 ```
-
-## Tips
-
-- Always profile in release mode
-- Use representative workloads (real journal files)
-- Focus on hot paths (most frequent functions)
-- Measure before and after each optimization
-- See [Rust Performance Book](https://nnethercote.github.io/perf-book/) for
-  more details
-- Consider compile-time optimizations in `Cargo.toml`:
-  - `lto = true` - Enable Link-Time Optimization
-  - `codegen-units = 1` - Better optimization (slower compile)
-  - `opt-level = 3` or `opt-level = "z"` - Optimization level
-  - `strip = true` - Remove debug symbols from binary
-- Use `cargo-bloat` to identify code size issues
