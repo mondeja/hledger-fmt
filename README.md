@@ -9,7 +9,7 @@ An opinionated [hledger]'s journal files formatter.
 
 See [how hledger-fmt formats files].
 
-[how hledger-fmt formats files]: https://github.com/mondeja/hledger-fmt/blob/master/CHANGELOG.md
+[how hledger-fmt formats files]: https://github.com/mondeja/hledger-fmt/blob/master/EXAMPLES.md
 
 ## Installation
 
