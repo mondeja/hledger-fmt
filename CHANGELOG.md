@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## 2025-12-13 - [0.3.8]
+
+### Bug fixes
+
+- Fix directives with multiple spaces of internal separation being cut back.
+
 ## 2025-11-11 - [0.3.7]
 
 ### Bug fixes
@@ -227,7 +233,8 @@
 
 First beta release
 
-[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.7...master
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.8...master
+[0.3.8]: https://github.com/mondeja/hledger-fmt/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/mondeja/hledger-fmt/compare/v0.3.4...v0.3.5

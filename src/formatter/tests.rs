@@ -554,6 +554,17 @@ fn issue_27() {
     )
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/78
+#[test]
+fn issue_78() {
+    assert_format(
+        r#"P   2025-01-01   HOUSE    100.341 USD
+"#,
+        r#"P 2025-01-01   HOUSE    100.341 USD
+"#,
+    );
+}
+
 // https://github.com/mondeja/hledger-fmt/issues/32
 #[test]
 fn unicode_in_entry_name() {
