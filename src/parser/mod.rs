@@ -435,36 +435,39 @@ fn parse_directive<'a>(name: &'a [u8], line: &'a [u8], data: &mut ParserTempData
     }
     let mut end = start;
 
-    let mut prev_was_whitespace = false;
     let mut comment_colno_padding = 1;
+    let mut there_is_coment = false;
 
     while end < line_length {
         let c = line[end];
         if c == b'\t' {
-            comment_colno_padding = 4;
-            break;
+            end += 1;
+            continue;
         }
 
-        if c.is_ascii_whitespace() {
-            if prev_was_whitespace {
-                // double whitespace, end of content
-                end -= 1;
-                break;
-            }
-            prev_was_whitespace = true;
-        } else {
-            prev_was_whitespace = false;
+        if c == b'#' || c == b';' {
+            comment_colno_padding = end - 1;
+            there_is_coment = true;
+            break;
         }
         end += 1;
     }
+
+    let mut content_end = end;
+
+    // trim whitespace at the end of content
+    while content_end > start && line[content_end - 1].is_ascii_whitespace() {
+        content_end -= 1;
+    }
+
     let mut comment = None;
-    if end != start {
+    if there_is_coment {
         // it should be a comment
         comment = parse_inline_comment(line, line_length, comment_colno_padding, None);
     }
 
     let name = ByteStr::from(name);
-    let content = ByteStr::from(&line[start..end]);
+    let content = ByteStr::from(&line[start..content_end]);
     save_directive(name, content, comment, data);
 }
 
