@@ -746,10 +746,6 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
             } else {
                 entry_name_start = end - 1;
                 entry_name_end = entry_name_start;
-                // first non-whitespace byte resets the run, otherwise the
-                // trailing space of the indent would be treated as the
-                // second whitespace in the name/value separator and the
-                // entry name would saturate to empty (issue #87)
                 prev_was_whitespace = false;
                 break;
             }

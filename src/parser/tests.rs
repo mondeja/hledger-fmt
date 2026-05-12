@@ -773,10 +773,6 @@ fn regression_tab_indented_entries() {
 
 #[test]
 fn regression_single_letter_account_name_preserved() {
-    // Single-letter account names must be preserved through the parser. Previously,
-    // `prev_was_whitespace` from the indent loop carried over into the name loop,
-    // so the first whitespace after a one-character account triggered the
-    // double-whitespace separator and the name was saturating-subtracted to empty.
     let content = "2026-01-01 Test\n    A  -$1\n    B  $1\n";
     let journal = parse_content(content.as_bytes()).expect("parse must succeed");
     let JournalCstNode::Transaction { entries, .. } = &journal[0] else {
