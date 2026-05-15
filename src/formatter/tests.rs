@@ -697,6 +697,17 @@ fn single_letter_account_names() {
     )
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/83
+#[test]
+fn transactions_with_status() {
+    assert_noop_format(
+        r"2026-02-02 Gas
+    * Liabilities:Current Liabilities:Credit Cards  USD -10.00
+    ! Expenses:Auto & Transport:Gas & Fuel           USD 10.00
+",
+    )
+}
+
 // Real-world corpus file tests
 // These tests verify that real-world journal files can be parsed and formatted correctly
 

@@ -1,6 +1,6 @@
 [package]
 name = "hledger-fmt"
-version = "0.3.8"
+version = "0.3.9"
 rust-version = "1.74.1"
 edition = "2021"
 description = "An opinionated hledger's journal files formatter."
@@ -27,8 +27,8 @@ required-features = ["cli"]
 
 [dependencies]
 clap = { workspace = true, optional = true }
-similar = { version = "2", optional = true }
-anstream = { version = "0.6", optional = true, default-features = false }
+similar = { version = "3", optional = true }
+anstream = { version = "1", optional = true, default-features = false }
 anstyle = { version = "1", optional = true, default-features = false }
 tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }

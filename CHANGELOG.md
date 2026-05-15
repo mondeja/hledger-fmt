@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## 2026-05-15 - [0.3.9]
+
+### Bug fixes
+
+- Fix transactions with status marks stripping the mark.
+- Fix transactions with single letter account names stripping the account name.
+
 ## 2025-12-13 - [0.3.8]
 
 ### Bug fixes
@@ -233,7 +240,8 @@
 
 First beta release
 
-[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.8...master
+[Unreleased]: https://github.com/mondeja/hledger-fmt/compare/v0.3.9...master
+[0.3.9]: https://github.com/mondeja/hledger-fmt/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/mondeja/hledger-fmt/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/mondeja/hledger-fmt/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/mondeja/hledger-fmt/compare/v0.3.5...v0.3.6
