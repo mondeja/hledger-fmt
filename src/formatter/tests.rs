@@ -686,6 +686,17 @@ fn space_as_thousands_separator() {
     )
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/87
+#[test]
+fn single_letter_account_names() {
+    assert_noop_format(
+        r"2026-01-01 Test
+    A  $-1
+    B   $1
+",
+    )
+}
+
 // Real-world corpus file tests
 // These tests verify that real-world journal files can be parsed and formatted correctly
 

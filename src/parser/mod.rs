@@ -746,6 +746,7 @@ fn parse_transaction_entry<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
             } else {
                 entry_name_start = end - 1;
                 entry_name_end = entry_name_start;
+                prev_was_whitespace = false;
                 break;
             }
         }
