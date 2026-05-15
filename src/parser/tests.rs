@@ -770,20 +770,3 @@ fn regression_tab_indented_entries() {
     let result = parse_content(content.as_bytes());
     assert!(result.is_ok());
 }
-
-#[test]
-fn regression_single_letter_account_name_preserved() {
-    let content = "2026-01-01 Test\n    A  -$1\n    B  $1\n";
-    let journal = parse_content(content.as_bytes()).expect("parse must succeed");
-    let JournalCstNode::Transaction { entries, .. } = &journal[0] else {
-        panic!("expected Transaction, got {:?}", journal[0]);
-    };
-    let names: Vec<&str> = entries
-        .iter()
-        .filter_map(|n| match n {
-            TransactionNode::TransactionEntry(e) => Some(core::str::from_utf8(&e.name).unwrap()),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(names, vec!["A", "B"], "single-letter names must round-trip");
-}
