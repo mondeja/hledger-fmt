@@ -708,6 +708,31 @@ fn transactions_with_status() {
     )
 }
 
+// https://github.com/mondeja/hledger-fmt/issues/91
+#[test]
+fn hash_inside_transaction_title() {
+    // '#' only starts a comment at the beginning of a line, so inside a
+    // transaction title it is ordinary text
+    assert_noop_format(
+        r"2026-01-01 * TRAILING HASH#
+    Expenses:a  £1.00
+    Assets:b
+
+2026-01-02 * SPACED HASH #35
+    Expenses:a  £1.00
+    Assets:b
+
+2026-01-03 * MID#WORD
+    Expenses:a  £1.00
+    Assets:b
+
+2026-01-04 * PAYEE# | NOTE#
+    Expenses:a  £1.00
+    Assets:b
+",
+    )
+}
+
 // Real-world corpus file tests
 // These tests verify that real-world journal files can be parsed and formatted correctly
 

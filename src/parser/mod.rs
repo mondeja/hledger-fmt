@@ -937,11 +937,10 @@ fn parse_transaction_title<'a>(line: &'a [u8], data: &mut ParserTempData<'a>) {
     while end < line_length {
         let c = line[end];
         end += 1;
+        // '#' only opens a comment at the start of a line, so inside a
+        // transaction title it is part of the description
         if c == b';' {
             comment_prefix = Some(CommentPrefix::Semicolon);
-            break;
-        } else if c == b'#' {
-            comment_prefix = Some(CommentPrefix::Hash);
             break;
         }
     }
